@@ -225,12 +225,32 @@ export function useDayScreenData(date: string) {
     [state.exerciseEntries, updateNumber]
   )
 
+  const updateSettings = useCallback(
+    async (patch: Partial<Omit<UserSettings, "id" | "updatedAt">>) => {
+      const currentSettings = await db.userSettings.get("local")
+
+      if (!currentSettings) {
+        return
+      }
+
+      await db.userSettings.put({
+        ...currentSettings,
+        ...patch,
+        updatedAt: new Date().toISOString(),
+      })
+
+      await load()
+    },
+    [load]
+  )
+
   return {
     ...state,
     addExercise,
     addSet,
     updateNumber,
     incrementNumber,
+    updateSettings,
     locale: state.settings?.locale ?? "en",
     dictionary: getDictionary(state.settings?.locale ?? "en"),
   }

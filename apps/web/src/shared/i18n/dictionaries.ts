@@ -16,17 +16,22 @@ type Dictionary = {
     pause: string
     reset: string
     search: string
+    settings: string
     start: string
   }
   labels: {
+    autoRestTimer: string
     exercises: string
+    language: string
     loading: string
     noExercisesFound: string
     futureDate: string
     pastDate: string
+    previousResultDefaults: string
     restTimer: string
     searchExercise: string
     today: string
+    weightUnit: string
   }
   units: {
     kg: string
@@ -53,17 +58,22 @@ export const dictionaries: Record<Locale, Dictionary> = {
       pause: "Pause",
       reset: "Reset",
       search: "Search",
+      settings: "Settings",
       start: "Start",
     },
     labels: {
+      autoRestTimer: "Auto rest timer",
       exercises: "Exercises",
+      language: "Language",
       loading: "Loading...",
       noExercisesFound: "No exercises found",
       futureDate: "Future date",
       pastDate: "Past date",
+      previousResultDefaults: "Use previous result as default",
       restTimer: "Rest timer",
       searchExercise: "Search exercise",
       today: "Today",
+      weightUnit: "Weight unit",
     },
     units: {
       kg: "kg",
@@ -100,17 +110,22 @@ export const dictionaries: Record<Locale, Dictionary> = {
       pause: "Пауза",
       reset: "Сброс",
       search: "Поиск",
+      settings: "Настройки",
       start: "Старт",
     },
     labels: {
+      autoRestTimer: "Автотаймер отдыха",
       exercises: "Упражнения",
+      language: "Язык",
       loading: "Загрузка...",
       noExercisesFound: "Упражнения не найдены",
       futureDate: "Будущая дата",
       pastDate: "Прошлая дата",
+      previousResultDefaults: "Подставлять прошлый результат",
       restTimer: "Таймер отдыха",
       searchExercise: "Найти упражнение",
       today: "Сегодня",
+      weightUnit: "Единицы веса",
     },
     units: {
       kg: "кг",
