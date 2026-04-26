@@ -20,7 +20,12 @@ import {
 } from "@/components/ui/drawer"
 import { Input } from "@/components/ui/input"
 import { muscleGroups } from "@/shared/domain/exercise-catalog"
-import type { Exercise, Locale, MuscleGroupId } from "@/shared/domain/types"
+import type {
+  DateState,
+  Exercise,
+  Locale,
+  MuscleGroupId,
+} from "@/shared/domain/types"
 import type { getDictionary } from "@/shared/i18n/dictionaries"
 
 import { useDayScreenData } from "./use-day-screen-data"
@@ -28,7 +33,8 @@ import { useDayScreenData } from "./use-day-screen-data"
 type Dictionary = ReturnType<typeof getDictionary>
 
 export function DayScreen() {
-  const [selectedDate] = useState(() => toDateKey(new Date()))
+  const today = toDateKey(new Date())
+  const [selectedDate, setSelectedDate] = useState(today)
   const [exercisePickerOpen, setExercisePickerOpen] = useState(false)
   const {
     addExercise,
@@ -50,6 +56,13 @@ export function DayScreen() {
     () => createDateStrip(selectedDate, dictionary.labels.today, locale),
     [dictionary.labels.today, locale, selectedDate]
   )
+  const selectedDateState = getDateState(selectedDate, today)
+  const dateStatusLabel = getDateStatusLabel(
+    selectedDateState,
+    dictionary,
+    selectedDate
+  )
+  const dateTone = getDateTone(selectedDateState)
 
   async function handleAddExercise(exerciseId: string) {
     await addExercise(exerciseId)
@@ -59,11 +72,13 @@ export function DayScreen() {
   return (
     <div className="flex min-h-svh justify-center bg-zinc-100 text-foreground">
       <main className="flex min-h-svh w-full max-w-md flex-col bg-background">
-        <header className="border-b border-border bg-emerald-50 px-4 pb-3 pt-4">
+        <header
+          className={`border-b px-4 pb-3 pt-4 ${dateTone.headerClassName}`}
+        >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-emerald-700">
-                {dictionary.labels.today}
+              <p className={`text-sm font-medium ${dateTone.labelClassName}`}>
+                {dateStatusLabel}
               </p>
               <h1 className="text-2xl font-semibold">Liftbook</h1>
             </div>
@@ -89,20 +104,30 @@ export function DayScreen() {
           <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
             {days.map((item) => (
               <button
-                key={`${item.day}-${item.date}`}
-                className={`min-w-14 rounded-lg border px-2 py-2 text-center text-sm ${
-                  item.state === "today"
-                    ? "border-emerald-500 bg-white text-emerald-800"
-                    : item.state === "future"
-                      ? "border-sky-200 bg-sky-50 text-sky-800"
-                      : "border-zinc-200 bg-zinc-50 text-zinc-500"
-                }`}
+                key={item.dateKey}
+                className={`min-w-14 rounded-lg border px-2 py-2 text-center text-sm ${getDateButtonClassName(
+                  item.state,
+                  item.selected
+                )}`}
+                type="button"
+                onClick={() => setSelectedDate(item.dateKey)}
               >
                 <span className="block text-xs">{item.day}</span>
                 <span className="block font-semibold">{item.date}</span>
               </button>
             ))}
           </div>
+
+          {selectedDate !== today ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-3 bg-white/80"
+              onClick={() => setSelectedDate(today)}
+            >
+              {dictionary.actions.goToToday}
+            </Button>
+          ) : null}
         </header>
 
         <section className="flex items-center justify-between border-b border-border px-4 py-3">
@@ -438,7 +463,11 @@ function toDateKey(date: Date) {
   return `${year}-${month}-${day}`
 }
 
-function createDateStrip(selectedDate: string, todayLabel: string, locale: Locale) {
+function createDateStrip(
+  selectedDate: string,
+  todayLabel: string,
+  locale: Locale
+) {
   const selected = new Date(`${selectedDate}T12:00:00`)
   const today = toDateKey(new Date())
 
@@ -450,11 +479,77 @@ function createDateStrip(selectedDate: string, todayLabel: string, locale: Local
 
     return {
       date: String(date.getDate()),
+      dateKey,
       day: isToday
         ? todayLabel
         : new Intl.DateTimeFormat(locale, { weekday: "short" }).format(date),
-      state:
-        dateKey === today ? "today" : dateKey < today ? "past" : "future",
+      selected: dateKey === selectedDate,
+      state: getDateState(dateKey, today),
     }
   })
+}
+
+function getDateState(dateKey: string, todayKey: string): DateState {
+  if (dateKey === todayKey) {
+    return "today"
+  }
+
+  return dateKey < todayKey ? "past" : "future"
+}
+
+function getDateStatusLabel(
+  state: DateState,
+  dictionary: Dictionary,
+  selectedDate: string
+) {
+  if (state === "today") {
+    return dictionary.labels.today
+  }
+
+  return `${state === "past" ? dictionary.labels.pastDate : dictionary.labels.futureDate} · ${selectedDate}`
+}
+
+function getDateTone(state: DateState) {
+  if (state === "today") {
+    return {
+      headerClassName: "border-emerald-100 bg-emerald-50",
+      labelClassName: "text-emerald-700",
+    }
+  }
+
+  if (state === "future") {
+    return {
+      headerClassName: "border-sky-100 bg-sky-50",
+      labelClassName: "text-sky-700",
+    }
+  }
+
+  return {
+    headerClassName: "border-zinc-200 bg-zinc-50",
+    labelClassName: "text-zinc-600",
+  }
+}
+
+function getDateButtonClassName(state: DateState, selected: boolean) {
+  if (selected && state === "today") {
+    return "border-emerald-600 bg-white text-emerald-900 ring-2 ring-emerald-500/30"
+  }
+
+  if (selected && state === "future") {
+    return "border-sky-600 bg-white text-sky-900 ring-2 ring-sky-500/30"
+  }
+
+  if (selected) {
+    return "border-zinc-500 bg-white text-zinc-900 ring-2 ring-zinc-400/30"
+  }
+
+  if (state === "today") {
+    return "border-emerald-300 bg-white/80 text-emerald-800"
+  }
+
+  if (state === "future") {
+    return "border-sky-200 bg-sky-50 text-sky-800"
+  }
+
+  return "border-zinc-200 bg-zinc-50 text-zinc-500"
 }

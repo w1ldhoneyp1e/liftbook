@@ -9,6 +9,7 @@ type Dictionary = {
     collapse: string
     collapseAll: string
     decrease: string
+    goToToday: string
     increase: string
     search: string
     start: string
@@ -17,6 +18,8 @@ type Dictionary = {
     exercises: string
     loading: string
     noExercisesFound: string
+    futureDate: string
+    pastDate: string
     restTimer: string
     searchExercise: string
     today: string
@@ -39,6 +42,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       collapse: "Collapse",
       collapseAll: "Collapse all",
       decrease: "Decrease",
+      goToToday: "Today",
       increase: "Increase",
       search: "Search",
       start: "Start",
@@ -47,6 +51,8 @@ export const dictionaries: Record<Locale, Dictionary> = {
       exercises: "Exercises",
       loading: "Loading...",
       noExercisesFound: "No exercises found",
+      futureDate: "Future date",
+      pastDate: "Past date",
       restTimer: "Rest timer",
       searchExercise: "Search exercise",
       today: "Today",
@@ -79,6 +85,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       collapse: "Свернуть",
       collapseAll: "Свернуть все",
       decrease: "Уменьшить",
+      goToToday: "Сегодня",
       increase: "Увеличить",
       search: "Поиск",
       start: "Старт",
@@ -87,6 +94,8 @@ export const dictionaries: Record<Locale, Dictionary> = {
       exercises: "Упражнения",
       loading: "Загрузка...",
       noExercisesFound: "Упражнения не найдены",
+      futureDate: "Будущая дата",
+      pastDate: "Прошлая дата",
       restTimer: "Таймер отдыха",
       searchExercise: "Найти упражнение",
       today: "Сегодня",
