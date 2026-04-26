@@ -138,6 +138,14 @@ export function useDayScreenData(date: string) {
     [load]
   )
 
+  const deleteExercise = useCallback(
+    async (exerciseEntryId: string) => {
+      await db.exerciseEntries.delete(exerciseEntryId)
+      await load()
+    },
+    [load]
+  )
+
   const addExercise = useCallback(
     async (exerciseId: string) => {
       const [settings, existingDay, entriesForDate, previousEntries] =
@@ -269,6 +277,7 @@ export function useDayScreenData(date: string) {
     ...state,
     addExercise,
     addSet,
+    deleteExercise,
     deleteSet,
     updateNumber,
     incrementNumber,

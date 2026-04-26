@@ -51,6 +51,7 @@ export function DayScreen() {
   const {
     addExercise,
     addSet,
+    deleteExercise,
     deleteSet,
     dictionary,
     exerciseEntries,
@@ -287,20 +288,34 @@ export function DayScreen() {
                         : ""}
                     </p>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={
-                      collapsed
-                        ? dictionary.actions.expand
-                        : dictionary.actions.collapse
-                    }
-                    onClick={() => handleToggleExercise(entry.id)}
-                  >
-                    <ChevronDown
-                      className={collapsed ? "-rotate-90 transition-transform" : "transition-transform"}
-                    />
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={dictionary.actions.deleteExercise}
+                      onClick={() => deleteExercise(entry.id)}
+                    >
+                      <Trash2 />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={
+                        collapsed
+                          ? dictionary.actions.expand
+                          : dictionary.actions.collapse
+                      }
+                      onClick={() => handleToggleExercise(entry.id)}
+                    >
+                      <ChevronDown
+                        className={
+                          collapsed
+                            ? "-rotate-90 transition-transform"
+                            : "transition-transform"
+                        }
+                      />
+                    </Button>
+                  </div>
                 </div>
 
                 <div className={collapsed ? "hidden" : "space-y-2 p-3"}>
