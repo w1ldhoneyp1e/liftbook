@@ -17,9 +17,3 @@ This document keeps known refactoring ideas that should not interrupt MVP flow b
   - exercise card
   - set row
   - set number control
-
-## Day Screen UI Polish
-
-- Calendar drawer height should not change depending on calendar content. Different months can have different week counts, so the drawer/calendar area needs a stable height.
-- The expand-all action should use a different icon than collapse-all.
-- Collapsed exercise cards should not show an extra bottom border under the exercise header.

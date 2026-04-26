@@ -3,7 +3,8 @@
 import {
   CalendarDays,
   ChevronDown,
-  ChevronsDownUp,
+  ChevronsDown,
+  ChevronsUp,
   Plus,
   Search,
   Settings,
@@ -252,7 +253,7 @@ export function DayScreen() {
               size="sm"
               onClick={handleToggleAllExercises}
             >
-              <ChevronsDownUp />
+              {allExercisesCollapsed ? <ChevronsDown /> : <ChevronsUp />}
               {allExercisesCollapsed
                 ? dictionary.actions.expandAll
                 : dictionary.actions.collapseAll}
@@ -286,7 +287,11 @@ export function DayScreen() {
                 key={entry.id}
                 className="rounded-lg border border-border bg-card text-card-foreground"
               >
-                <div className="flex items-center justify-between border-b border-border px-3 py-3">
+                <div
+                  className={`flex items-center justify-between px-3 py-3 ${
+                    collapsed ? "" : "border-b border-border"
+                  }`}
+                >
                   <div>
                     <h3 className="font-medium">
                       {exercise?.name[locale] ?? entry.exerciseId}
@@ -586,7 +591,7 @@ function CalendarDrawer({
           <DrawerDescription>{selectedDate}</DrawerDescription>
         </DrawerHeader>
 
-        <div className="px-4 pb-4">
+        <div className="min-h-[330px] px-4 pb-4">
           <Calendar
             mode="single"
             locale={{ code: locale }}
