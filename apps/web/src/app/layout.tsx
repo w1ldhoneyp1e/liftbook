@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next"
 import "./globals.css"
+import { PwaRegistrar } from "./pwa-registrar"
 
 export const metadata: Metadata = {
   applicationName: "Liftbook",
@@ -30,7 +31,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full antialiased">
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        {children}
+        <PwaRegistrar />
+      </body>
     </html>
   )
 }
