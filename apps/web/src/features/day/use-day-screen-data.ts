@@ -117,6 +117,27 @@ export function useDayScreenData(date: string) {
     [load]
   )
 
+  const deleteSet = useCallback(
+    async (exerciseEntryId: string, setEntryId: string) => {
+      const entry = await db.exerciseEntries.get(exerciseEntryId)
+
+      if (!entry) {
+        return
+      }
+
+      await db.exerciseEntries.put({
+        ...entry,
+        updatedAt: new Date().toISOString(),
+        setEntries: entry.setEntries.filter(
+          (setEntry) => setEntry.id !== setEntryId
+        ),
+      })
+
+      await load()
+    },
+    [load]
+  )
+
   const addExercise = useCallback(
     async (exerciseId: string) => {
       const [settings, existingDay, entriesForDate, previousEntries] =
@@ -248,6 +269,7 @@ export function useDayScreenData(date: string) {
     ...state,
     addExercise,
     addSet,
+    deleteSet,
     updateNumber,
     incrementNumber,
     updateSettings,

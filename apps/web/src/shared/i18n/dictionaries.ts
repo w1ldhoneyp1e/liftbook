@@ -9,6 +9,7 @@ type Dictionary = {
     collapse: string
     collapseAll: string
     decrease: string
+    deleteSet: string
     expand: string
     expandAll: string
     goToToday: string
@@ -51,6 +52,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       collapse: "Collapse",
       collapseAll: "Collapse all",
       decrease: "Decrease",
+      deleteSet: "Delete set",
       expand: "Expand",
       expandAll: "Expand all",
       goToToday: "Today",
@@ -103,6 +105,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       collapse: "Свернуть",
       collapseAll: "Свернуть все",
       decrease: "Уменьшить",
+      deleteSet: "Удалить подход",
       expand: "Развернуть",
       expandAll: "Развернуть все",
       goToToday: "Сегодня",

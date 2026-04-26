@@ -8,6 +8,7 @@ import {
   Search,
   Settings,
   Timer,
+  Trash2,
 } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 
@@ -50,6 +51,7 @@ export function DayScreen() {
   const {
     addExercise,
     addSet,
+    deleteSet,
     dictionary,
     exerciseEntries,
     exercisesById,
@@ -305,7 +307,7 @@ export function DayScreen() {
                   {entry.setEntries.map((set, index) => (
                     <div
                       key={set.id}
-                      className="grid grid-cols-[2rem_1fr_1fr] items-center gap-2 rounded-lg bg-muted px-2 py-2"
+                      className="grid grid-cols-[2rem_1fr_1fr_2rem] items-center gap-2 rounded-lg bg-muted px-2 py-2"
                     >
                       <span className="text-center text-sm text-muted-foreground">
                         {index + 1}
@@ -344,6 +346,14 @@ export function DayScreen() {
                           incrementNumber(entry.id, set.id, "reps", delta)
                         }
                       />
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={dictionary.actions.deleteSet}
+                        onClick={() => deleteSet(entry.id, set.id)}
+                      >
+                        <Trash2 />
+                      </Button>
                     </div>
                   ))}
 
