@@ -89,7 +89,6 @@ const seedDay: WorkoutDay = {
   localOwnerId,
   createdAt: now,
   updatedAt: now,
-  exerciseEntries: seedEntries,
 }
 
 export async function seedLocalDatabase() {

@@ -60,7 +60,6 @@ export type WorkoutDay = {
   id: string
   date: string
   localOwnerId: string
-  exerciseEntries: ExerciseEntry[]
   inferredDurationSeconds?: number
   createdAt: string
   updatedAt: string

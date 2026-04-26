@@ -8,8 +8,10 @@ import {
   Search,
   Timer,
 } from "lucide-react"
+import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 
 import { useDayScreenData } from "./use-day-screen-data"
 
@@ -26,11 +28,21 @@ const days = [
 ]
 
 export function DayScreen() {
-  const { dictionary, exercisesById, locale, loading, settings, workoutDay } =
-    useDayScreenData(selectedDate)
+  const {
+    addSet,
+    dictionary,
+    exerciseEntries,
+    exercisesById,
+    incrementNumber,
+    locale,
+    loading,
+    settings,
+    updateNumber,
+  } = useDayScreenData(selectedDate)
 
-  const exerciseEntries = workoutDay?.exerciseEntries ?? []
   const unit = settings?.weightUnit ?? "kg"
+  const weightStep = unit === "kg" ? (settings?.kgStep ?? 1) : (settings?.lbStep ?? 2.5)
+  const repsStep = settings?.repsStep ?? 1
 
   return (
     <div className="flex min-h-svh justify-center bg-zinc-100 text-foreground">
@@ -101,7 +113,7 @@ export function DayScreen() {
 
           {loading ? (
             <div className="rounded-lg border border-border p-4 text-sm text-muted-foreground">
-              Loading...
+              {dictionary.labels.loading}
             </div>
           ) : null}
 
@@ -150,16 +162,48 @@ export function DayScreen() {
                       <span className="text-center text-sm text-muted-foreground">
                         {index + 1}
                       </span>
-                      <div className="rounded-md bg-background px-2 py-2 text-center text-sm font-medium">
-                        {set.weight ?? 0} {dictionary.units[unit]}
-                      </div>
-                      <div className="rounded-md bg-background px-2 py-2 text-center text-sm font-medium">
-                        {set.reps ?? 0} {dictionary.units.reps}
-                      </div>
+                      <SetNumberControl
+                        key={`weight-${set.id}-${set.weight ?? 0}`}
+                        ariaLabel={`${exercise?.name[locale] ?? entry.exerciseId} set ${
+                          index + 1
+                        } ${dictionary.units[unit]}`}
+                        decreaseLabel={dictionary.actions.decrease}
+                        increaseLabel={dictionary.actions.increase}
+                        step={weightStep}
+                        suffix={dictionary.units[unit]}
+                        value={set.weight ?? 0}
+                        onCommit={(value) =>
+                          updateNumber(entry.id, set.id, "weight", value)
+                        }
+                        onIncrement={(delta) =>
+                          incrementNumber(entry.id, set.id, "weight", delta)
+                        }
+                      />
+                      <SetNumberControl
+                        key={`reps-${set.id}-${set.reps ?? 0}`}
+                        ariaLabel={`${exercise?.name[locale] ?? entry.exerciseId} set ${
+                          index + 1
+                        } ${dictionary.units.reps}`}
+                        decreaseLabel={dictionary.actions.decrease}
+                        increaseLabel={dictionary.actions.increase}
+                        step={repsStep}
+                        suffix={dictionary.units.reps}
+                        value={set.reps ?? 0}
+                        onCommit={(value) =>
+                          updateNumber(entry.id, set.id, "reps", value)
+                        }
+                        onIncrement={(delta) =>
+                          incrementNumber(entry.id, set.id, "reps", delta)
+                        }
+                      />
                     </div>
                   ))}
 
-                  <button className="flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border text-sm text-muted-foreground">
+                  <button
+                    className="flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border text-sm text-muted-foreground"
+                    type="button"
+                    onClick={() => addSet(entry.id)}
+                  >
                     <Plus className="size-4" />
                     {dictionary.actions.addSet}
                   </button>
@@ -178,4 +222,82 @@ export function DayScreen() {
       </main>
     </div>
   )
+}
+
+type SetNumberControlProps = {
+  ariaLabel: string
+  decreaseLabel: string
+  increaseLabel: string
+  step: number
+  suffix: string
+  value: number
+  onCommit: (value: number) => void
+  onIncrement: (delta: number) => void
+}
+
+function SetNumberControl({
+  ariaLabel,
+  decreaseLabel,
+  increaseLabel,
+  step,
+  suffix,
+  value,
+  onCommit,
+  onIncrement,
+}: SetNumberControlProps) {
+  const [draft, setDraft] = useState(formatNumber(value))
+
+  function commitDraft() {
+    const parsed = Number(draft.replace(",", "."))
+
+    if (Number.isFinite(parsed)) {
+      onCommit(parsed)
+      return
+    }
+
+    setDraft(formatNumber(value))
+  }
+
+  return (
+    <div className="grid grid-cols-[1.75rem_1fr_1.75rem] items-center rounded-md bg-background">
+      <button
+        aria-label={decreaseLabel}
+        className="h-9 text-sm text-muted-foreground"
+        type="button"
+        onClick={() => onIncrement(-step)}
+      >
+        -
+      </button>
+      <div className="relative">
+        <Input
+          aria-label={ariaLabel}
+          className="h-9 border-0 px-1 pr-8 text-center text-sm font-medium shadow-none focus-visible:ring-0"
+          inputMode="decimal"
+          value={draft}
+          onBlur={commitDraft}
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.currentTarget.blur()
+            }
+          }}
+        />
+        <span className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">
+          {suffix}
+        </span>
+      </div>
+      <button
+        aria-label={increaseLabel}
+        className="h-9 text-sm text-muted-foreground"
+        type="button"
+        onClick={() => onIncrement(step)}
+      >
+        +
+      </button>
+    </div>
+  )
+}
+
+function formatNumber(value: number) {
+  return Number.isInteger(value) ? String(value) : String(value)
 }

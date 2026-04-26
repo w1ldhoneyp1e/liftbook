@@ -7,11 +7,14 @@ type Dictionary = {
     calendar: string
     collapse: string
     collapseAll: string
+    decrease: string
+    increase: string
     search: string
     start: string
   }
   labels: {
     exercises: string
+    loading: string
     restTimer: string
     today: string
   }
@@ -31,11 +34,14 @@ export const dictionaries: Record<Locale, Dictionary> = {
       calendar: "Calendar",
       collapse: "Collapse",
       collapseAll: "Collapse all",
+      decrease: "Decrease",
+      increase: "Increase",
       search: "Search",
       start: "Start",
     },
     labels: {
       exercises: "Exercises",
+      loading: "Loading...",
       restTimer: "Rest timer",
       today: "Today",
     },
@@ -65,11 +71,14 @@ export const dictionaries: Record<Locale, Dictionary> = {
       calendar: "Календарь",
       collapse: "Свернуть",
       collapseAll: "Свернуть все",
+      decrease: "Уменьшить",
+      increase: "Увеличить",
       search: "Поиск",
       start: "Старт",
     },
     labels: {
       exercises: "Упражнения",
+      loading: "Загрузка...",
       restTimer: "Таймер отдыха",
       today: "Сегодня",
     },
