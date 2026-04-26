@@ -96,6 +96,15 @@ export function DayScreen() {
     setExercisePickerOpen(false)
   }
 
+  async function handleAddSet(exerciseEntryId: string) {
+    await addSet(exerciseEntryId)
+
+    if (settings?.autoRestTimer) {
+      setRestSeconds(0)
+      setRestTimerRunning(true)
+    }
+  }
+
   function handleSelectDate(date: Date | undefined) {
     if (!date) {
       return
@@ -341,7 +350,7 @@ export function DayScreen() {
                   <button
                     className="flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border text-sm text-muted-foreground"
                     type="button"
-                    onClick={() => addSet(entry.id)}
+                    onClick={() => handleAddSet(entry.id)}
                   >
                     <Plus className="size-4" />
                     {dictionary.actions.addSet}
