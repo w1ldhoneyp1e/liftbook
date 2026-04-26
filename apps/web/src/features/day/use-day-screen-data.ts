@@ -142,10 +142,35 @@ export function useDayScreenData(date: string) {
 
   const deleteExercise = useCallback(
     async (exerciseEntryId: string) => {
-      await db.exerciseEntries.delete(exerciseEntryId)
+      await db.transaction("rw", db.workoutDays, db.exerciseEntries, async () => {
+        await db.exerciseEntries.delete(exerciseEntryId)
+
+        const remainingEntries = await db.exerciseEntries
+          .where("workoutDate")
+          .equals(date)
+          .sortBy("position")
+
+        if (remainingEntries.length === 0) {
+          await db.workoutDays.delete(`day_${date}`)
+          return
+        }
+
+        const now = new Date().toISOString()
+
+        await db.exerciseEntries.bulkPut(
+          remainingEntries.map((entry, position) => ({
+            ...entry,
+            position,
+            updatedAt: now,
+          }))
+        )
+
+        await db.workoutDays.update(`day_${date}`, { updatedAt: now })
+      })
+
       await load()
     },
-    [load]
+    [date, load]
   )
 
   const addExercise = useCallback(
