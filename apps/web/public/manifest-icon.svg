@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Liftbook">
+  <rect width="512" height="512" rx="96" fill="#ecfdf5"/>
+  <rect x="112" y="236" width="288" height="40" rx="20" fill="#064e3b"/>
+  <rect x="76" y="204" width="44" height="104" rx="18" fill="#059669"/>
+  <rect x="392" y="204" width="44" height="104" rx="18" fill="#059669"/>
+  <rect x="144" y="168" width="224" height="176" rx="28" fill="#ffffff" stroke="#064e3b" stroke-width="18"/>
+  <path d="M184 222h144M184 266h112M184 310h144" stroke="#064e3b" stroke-width="20" stroke-linecap="round"/>
+</svg>
