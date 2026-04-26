@@ -11,6 +11,7 @@ import {
 import { useMemo, useState } from "react"
 
 import { Button } from "@/components/ui/button"
+import { Calendar } from "@/components/ui/calendar"
 import {
   Drawer,
   DrawerContent,
@@ -35,7 +36,9 @@ type Dictionary = ReturnType<typeof getDictionary>
 export function DayScreen() {
   const today = toDateKey(new Date())
   const [selectedDate, setSelectedDate] = useState(today)
+  const [calendarOpen, setCalendarOpen] = useState(false)
   const [exercisePickerOpen, setExercisePickerOpen] = useState(false)
+  const [collapsedExerciseIds, setCollapsedExerciseIds] = useState<string[]>([])
   const {
     addExercise,
     addSet,
@@ -63,10 +66,36 @@ export function DayScreen() {
     selectedDate
   )
   const dateTone = getDateTone(selectedDateState)
+  const allExercisesCollapsed =
+    exerciseEntries.length > 0 &&
+    exerciseEntries.every((entry) => collapsedExerciseIds.includes(entry.id))
 
   async function handleAddExercise(exerciseId: string) {
     await addExercise(exerciseId)
     setExercisePickerOpen(false)
+  }
+
+  function handleSelectDate(date: Date | undefined) {
+    if (!date) {
+      return
+    }
+
+    setSelectedDate(toDateKey(date))
+    setCalendarOpen(false)
+  }
+
+  function handleToggleAllExercises() {
+    setCollapsedExerciseIds(
+      allExercisesCollapsed ? [] : exerciseEntries.map((entry) => entry.id)
+    )
+  }
+
+  function handleToggleExercise(exerciseEntryId: string) {
+    setCollapsedExerciseIds((current) =>
+      current.includes(exerciseEntryId)
+        ? current.filter((id) => id !== exerciseEntryId)
+        : [...current, exerciseEntryId]
+    )
   }
 
   return (
@@ -95,6 +124,7 @@ export function DayScreen() {
                 variant="outline"
                 size="icon"
                 aria-label={dictionary.actions.calendar}
+                onClick={() => setCalendarOpen(true)}
               >
                 <CalendarDays />
               </Button>
@@ -143,9 +173,15 @@ export function DayScreen() {
             <h2 className="text-base font-semibold">
               {dictionary.labels.exercises}
             </h2>
-            <Button variant="ghost" size="sm">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleToggleAllExercises}
+            >
               <ChevronsDownUp />
-              {dictionary.actions.collapseAll}
+              {allExercisesCollapsed
+                ? dictionary.actions.expandAll
+                : dictionary.actions.collapseAll}
             </Button>
           </div>
 
@@ -169,6 +205,7 @@ export function DayScreen() {
           {exerciseEntries.map((entry) => {
             const exercise = exercisesById[entry.exerciseId]
             const primaryMuscleGroup = exercise?.muscleGroupIds[0]
+            const collapsed = collapsedExerciseIds.includes(entry.id)
 
             return (
               <article
@@ -189,13 +226,20 @@ export function DayScreen() {
                   <Button
                     variant="ghost"
                     size="icon-sm"
-                    aria-label={dictionary.actions.collapse}
+                    aria-label={
+                      collapsed
+                        ? dictionary.actions.expand
+                        : dictionary.actions.collapse
+                    }
+                    onClick={() => handleToggleExercise(entry.id)}
                   >
-                    <ChevronDown />
+                    <ChevronDown
+                      className={collapsed ? "-rotate-90 transition-transform" : "transition-transform"}
+                    />
                   </Button>
                 </div>
 
-                <div className="space-y-2 p-3">
+                <div className={collapsed ? "hidden" : "space-y-2 p-3"}>
                   {entry.setEntries.map((set, index) => (
                     <div
                       key={set.id}
@@ -275,7 +319,55 @@ export function DayScreen() {
         onOpenChange={setExercisePickerOpen}
         onSelectExercise={handleAddExercise}
       />
+
+      <CalendarDrawer
+        dictionary={dictionary}
+        locale={locale}
+        open={calendarOpen}
+        selectedDate={selectedDate}
+        onOpenChange={setCalendarOpen}
+        onSelectDate={handleSelectDate}
+      />
     </div>
+  )
+}
+
+type CalendarDrawerProps = {
+  dictionary: Dictionary
+  locale: Locale
+  open: boolean
+  selectedDate: string
+  onOpenChange: (open: boolean) => void
+  onSelectDate: (date: Date | undefined) => void
+}
+
+function CalendarDrawer({
+  dictionary,
+  locale,
+  open,
+  selectedDate,
+  onOpenChange,
+  onSelectDate,
+}: CalendarDrawerProps) {
+  return (
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="mx-auto max-w-md rounded-t-xl bg-background">
+        <DrawerHeader className="text-left">
+          <DrawerTitle>{dictionary.actions.calendar}</DrawerTitle>
+          <DrawerDescription>{selectedDate}</DrawerDescription>
+        </DrawerHeader>
+
+        <div className="px-4 pb-4">
+          <Calendar
+            mode="single"
+            locale={{ code: locale }}
+            selected={new Date(`${selectedDate}T12:00:00`)}
+            className="mx-auto"
+            onSelect={onSelectDate}
+          />
+        </div>
+      </DrawerContent>
+    </Drawer>
   )
 }
 
