@@ -5,6 +5,7 @@ type Dictionary = {
     addExercise: string
     addSet: string
     calendar: string
+    chooseExercise: string
     collapse: string
     collapseAll: string
     decrease: string
@@ -15,7 +16,9 @@ type Dictionary = {
   labels: {
     exercises: string
     loading: string
+    noExercisesFound: string
     restTimer: string
+    searchExercise: string
     today: string
   }
   units: {
@@ -32,6 +35,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       addExercise: "Add exercise",
       addSet: "Add set",
       calendar: "Calendar",
+      chooseExercise: "Choose exercise",
       collapse: "Collapse",
       collapseAll: "Collapse all",
       decrease: "Decrease",
@@ -42,7 +46,9 @@ export const dictionaries: Record<Locale, Dictionary> = {
     labels: {
       exercises: "Exercises",
       loading: "Loading...",
+      noExercisesFound: "No exercises found",
       restTimer: "Rest timer",
+      searchExercise: "Search exercise",
       today: "Today",
     },
     units: {
@@ -69,6 +75,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       addExercise: "Добавить упражнение",
       addSet: "Добавить подход",
       calendar: "Календарь",
+      chooseExercise: "Выбрать упражнение",
       collapse: "Свернуть",
       collapseAll: "Свернуть все",
       decrease: "Уменьшить",
@@ -79,7 +86,9 @@ export const dictionaries: Record<Locale, Dictionary> = {
     labels: {
       exercises: "Упражнения",
       loading: "Загрузка...",
+      noExercisesFound: "Упражнения не найдены",
       restTimer: "Таймер отдыха",
+      searchExercise: "Найти упражнение",
       today: "Сегодня",
     },
     units: {

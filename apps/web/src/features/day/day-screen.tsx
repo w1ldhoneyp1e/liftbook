@@ -8,27 +8,30 @@ import {
   Search,
   Timer,
 } from "lucide-react"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 
 import { Button } from "@/components/ui/button"
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer"
 import { Input } from "@/components/ui/input"
+import { muscleGroups } from "@/shared/domain/exercise-catalog"
+import type { Exercise, Locale, MuscleGroupId } from "@/shared/domain/types"
+import type { getDictionary } from "@/shared/i18n/dictionaries"
 
 import { useDayScreenData } from "./use-day-screen-data"
 
-const selectedDate = "2026-04-26"
-
-const days = [
-  { day: "Mon", date: "22", state: "past" },
-  { day: "Tue", date: "23", state: "past" },
-  { day: "Wed", date: "24", state: "past" },
-  { day: "Thu", date: "25", state: "past" },
-  { day: "Today", date: "26", state: "today" },
-  { day: "Sat", date: "27", state: "future" },
-  { day: "Sun", date: "28", state: "future" },
-]
+type Dictionary = ReturnType<typeof getDictionary>
 
 export function DayScreen() {
+  const [selectedDate] = useState(() => toDateKey(new Date()))
+  const [exercisePickerOpen, setExercisePickerOpen] = useState(false)
   const {
+    addExercise,
     addSet,
     dictionary,
     exerciseEntries,
@@ -43,6 +46,15 @@ export function DayScreen() {
   const unit = settings?.weightUnit ?? "kg"
   const weightStep = unit === "kg" ? (settings?.kgStep ?? 1) : (settings?.lbStep ?? 2.5)
   const repsStep = settings?.repsStep ?? 1
+  const days = useMemo(
+    () => createDateStrip(selectedDate, dictionary.labels.today, locale),
+    [dictionary.labels.today, locale, selectedDate]
+  )
+
+  async function handleAddExercise(exerciseId: string) {
+    await addExercise(exerciseId)
+    setExercisePickerOpen(false)
+  }
 
   return (
     <div className="flex min-h-svh justify-center bg-zinc-100 text-foreground">
@@ -60,6 +72,7 @@ export function DayScreen() {
                 variant="outline"
                 size="icon"
                 aria-label={dictionary.actions.search}
+                onClick={() => setExercisePickerOpen(true)}
               >
                 <Search />
               </Button>
@@ -118,7 +131,11 @@ export function DayScreen() {
           ) : null}
 
           {!loading && exerciseEntries.length === 0 ? (
-            <Button variant="outline" className="w-full">
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setExercisePickerOpen(true)}
+            >
               <Plus />
               {dictionary.actions.addExercise}
             </Button>
@@ -213,14 +230,125 @@ export function DayScreen() {
           })}
 
           {exerciseEntries.length > 0 ? (
-            <Button variant="outline" className="mt-1 w-full">
+            <Button
+              variant="outline"
+              className="mt-1 w-full"
+              onClick={() => setExercisePickerOpen(true)}
+            >
               <Plus />
               {dictionary.actions.addExercise}
             </Button>
           ) : null}
         </section>
       </main>
+
+      <ExercisePickerDrawer
+        dictionary={dictionary}
+        exercises={Object.values(exercisesById)}
+        locale={locale}
+        open={exercisePickerOpen}
+        onOpenChange={setExercisePickerOpen}
+        onSelectExercise={handleAddExercise}
+      />
     </div>
+  )
+}
+
+type ExercisePickerDrawerProps = {
+  dictionary: Dictionary
+  exercises: Exercise[]
+  locale: Locale
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onSelectExercise: (exerciseId: string) => void
+}
+
+function ExercisePickerDrawer({
+  dictionary,
+  exercises,
+  locale,
+  open,
+  onOpenChange,
+  onSelectExercise,
+}: ExercisePickerDrawerProps) {
+  const [selectedMuscleGroup, setSelectedMuscleGroup] =
+    useState<MuscleGroupId>("chest")
+  const [query, setQuery] = useState("")
+
+  const filteredExercises = exercises
+    .filter((exercise) => exercise.muscleGroupIds.includes(selectedMuscleGroup))
+    .filter((exercise) =>
+      exercise.name[locale].toLowerCase().includes(query.trim().toLowerCase())
+    )
+    .sort((a, b) => a.name[locale].localeCompare(b.name[locale]))
+
+  return (
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="mx-auto max-h-[85svh] max-w-md rounded-t-xl bg-background">
+        <DrawerHeader className="text-left">
+          <DrawerTitle>{dictionary.actions.chooseExercise}</DrawerTitle>
+          <DrawerDescription>{dictionary.labels.searchExercise}</DrawerDescription>
+        </DrawerHeader>
+
+        <div className="space-y-3 overflow-hidden px-4 pb-4">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              className="h-10 pl-9"
+              placeholder={dictionary.labels.searchExercise}
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+          </div>
+
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {muscleGroups.map((muscleGroup) => (
+              <button
+                key={muscleGroup}
+                className={`h-8 shrink-0 rounded-lg border px-3 text-sm ${
+                  selectedMuscleGroup === muscleGroup
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-background text-foreground"
+                }`}
+                type="button"
+                onClick={() => setSelectedMuscleGroup(muscleGroup)}
+              >
+                {dictionary.muscleGroups[muscleGroup]}
+              </button>
+            ))}
+          </div>
+
+          <div className="max-h-[45svh] space-y-2 overflow-y-auto pb-2">
+            {filteredExercises.length === 0 ? (
+              <div className="rounded-lg border border-border p-4 text-sm text-muted-foreground">
+                {dictionary.labels.noExercisesFound}
+              </div>
+            ) : null}
+
+            {filteredExercises.map((exercise) => (
+              <button
+                key={exercise.id}
+                className="flex w-full items-center justify-between rounded-lg border border-border px-3 py-3 text-left"
+                type="button"
+                onClick={() => onSelectExercise(exercise.id)}
+              >
+                <span>
+                  <span className="block text-sm font-medium">
+                    {exercise.name[locale]}
+                  </span>
+                  <span className="block text-xs text-muted-foreground">
+                    {exercise.muscleGroupIds
+                      .map((muscleGroup) => dictionary.muscleGroups[muscleGroup])
+                      .join(", ")}
+                  </span>
+                </span>
+                <Plus className="size-4 text-muted-foreground" />
+              </button>
+            ))}
+          </div>
+        </div>
+      </DrawerContent>
+    </Drawer>
   )
 }
 
@@ -300,4 +428,33 @@ function SetNumberControl({
 
 function formatNumber(value: number) {
   return Number.isInteger(value) ? String(value) : String(value)
+}
+
+function toDateKey(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+
+  return `${year}-${month}-${day}`
+}
+
+function createDateStrip(selectedDate: string, todayLabel: string, locale: Locale) {
+  const selected = new Date(`${selectedDate}T12:00:00`)
+  const today = toDateKey(new Date())
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(selected)
+    date.setDate(selected.getDate() + index - 3)
+    const dateKey = toDateKey(date)
+    const isToday = dateKey === today
+
+    return {
+      date: String(date.getDate()),
+      day: isToday
+        ? todayLabel
+        : new Intl.DateTimeFormat(locale, { weekday: "short" }).format(date),
+      state:
+        dateKey === today ? "today" : dateKey < today ? "past" : "future",
+    }
+  })
 }

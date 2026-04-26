@@ -117,6 +117,72 @@ export function useDayScreenData(date: string) {
     [load]
   )
 
+  const addExercise = useCallback(
+    async (exerciseId: string) => {
+      const [settings, existingDay, entriesForDate, previousEntries] =
+        await Promise.all([
+          db.userSettings.get("local"),
+          db.workoutDays.where("date").equals(date).first(),
+          db.exerciseEntries.where("workoutDate").equals(date).toArray(),
+          db.exerciseEntries.where("exerciseId").equals(exerciseId).toArray(),
+        ])
+
+      const now = new Date().toISOString()
+      const workoutDay =
+        existingDay ??
+        ({
+          id: `day_${date}`,
+          date,
+          localOwnerId: "local",
+          createdAt: now,
+          updatedAt: now,
+        } satisfies WorkoutDay)
+
+      const previousResult =
+        settings?.previousResultDefaults === false
+          ? undefined
+          : previousEntries
+              .filter((entry) => entry.workoutDate < date)
+              .sort((a, b) => b.workoutDate.localeCompare(a.workoutDate))[0]
+
+      const setEntries =
+        previousResult?.setEntries.map((setEntry) => ({
+          ...setEntry,
+          id: createLocalId("set"),
+          createdAt: now,
+          updatedAt: now,
+        })) ?? [
+          {
+            id: createLocalId("set"),
+            weight: 0,
+            weightUnit: settings?.weightUnit ?? "kg",
+            reps: 0,
+            createdAt: now,
+            updatedAt: now,
+          },
+        ]
+
+      const exerciseEntry: ExerciseEntry = {
+        id: createLocalId("entry"),
+        exerciseId,
+        workoutDate: date,
+        position: entriesForDate.length,
+        setEntries,
+        previousResultSourceId: previousResult?.id,
+        createdAt: now,
+        updatedAt: now,
+      }
+
+      await db.transaction("rw", db.workoutDays, db.exerciseEntries, async () => {
+        await db.workoutDays.put({ ...workoutDay, updatedAt: now })
+        await db.exerciseEntries.put(exerciseEntry)
+      })
+
+      await load()
+    },
+    [date, load]
+  )
+
   const updateNumber = useCallback(
     async (
       exerciseEntryId: string,
@@ -161,6 +227,7 @@ export function useDayScreenData(date: string) {
 
   return {
     ...state,
+    addExercise,
     addSet,
     updateNumber,
     incrementNumber,
