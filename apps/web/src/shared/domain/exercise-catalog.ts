@@ -1,0 +1,102 @@
+import type { Exercise, MuscleGroupId } from "./types"
+
+export const muscleGroups: MuscleGroupId[] = [
+  "chest",
+  "back",
+  "legs",
+  "shoulders",
+  "biceps",
+  "triceps",
+  "core",
+  "glutes",
+  "cardio",
+  "full_body",
+  "other",
+]
+
+export const starterExercises: Exercise[] = [
+  {
+    id: "bench_press",
+    name: { en: "Bench press", ru: "Жим лежа" },
+    muscleGroupIds: ["chest", "triceps"],
+    trackingMode: "weight_reps",
+    builtIn: true,
+  },
+  {
+    id: "incline_dumbbell_press",
+    name: { en: "Incline dumbbell press", ru: "Жим гантелей на наклонной" },
+    muscleGroupIds: ["chest"],
+    trackingMode: "weight_reps",
+    builtIn: true,
+  },
+  {
+    id: "lat_pulldown",
+    name: { en: "Lat pulldown", ru: "Тяга верхнего блока" },
+    muscleGroupIds: ["back"],
+    trackingMode: "weight_reps",
+    builtIn: true,
+  },
+  {
+    id: "seated_cable_row",
+    name: { en: "Seated cable row", ru: "Горизонтальная тяга" },
+    muscleGroupIds: ["back"],
+    trackingMode: "weight_reps",
+    builtIn: true,
+  },
+  {
+    id: "barbell_squat",
+    name: { en: "Barbell squat", ru: "Присед со штангой" },
+    muscleGroupIds: ["legs", "glutes"],
+    trackingMode: "weight_reps",
+    builtIn: true,
+  },
+  {
+    id: "leg_press",
+    name: { en: "Leg press", ru: "Жим ногами" },
+    muscleGroupIds: ["legs", "glutes"],
+    trackingMode: "weight_reps",
+    builtIn: true,
+  },
+  {
+    id: "shoulder_press",
+    name: { en: "Shoulder press", ru: "Жим на плечи" },
+    muscleGroupIds: ["shoulders", "triceps"],
+    trackingMode: "weight_reps",
+    builtIn: true,
+  },
+  {
+    id: "dumbbell_lateral_raise",
+    name: { en: "Dumbbell lateral raise", ru: "Махи гантелями в стороны" },
+    muscleGroupIds: ["shoulders"],
+    trackingMode: "weight_reps",
+    builtIn: true,
+  },
+  {
+    id: "barbell_curl",
+    name: { en: "Barbell curl", ru: "Подъем штанги на бицепс" },
+    muscleGroupIds: ["biceps"],
+    trackingMode: "weight_reps",
+    builtIn: true,
+  },
+  {
+    id: "triceps_pushdown",
+    name: { en: "Triceps pushdown", ru: "Разгибание рук на блоке" },
+    muscleGroupIds: ["triceps"],
+    trackingMode: "weight_reps",
+    builtIn: true,
+  },
+  {
+    id: "plank",
+    name: { en: "Plank", ru: "Планка" },
+    muscleGroupIds: ["core"],
+    trackingMode: "time",
+    builtIn: true,
+  },
+  {
+    id: "treadmill_run",
+    name: { en: "Treadmill run", ru: "Беговая дорожка" },
+    muscleGroupIds: ["cardio"],
+    trackingMode: "distance_time",
+    builtIn: true,
+  },
+]
