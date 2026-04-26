@@ -23,6 +23,7 @@ type Dictionary = {
     start: string
   }
   labels: {
+    allMuscleGroups: string
     autoRestTimer: string
     exercises: string
     language: string
@@ -68,6 +69,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       start: "Start",
     },
     labels: {
+      allMuscleGroups: "All",
       autoRestTimer: "Auto rest timer",
       exercises: "Exercises",
       language: "Language",
@@ -123,6 +125,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       start: "Старт",
     },
     labels: {
+      allMuscleGroups: "Все",
       autoRestTimer: "Автотаймер отдыха",
       exercises: "Упражнения",
       language: "Язык",

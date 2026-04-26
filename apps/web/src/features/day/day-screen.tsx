@@ -1,6 +1,8 @@
 "use client"
 
 import {
+  ArrowLeft,
+  ArrowRight,
   CalendarDays,
   ChevronDown,
   ChevronsDown,
@@ -46,6 +48,7 @@ export function DayScreen() {
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [exercisePickerOpen, setExercisePickerOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [touchStartX, setTouchStartX] = useState<number | null>(null)
   const [collapsedExerciseIds, setCollapsedExerciseIds] = useState<string[]>([])
   const [restSeconds, setRestSeconds] = useState(0)
   const [restTimerRunning, setRestTimerRunning] = useState(false)
@@ -69,8 +72,8 @@ export function DayScreen() {
   const unit = settings?.weightUnit ?? "kg"
   const repsStep = settings?.repsStep ?? 1
   const days = useMemo(
-    () => createDateStrip(selectedDate, dictionary.labels.today, locale),
-    [dictionary.labels.today, locale, selectedDate]
+    () => createDateStrip(selectedDate, locale),
+    [locale, selectedDate]
   )
   const selectedDateState = getDateState(selectedDate, today)
   const dateStatusLabel = getDateStatusLabel(
@@ -126,6 +129,29 @@ export function DayScreen() {
     setCalendarOpen(false)
   }
 
+  function handleShiftDate(dayDelta: number) {
+    setSelectedDate((currentDate) => {
+      const nextDate = new Date(`${currentDate}T12:00:00`)
+      nextDate.setDate(nextDate.getDate() + dayDelta)
+      return toDateKey(nextDate)
+    })
+  }
+
+  function handleTouchEnd(clientX: number) {
+    if (touchStartX === null) {
+      return
+    }
+
+    const deltaX = clientX - touchStartX
+    setTouchStartX(null)
+
+    if (Math.abs(deltaX) < 60) {
+      return
+    }
+
+    handleShiftDate(deltaX < 0 ? 1 : -1)
+  }
+
   function handleToggleAllExercises() {
     setCollapsedExerciseIds(
       allExercisesCollapsed ? [] : exerciseEntries.map((entry) => entry.id)
@@ -142,105 +168,100 @@ export function DayScreen() {
 
   return (
     <div className="flex min-h-svh justify-center bg-zinc-100 text-foreground">
-      <main className="flex min-h-svh w-full max-w-md flex-col bg-background">
-        <header
-          className={`border-b px-4 pb-3 pt-4 ${dateTone.headerClassName}`}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className={`text-sm font-medium ${dateTone.labelClassName}`}>
-                {dateStatusLabel}
-              </p>
-              <h1 className="text-2xl font-semibold">Liftbook</h1>
+      <main
+        className="flex min-h-svh w-full max-w-md flex-col bg-background"
+        onTouchStart={(event) => setTouchStartX(event.changedTouches[0].clientX)}
+        onTouchEnd={(event) => handleTouchEnd(event.changedTouches[0].clientX)}
+      >
+        <div className="sticky top-0 z-40 bg-background shadow-sm">
+          <header className={`px-4 pb-3 pt-4 ${dateTone.headerClassName}`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className={`text-sm font-medium ${dateTone.labelClassName}`}>
+                  {dateStatusLabel}
+                </p>
+                <h1 className="text-2xl font-semibold">Liftbook</h1>
+              </div>
+              <div className="flex gap-2">
+                {selectedDate !== today ? (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    aria-label={dictionary.actions.goToToday}
+                    onClick={() => setSelectedDate(today)}
+                  >
+                    {selectedDateState === "future" ? <ArrowLeft /> : <ArrowRight />}
+                  </Button>
+                ) : null}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  aria-label={dictionary.actions.calendar}
+                  onClick={() => setCalendarOpen(true)}
+                >
+                  <CalendarDays />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  aria-label={dictionary.actions.settings}
+                  onClick={() => setSettingsOpen(true)}
+                >
+                  <Settings />
+                </Button>
+              </div>
             </div>
-            <div className="flex gap-2">
+
+            <div className="mt-4 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {days.map((item) => (
+                <button
+                  key={item.dateKey}
+                  className={`min-w-14 rounded-lg px-2 py-2 text-center text-sm ${getDateButtonClassName(
+                    item.state,
+                    item.selected
+                  )}`}
+                  type="button"
+                  onClick={() => setSelectedDate(item.dateKey)}
+                >
+                  <span className="block text-xs">{item.day}</span>
+                  <span className="block font-semibold">{item.date}</span>
+                </button>
+              ))}
+            </div>
+          </header>
+
+          <section className="flex items-center justify-between gap-3 px-4 py-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Timer className="size-4" />
+                <span>{dictionary.labels.restTimer}</span>
+              </div>
+              <div className="mt-0.5 font-mono text-xl font-semibold">
+                {formatTimer(restSeconds)}
+              </div>
+            </div>
+            <div className="flex shrink-0 gap-2">
               <Button
-                variant="outline"
-                size="icon"
-                aria-label={dictionary.actions.search}
-                onClick={() => setExercisePickerOpen(true)}
+                size="sm"
+                onClick={() => setRestTimerRunning((running) => !running)}
               >
-                <Search />
+                {restTimerRunning
+                  ? dictionary.actions.pause
+                  : dictionary.actions.start}
               </Button>
               <Button
                 variant="outline"
-                size="icon"
-                aria-label={dictionary.actions.calendar}
-                onClick={() => setCalendarOpen(true)}
+                size="sm"
+                onClick={() => {
+                  setRestTimerRunning(false)
+                  setRestSeconds(0)
+                }}
               >
-                <CalendarDays />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                aria-label={dictionary.actions.settings}
-                onClick={() => setSettingsOpen(true)}
-              >
-                <Settings />
+                {dictionary.actions.reset}
               </Button>
             </div>
-          </div>
-
-          <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
-            {days.map((item) => (
-              <button
-                key={item.dateKey}
-                className={`min-w-14 rounded-lg border px-2 py-2 text-center text-sm ${getDateButtonClassName(
-                  item.state,
-                  item.selected
-                )}`}
-                type="button"
-                onClick={() => setSelectedDate(item.dateKey)}
-              >
-                <span className="block text-xs">{item.day}</span>
-                <span className="block font-semibold">{item.date}</span>
-              </button>
-            ))}
-          </div>
-
-          {selectedDate !== today ? (
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-3 bg-white/80"
-              onClick={() => setSelectedDate(today)}
-            >
-              {dictionary.actions.goToToday}
-            </Button>
-          ) : null}
-        </header>
-
-        <section className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Timer className="size-4" />
-            <span>{dictionary.labels.restTimer}</span>
-            </div>
-            <div className="mt-0.5 font-mono text-xl font-semibold">
-              {formatTimer(restSeconds)}
-            </div>
-          </div>
-          <div className="flex shrink-0 gap-2">
-            <Button
-              size="sm"
-              onClick={() => setRestTimerRunning((running) => !running)}
-            >
-              {restTimerRunning
-                ? dictionary.actions.pause
-                : dictionary.actions.start}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setRestTimerRunning(false)
-                setRestSeconds(0)
-              }}
-            >
-              {dictionary.actions.reset}
-            </Button>
-          </div>
-        </section>
+          </section>
+        </div>
 
         <section className="flex flex-1 flex-col gap-3 px-4 py-4">
           <div className="flex items-center justify-between">
@@ -266,14 +287,9 @@ export function DayScreen() {
           ) : null}
 
           {!loading && exerciseEntries.length === 0 ? (
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => setExercisePickerOpen(true)}
-            >
-              <Plus />
+            <div className="rounded-lg bg-muted/60 p-4 text-sm text-muted-foreground">
               {dictionary.actions.addExercise}
-            </Button>
+            </div>
           ) : null}
 
           {exerciseEntries.map((entry) => {
@@ -282,13 +298,10 @@ export function DayScreen() {
             const collapsed = collapsedExerciseIds.includes(entry.id)
 
             return (
-              <article
-                key={entry.id}
-                className="rounded-lg border border-border bg-card text-card-foreground"
-              >
+              <article key={entry.id} className="rounded-lg bg-card shadow-sm">
                 <div
                   className={`flex items-center justify-between px-3 py-3 ${
-                    collapsed ? "" : "border-b border-border"
+                    collapsed ? "" : "border-b border-border/60"
                   }`}
                 >
                   <div>
@@ -406,17 +419,17 @@ export function DayScreen() {
             )
           })}
 
-          {exerciseEntries.length > 0 ? (
-            <Button
-              variant="outline"
-              className="mt-1 w-full"
-              onClick={() => setExercisePickerOpen(true)}
-            >
-              <Plus />
-              {dictionary.actions.addExercise}
-            </Button>
-          ) : null}
+          <div className="h-16" />
         </section>
+
+        <Button
+          size="icon-lg"
+          className="fixed bottom-5 right-5 z-30 size-12 rounded-full shadow-lg"
+          aria-label={dictionary.actions.addExercise}
+          onClick={() => setExercisePickerOpen(true)}
+        >
+          <Plus />
+        </Button>
       </main>
 
       <ExercisePickerDrawer
@@ -470,7 +483,7 @@ function SettingsDrawer({
 }: SettingsDrawerProps) {
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="mx-auto max-w-md rounded-t-xl bg-background">
+      <DrawerContent className="mx-auto max-h-[92svh] max-w-md rounded-t-xl bg-background">
         <DrawerHeader className="text-left">
           <DrawerTitle>{dictionary.actions.settings}</DrawerTitle>
           <DrawerDescription>Liftbook</DrawerDescription>
@@ -598,12 +611,12 @@ function CalendarDrawer({
           <DrawerDescription>{selectedDate}</DrawerDescription>
         </DrawerHeader>
 
-        <div className="min-h-[330px] px-4 pb-4">
+        <div className="min-h-[410px] px-4 pb-4">
           <Calendar
             mode="single"
             locale={{ code: locale }}
             selected={new Date(`${selectedDate}T12:00:00`)}
-            className="mx-auto"
+            className="mx-auto [--cell-size:--spacing(10)]"
             onSelect={onSelectDate}
           />
         </div>
@@ -632,11 +645,15 @@ function ExercisePickerDrawer({
   onSelectExercise,
 }: ExercisePickerDrawerProps) {
   const [selectedMuscleGroup, setSelectedMuscleGroup] =
-    useState<MuscleGroupId>("chest")
+    useState<MuscleGroupId | null>(null)
   const [query, setQuery] = useState("")
 
   const filteredExercises = exercises
-    .filter((exercise) => exercise.muscleGroupIds.includes(selectedMuscleGroup))
+    .filter(
+      (exercise) =>
+        !selectedMuscleGroup ||
+        exercise.muscleGroupIds.includes(selectedMuscleGroup)
+    )
     .filter((exercise) =>
       exercise.name[locale].toLowerCase().includes(query.trim().toLowerCase())
     )
@@ -645,7 +662,7 @@ function ExercisePickerDrawer({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="mx-auto max-h-[85svh] max-w-md rounded-t-xl bg-background">
+      <DrawerContent className="mx-auto max-h-[92svh] max-w-md rounded-t-xl bg-background">
         <DrawerHeader className="text-left">
           <DrawerTitle>{dictionary.actions.chooseExercise}</DrawerTitle>
           <DrawerDescription>{dictionary.labels.searchExercise}</DrawerDescription>
@@ -663,13 +680,24 @@ function ExercisePickerDrawer({
           </div>
 
           <div className="flex gap-2 overflow-x-auto pb-1">
+            <button
+              className={`h-8 shrink-0 rounded-lg px-3 text-sm ${
+                selectedMuscleGroup === null
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-foreground"
+              }`}
+              type="button"
+              onClick={() => setSelectedMuscleGroup(null)}
+            >
+              {dictionary.labels.allMuscleGroups}
+            </button>
             {muscleGroups.map((muscleGroup) => (
               <button
                 key={muscleGroup}
-                className={`h-8 shrink-0 rounded-lg border px-3 text-sm ${
+                className={`h-8 shrink-0 rounded-lg px-3 text-sm ${
                   selectedMuscleGroup === muscleGroup
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-background text-foreground"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-foreground"
                 }`}
                 type="button"
                 onClick={() => setSelectedMuscleGroup(muscleGroup)}
@@ -679,7 +707,7 @@ function ExercisePickerDrawer({
             ))}
           </div>
 
-          <div className="max-h-[45svh] space-y-2 overflow-y-auto pb-2">
+          <div className="max-h-[58svh] space-y-2 overflow-y-auto pb-2">
             {filteredExercises.length === 0 ? (
               <div className="rounded-lg border border-border p-4 text-sm text-muted-foreground">
                 {dictionary.labels.noExercisesFound}
@@ -713,7 +741,7 @@ function ExercisePickerDrawer({
             className="w-full"
             disabled={!canCreateCustomExercise}
             onClick={() =>
-              onCreateCustomExercise(query.trim(), selectedMuscleGroup)
+              onCreateCustomExercise(query.trim(), selectedMuscleGroup ?? "other")
             }
           >
             <Plus />
@@ -818,11 +846,7 @@ function toDateKey(date: Date) {
   return `${year}-${month}-${day}`
 }
 
-function createDateStrip(
-  selectedDate: string,
-  todayLabel: string,
-  locale: Locale
-) {
+function createDateStrip(selectedDate: string, locale: Locale) {
   const selected = new Date(`${selectedDate}T12:00:00`)
   const today = toDateKey(new Date())
 
@@ -830,14 +854,11 @@ function createDateStrip(
     const date = new Date(selected)
     date.setDate(selected.getDate() + index - 3)
     const dateKey = toDateKey(date)
-    const isToday = dateKey === today
 
     return {
       date: String(date.getDate()),
       dateKey,
-      day: isToday
-        ? todayLabel
-        : new Intl.DateTimeFormat(locale, { weekday: "short" }).format(date),
+      day: new Intl.DateTimeFormat(locale, { weekday: "short" }).format(date),
       selected: dateKey === selectedDate,
       state: getDateState(dateKey, today),
     }
@@ -861,7 +882,7 @@ function getDateStatusLabel(
     return dictionary.labels.today
   }
 
-  return `${state === "past" ? dictionary.labels.pastDate : dictionary.labels.futureDate} · ${selectedDate}`
+  return selectedDate
 }
 
 function getDateTone(state: DateState) {
@@ -887,24 +908,24 @@ function getDateTone(state: DateState) {
 
 function getDateButtonClassName(state: DateState, selected: boolean) {
   if (selected && state === "today") {
-    return "border-emerald-600 bg-white text-emerald-900 ring-2 ring-emerald-500/30"
+    return "bg-white text-emerald-900 ring-2 ring-emerald-500/30"
   }
 
   if (selected && state === "future") {
-    return "border-sky-600 bg-white text-sky-900 ring-2 ring-sky-500/30"
+    return "bg-white text-sky-900 ring-2 ring-sky-500/30"
   }
 
   if (selected) {
-    return "border-zinc-500 bg-white text-zinc-900 ring-2 ring-zinc-400/30"
+    return "bg-white text-zinc-900 ring-2 ring-zinc-400/30"
   }
 
   if (state === "today") {
-    return "border-emerald-300 bg-white/80 text-emerald-800"
+    return "bg-white/80 text-emerald-800"
   }
 
   if (state === "future") {
-    return "border-sky-200 bg-sky-50 text-sky-800"
+    return "bg-sky-50 text-sky-800"
   }
 
-  return "border-zinc-200 bg-zinc-50 text-zinc-500"
+  return "bg-zinc-50 text-zinc-500"
 }
