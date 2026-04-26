@@ -6,6 +6,8 @@ import { getDictionary } from "@/shared/i18n/dictionaries"
 import type {
   Exercise,
   ExerciseEntry,
+  Locale,
+  MuscleGroupId,
   SetEntry,
   UserSettings,
   WorkoutDay,
@@ -212,6 +214,33 @@ export function useDayScreenData(date: string) {
     [date, load]
   )
 
+  const addCustomExercise = useCallback(
+    async (name: string, muscleGroupId: MuscleGroupId, locale: Locale) => {
+      const trimmedName = name.trim()
+
+      if (!trimmedName) {
+        return
+      }
+
+      const exerciseId = createLocalId("exercise")
+
+      await db.exercises.put({
+        id: exerciseId,
+        name: {
+          en: trimmedName,
+          ru: trimmedName,
+          [locale]: trimmedName,
+        },
+        muscleGroupIds: [muscleGroupId],
+        trackingMode: "weight_reps",
+        builtIn: false,
+      })
+
+      await addExercise(exerciseId)
+    },
+    [addExercise]
+  )
+
   const updateNumber = useCallback(
     async (
       exerciseEntryId: string,
@@ -276,6 +305,7 @@ export function useDayScreenData(date: string) {
   return {
     ...state,
     addExercise,
+    addCustomExercise,
     addSet,
     deleteExercise,
     deleteSet,

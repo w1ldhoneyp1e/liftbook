@@ -50,6 +50,7 @@ export function DayScreen() {
   const [restTimerRunning, setRestTimerRunning] = useState(false)
   const {
     addExercise,
+    addCustomExercise,
     addSet,
     deleteExercise,
     deleteSet,
@@ -96,6 +97,14 @@ export function DayScreen() {
 
   async function handleAddExercise(exerciseId: string) {
     await addExercise(exerciseId)
+    setExercisePickerOpen(false)
+  }
+
+  async function handleAddCustomExercise(
+    name: string,
+    muscleGroupId: MuscleGroupId
+  ) {
+    await addCustomExercise(name, muscleGroupId, locale)
     setExercisePickerOpen(false)
   }
 
@@ -404,6 +413,7 @@ export function DayScreen() {
         locale={locale}
         open={exercisePickerOpen}
         onOpenChange={setExercisePickerOpen}
+        onCreateCustomExercise={handleAddCustomExercise}
         onSelectExercise={handleAddExercise}
       />
 
@@ -596,6 +606,7 @@ type ExercisePickerDrawerProps = {
   locale: Locale
   open: boolean
   onOpenChange: (open: boolean) => void
+  onCreateCustomExercise: (name: string, muscleGroupId: MuscleGroupId) => void
   onSelectExercise: (exerciseId: string) => void
 }
 
@@ -605,6 +616,7 @@ function ExercisePickerDrawer({
   locale,
   open,
   onOpenChange,
+  onCreateCustomExercise,
   onSelectExercise,
 }: ExercisePickerDrawerProps) {
   const [selectedMuscleGroup, setSelectedMuscleGroup] =
@@ -617,6 +629,7 @@ function ExercisePickerDrawer({
       exercise.name[locale].toLowerCase().includes(query.trim().toLowerCase())
     )
     .sort((a, b) => a.name[locale].localeCompare(b.name[locale]))
+  const canCreateCustomExercise = query.trim().length > 0
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -682,6 +695,18 @@ function ExercisePickerDrawer({
               </button>
             ))}
           </div>
+
+          <Button
+            variant="outline"
+            className="w-full"
+            disabled={!canCreateCustomExercise}
+            onClick={() =>
+              onCreateCustomExercise(query.trim(), selectedMuscleGroup)
+            }
+          >
+            <Plus />
+            {dictionary.actions.createCustomExercise}
+          </Button>
         </div>
       </DrawerContent>
     </Drawer>
