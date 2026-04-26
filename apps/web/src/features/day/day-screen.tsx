@@ -13,7 +13,7 @@ import {
   Timer,
   Trash2,
 } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
+import { type CSSProperties, useEffect, useMemo, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -605,7 +605,7 @@ function CalendarDrawer({
 }: CalendarDrawerProps) {
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="mx-auto max-w-md rounded-t-xl bg-background">
+      <DrawerContent className="mx-auto max-h-[92svh] max-w-md rounded-t-xl bg-background">
         <DrawerHeader className="text-left">
           <DrawerTitle>{dictionary.actions.calendar}</DrawerTitle>
           <DrawerDescription>{selectedDate}</DrawerDescription>
@@ -617,6 +617,7 @@ function CalendarDrawer({
             locale={{ code: locale }}
             selected={new Date(`${selectedDate}T12:00:00`)}
             className="mx-auto [--cell-size:--spacing(10)]"
+            style={{ "--cell-size": "2.75rem" } as CSSProperties}
             onSelect={onSelectDate}
           />
         </div>
