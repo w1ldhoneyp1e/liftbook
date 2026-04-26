@@ -45,5 +45,6 @@ The web application lives in `apps/web`.
 - [MVP UX flow](docs/ux-flow.md)
 - [Day screen MVP spec](docs/day-screen-spec.md)
 - [MVP roadmap](docs/mvp-roadmap.md)
+- [Refactor backlog](docs/refactor-backlog.md)
 - [ADR 0001: initial technical direction](docs/adr/0001-initial-technical-direction.md)
 - [ADR 0002: stack and monorepo](docs/adr/0002-stack-and-monorepo.md)
