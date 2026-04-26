@@ -8,7 +8,7 @@ import {
   Search,
   Timer,
 } from "lucide-react"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -39,6 +39,8 @@ export function DayScreen() {
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [exercisePickerOpen, setExercisePickerOpen] = useState(false)
   const [collapsedExerciseIds, setCollapsedExerciseIds] = useState<string[]>([])
+  const [restSeconds, setRestSeconds] = useState(0)
+  const [restTimerRunning, setRestTimerRunning] = useState(false)
   const {
     addExercise,
     addSet,
@@ -69,6 +71,18 @@ export function DayScreen() {
   const allExercisesCollapsed =
     exerciseEntries.length > 0 &&
     exerciseEntries.every((entry) => collapsedExerciseIds.includes(entry.id))
+
+  useEffect(() => {
+    if (!restTimerRunning) {
+      return
+    }
+
+    const intervalId = window.setInterval(() => {
+      setRestSeconds((seconds) => seconds + 1)
+    }, 1000)
+
+    return () => window.clearInterval(intervalId)
+  }, [restTimerRunning])
 
   async function handleAddExercise(exerciseId: string) {
     await addExercise(exerciseId)
@@ -160,12 +174,36 @@ export function DayScreen() {
           ) : null}
         </header>
 
-        <section className="flex items-center justify-between border-b border-border px-4 py-3">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <section className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Timer className="size-4" />
             <span>{dictionary.labels.restTimer}</span>
+            </div>
+            <div className="mt-0.5 font-mono text-xl font-semibold">
+              {formatTimer(restSeconds)}
+            </div>
           </div>
-          <Button size="sm">{dictionary.actions.start}</Button>
+          <div className="flex shrink-0 gap-2">
+            <Button
+              size="sm"
+              onClick={() => setRestTimerRunning((running) => !running)}
+            >
+              {restTimerRunning
+                ? dictionary.actions.pause
+                : dictionary.actions.start}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setRestTimerRunning(false)
+                setRestSeconds(0)
+              }}
+            >
+              {dictionary.actions.reset}
+            </Button>
+          </div>
         </section>
 
         <section className="flex flex-1 flex-col gap-3 px-4 py-4">
@@ -545,6 +583,13 @@ function SetNumberControl({
 
 function formatNumber(value: number) {
   return Number.isInteger(value) ? String(value) : String(value)
+}
+
+function formatTimer(seconds: number) {
+  const minutes = Math.floor(seconds / 60)
+  const restSeconds = seconds % 60
+
+  return `${String(minutes).padStart(2, "0")}:${String(restSeconds).padStart(2, "0")}`
 }
 
 function toDateKey(date: Date) {

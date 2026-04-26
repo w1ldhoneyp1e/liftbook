@@ -13,6 +13,8 @@ type Dictionary = {
     expandAll: string
     goToToday: string
     increase: string
+    pause: string
+    reset: string
     search: string
     start: string
   }
@@ -48,6 +50,8 @@ export const dictionaries: Record<Locale, Dictionary> = {
       expandAll: "Expand all",
       goToToday: "Today",
       increase: "Increase",
+      pause: "Pause",
+      reset: "Reset",
       search: "Search",
       start: "Start",
     },
@@ -93,6 +97,8 @@ export const dictionaries: Record<Locale, Dictionary> = {
       expandAll: "Развернуть все",
       goToToday: "Сегодня",
       increase: "Увеличить",
+      pause: "Пауза",
+      reset: "Сброс",
       search: "Поиск",
       start: "Старт",
     },
