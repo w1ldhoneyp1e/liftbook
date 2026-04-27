@@ -89,6 +89,8 @@ The backend should start as a modular TypeScript service, likely in `apps/api`, 
 
 The backend is not required for the first offline logging flow, but its contracts should be considered early so local data and sync operations can evolve cleanly.
 
+The initial repository skeleton includes `apps/api` as a dependency-free Node service. It defines health, guest account, and sync endpoints before choosing a production web framework, database, or authentication provider.
+
 ## Local Database Options
 
 ### Dexie

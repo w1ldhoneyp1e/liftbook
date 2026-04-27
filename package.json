@@ -5,7 +5,8 @@
   "packageManager": "pnpm@10.28.1",
   "scripts": {
     "dev": "pnpm --filter web dev",
-    "build": "pnpm --filter web build",
-    "lint": "pnpm --filter web lint"
+    "dev:api": "pnpm --filter api dev",
+    "build": "pnpm --filter web build && pnpm --filter api build",
+    "lint": "pnpm --filter web lint && pnpm --filter api lint"
   }
 }
