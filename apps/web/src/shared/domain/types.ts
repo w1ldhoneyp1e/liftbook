@@ -8,6 +8,8 @@ export type SyncStatus = "pending" | "synced" | "conflict"
 
 export type SyncMetadata = {
   serverId?: string
+  createdAt?: string
+  updatedAt?: string
   deletedAt?: string
   syncStatus: SyncStatus
 }

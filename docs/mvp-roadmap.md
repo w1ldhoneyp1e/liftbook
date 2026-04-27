@@ -18,6 +18,8 @@ Core features:
 - Support kg and lb.
 - Support Russian and English UI text.
 - Include around 50 starter exercises grouped by muscle group.
+- Create custom exercises.
+- Rename and delete custom exercises.
 - Support exercise-specific tracking modes.
 - View the previous result for the same exercise.
 - Create default sets from the previous result when adding an exercise.
@@ -46,7 +48,6 @@ Possible features:
 
 - Workout templates.
 - Reuse previous workout.
-- Custom exercise catalog.
 - Expand built-in catalog toward 150 exercises.
 - Notes per exercise or set.
 - Edit completed workouts.

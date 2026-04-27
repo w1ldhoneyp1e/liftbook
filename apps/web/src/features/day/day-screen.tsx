@@ -34,6 +34,7 @@ export function DayScreen() {
     addExercise,
     addCustomExercise,
     addSet,
+    deleteCustomExercise,
     deleteExercise,
     deleteSet,
     dictionary,
@@ -42,6 +43,7 @@ export function DayScreen() {
     incrementNumber,
     locale,
     loading,
+    renameCustomExercise,
     settings,
     updateSettings,
     updateNumber,
@@ -214,6 +216,10 @@ export function DayScreen() {
         open={exercisePickerOpen}
         onOpenChange={setExercisePickerOpen}
         onCreateCustomExercise={handleAddCustomExercise}
+        onDeleteCustomExercise={deleteCustomExercise}
+        onRenameCustomExercise={(exerciseId, name) =>
+          renameCustomExercise(exerciseId, name, locale)
+        }
         onSelectExercise={handleAddExercise}
       />
 

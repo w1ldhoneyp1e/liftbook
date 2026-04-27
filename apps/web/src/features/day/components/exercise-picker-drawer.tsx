@@ -1,6 +1,6 @@
 "use client"
 
-import { Plus, Search } from "lucide-react"
+import { Check, Pencil, Plus, Search, Trash2, X } from "lucide-react"
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -23,6 +23,8 @@ type ExercisePickerDrawerProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   onCreateCustomExercise: (name: string, muscleGroupId: MuscleGroupId) => void
+  onDeleteCustomExercise: (exerciseId: string) => void
+  onRenameCustomExercise: (exerciseId: string, name: string) => void
   onSelectExercise: (exerciseId: string) => void
 }
 
@@ -33,13 +35,18 @@ export function ExercisePickerDrawer({
   open,
   onOpenChange,
   onCreateCustomExercise,
+  onDeleteCustomExercise,
+  onRenameCustomExercise,
   onSelectExercise,
 }: ExercisePickerDrawerProps) {
   const [selectedMuscleGroup, setSelectedMuscleGroup] =
     useState<MuscleGroupId | null>(null)
   const [query, setQuery] = useState("")
+  const [editingExerciseId, setEditingExerciseId] = useState<string | null>(null)
+  const [editingName, setEditingName] = useState("")
 
   const filteredExercises = exercises
+    .filter((exercise) => !exercise.deletedAt)
     .filter(
       (exercise) =>
         !selectedMuscleGroup ||
@@ -50,6 +57,21 @@ export function ExercisePickerDrawer({
     )
     .sort((a, b) => a.name[locale].localeCompare(b.name[locale]))
   const canCreateCustomExercise = query.trim().length > 0
+
+  function startRename(exercise: Exercise) {
+    setEditingExerciseId(exercise.id)
+    setEditingName(exercise.name[locale])
+  }
+
+  function cancelRename() {
+    setEditingExerciseId(null)
+    setEditingName("")
+  }
+
+  function saveRename(exerciseId: string) {
+    onRenameCustomExercise(exerciseId, editingName)
+    cancelRename()
+  }
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -105,26 +127,105 @@ export function ExercisePickerDrawer({
               </div>
             ) : null}
 
-            {filteredExercises.map((exercise) => (
-              <button
-                key={exercise.id}
-                className="flex w-full items-center justify-between rounded-lg border border-border px-3 py-3 text-left"
-                type="button"
-                onClick={() => onSelectExercise(exercise.id)}
-              >
-                <span>
-                  <span className="block text-sm font-medium">
-                    {exercise.name[locale]}
-                  </span>
-                  <span className="block text-xs text-muted-foreground">
-                    {exercise.muscleGroupIds
-                      .map((muscleGroup) => dictionary.muscleGroups[muscleGroup])
-                      .join(", ")}
-                  </span>
-                </span>
-                <Plus className="size-4 text-muted-foreground" />
-              </button>
-            ))}
+            {filteredExercises.map((exercise) => {
+              const editing = editingExerciseId === exercise.id
+
+              return (
+                <div
+                  key={exercise.id}
+                  className="rounded-lg border border-border px-3 py-3"
+                >
+                  {editing ? (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        className="h-9"
+                        aria-label={dictionary.actions.renameCustomExercise}
+                        value={editingName}
+                        onChange={(event) => setEditingName(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            saveRename(exercise.id)
+                          }
+
+                          if (event.key === "Escape") {
+                            cancelRename()
+                          }
+                        }}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={dictionary.actions.save}
+                        onClick={() => saveRename(exercise.id)}
+                      >
+                        <Check />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={dictionary.actions.cancel}
+                        onClick={cancelRename}
+                      >
+                        <X />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex w-full items-center justify-between gap-2">
+                      <button
+                        className="min-w-0 flex-1 text-left"
+                        type="button"
+                        onClick={() => onSelectExercise(exercise.id)}
+                      >
+                        <span className="block text-sm font-medium">
+                          {exercise.name[locale]}
+                        </span>
+                        <span className="block text-xs text-muted-foreground">
+                          {exercise.muscleGroupIds
+                            .map(
+                              (muscleGroup) =>
+                                dictionary.muscleGroups[muscleGroup]
+                            )
+                            .join(", ")}
+                        </span>
+                      </button>
+                      <span className="flex items-center gap-1">
+                        {!exercise.builtIn ? (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              aria-label={
+                                dictionary.actions.renameCustomExercise
+                              }
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                startRename(exercise)
+                              }}
+                            >
+                              <Pencil />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              aria-label={
+                                dictionary.actions.deleteCustomExercise
+                              }
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                onDeleteCustomExercise(exercise.id)
+                              }}
+                            >
+                              <Trash2 />
+                            </Button>
+                          </>
+                        ) : null}
+                        <Plus className="size-4 text-muted-foreground" />
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
 
           <Button

@@ -52,9 +52,7 @@ export function useDayScreenData(date: string) {
           setEntries: entry.setEntries.filter((setEntry) => !setEntry.deletedAt),
         })),
       exercisesById: Object.fromEntries(
-        exercises
-          .filter((exercise) => !exercise.deletedAt)
-          .map((exercise) => [exercise.id, exercise])
+        exercises.map((exercise) => [exercise.id, exercise])
       ),
       loading: false,
     })
@@ -304,6 +302,7 @@ export function useDayScreenData(date: string) {
       }
 
       const exerciseId = createLocalId("exercise")
+      const now = new Date().toISOString()
 
       await db.exercises.put({
         id: exerciseId,
@@ -315,12 +314,60 @@ export function useDayScreenData(date: string) {
         muscleGroupIds: [muscleGroupId],
         trackingMode: "weight_reps",
         builtIn: false,
+        createdAt: now,
+        updatedAt: now,
         syncStatus: "pending",
       })
 
       await addExercise(exerciseId)
     },
     [addExercise]
+  )
+
+  const renameCustomExercise = useCallback(
+    async (exerciseId: string, name: string, locale: Locale) => {
+      const trimmedName = name.trim()
+      const exercise = await db.exercises.get(exerciseId)
+
+      if (!exercise || exercise.builtIn || !trimmedName) {
+        return
+      }
+
+      await db.exercises.put({
+        ...exercise,
+        name: {
+          ...exercise.name,
+          [locale]: trimmedName,
+        },
+        syncStatus: "pending",
+        updatedAt: new Date().toISOString(),
+      })
+
+      await load()
+    },
+    [load]
+  )
+
+  const deleteCustomExercise = useCallback(
+    async (exerciseId: string) => {
+      const exercise = await db.exercises.get(exerciseId)
+
+      if (!exercise || exercise.builtIn) {
+        return
+      }
+
+      const now = new Date().toISOString()
+
+      await db.exercises.put({
+        ...exercise,
+        deletedAt: now,
+        syncStatus: "pending",
+        updatedAt: now,
+      })
+
+      await load()
+    },
+    [load]
   )
 
   const updateNumber = useCallback(
@@ -390,10 +437,12 @@ export function useDayScreenData(date: string) {
     addExercise,
     addCustomExercise,
     addSet,
+    deleteCustomExercise,
     deleteExercise,
     deleteSet,
     updateNumber,
     incrementNumber,
+    renameCustomExercise,
     updateSettings,
     locale: state.settings?.locale ?? "en",
     dictionary: getDictionary(state.settings?.locale ?? "en"),

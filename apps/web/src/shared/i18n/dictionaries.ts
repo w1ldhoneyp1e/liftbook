@@ -8,11 +8,13 @@ export type Dictionary = {
     addExercise: string
     addSet: string
     calendar: string
+    cancel: string
     chooseExercise: string
     createCustomExercise: string
     collapse: string
     collapseAll: string
     deleteExercise: string
+    deleteCustomExercise: string
     decrease: string
     deleteSet: string
     expand: string
@@ -21,6 +23,8 @@ export type Dictionary = {
     increase: string
     pause: string
     reset: string
+    renameCustomExercise: string
+    save: string
     search: string
     settings: string
     start: string

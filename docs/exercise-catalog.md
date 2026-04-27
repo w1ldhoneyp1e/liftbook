@@ -6,11 +6,11 @@ MVP 1 should include around 50 built-in exercises.
 
 The catalog should be grouped by muscle group and support localized labels for Russian and English.
 
+Users can create custom exercises from the exercise picker. Custom exercises can be renamed and soft-deleted locally so later sync can propagate catalog changes.
+
 ## Post-MVP Scope
 
 After MVP 1, the built-in catalog can expand toward roughly 150 exercises.
-
-Custom exercises should be implemented in MVP 1 if feasible, or immediately after MVP 1.
 
 ## Muscle Groups
 
