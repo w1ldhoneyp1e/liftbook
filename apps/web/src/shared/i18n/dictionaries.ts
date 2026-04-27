@@ -29,6 +29,7 @@ export type Dictionary = {
     search: string
     settings: string
     start: string
+    syncNow: string
   }
   labels: {
     account: string
@@ -46,6 +47,10 @@ export type Dictionary = {
     previousResultDefaults: string
     restTimer: string
     searchExercise: string
+    syncFailed: string
+    syncReady: string
+    syncStatus: string
+    syncSuccess: string
     today: string
     weightUnit: string
   }

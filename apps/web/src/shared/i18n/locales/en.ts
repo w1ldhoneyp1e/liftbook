@@ -26,6 +26,7 @@ export const en: Dictionary = {
     search: "Search",
     settings: "Settings",
     start: "Start",
+    syncNow: "Sync now",
   },
   labels: {
     account: "Account",
@@ -43,6 +44,10 @@ export const en: Dictionary = {
     previousResultDefaults: "Use previous result as default",
     restTimer: "Rest timer",
     searchExercise: "Search exercise",
+    syncFailed: "Sync failed",
+    syncReady: "Ready to sync",
+    syncStatus: "Sync",
+    syncSuccess: "Synced",
     today: "Today",
     weightUnit: "Weight unit",
   },

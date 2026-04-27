@@ -1,5 +1,21 @@
 import type { Locale } from "@/shared/domain/types"
 
+export type SyncEntityType =
+  | "exercise"
+  | "workoutDay"
+  | "exerciseEntry"
+  | "userSettings"
+
+export type SyncOperation = "upsert" | "delete"
+
+export type SyncChange = {
+  localId: string
+  entityType: SyncEntityType
+  operation: SyncOperation
+  updatedAt: string
+  payload: unknown
+}
+
 type GuestAccountResponse = {
   user: {
     id: string
@@ -14,6 +30,19 @@ type GuestAccountResponse = {
   sync: {
     cursor: string | null
   }
+}
+
+type PushSyncResponse = {
+  accepted: Array<{
+    localId: string
+    entityType: SyncEntityType
+    operation: SyncOperation
+    serverVersion: string
+    status: "accepted"
+  }>
+  conflicts: unknown[]
+  nextCursor: string
+  serverTime: string
 }
 
 const apiBaseUrl =
@@ -36,6 +65,35 @@ export async function createGuestAccount(locale: Locale) {
   }
 
   return (await response.json()) as GuestAccountResponse
+}
+
+export async function pushSyncChanges({
+  accessToken,
+  changes,
+  cursor,
+}: {
+  accessToken: string
+  changes: SyncChange[]
+  cursor?: string | null
+}) {
+  const response = await fetch(`${apiBaseUrl}/v1/sync/push`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      changes,
+      clientId: getClientId(),
+      cursor: cursor ?? null,
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Sync push request failed: ${response.status}`)
+  }
+
+  return (await response.json()) as PushSyncResponse
 }
 
 function getClientId() {

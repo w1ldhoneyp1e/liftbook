@@ -32,6 +32,8 @@ export function DayScreen() {
   const [restTimerRunning, setRestTimerRunning] = useState(false)
   const [accountError, setAccountError] = useState(false)
   const [accountConnecting, setAccountConnecting] = useState(false)
+  const [syncError, setSyncError] = useState(false)
+  const [syncing, setSyncing] = useState(false)
   const {
     accountSession,
     addExercise,
@@ -47,8 +49,10 @@ export function DayScreen() {
     incrementNumber,
     locale,
     loading,
+    pendingSyncCount,
     renameCustomExercise,
     settings,
+    syncPendingChanges,
     updateSettings,
     updateNumber,
   } = useDayScreenData(selectedDate)
@@ -113,6 +117,19 @@ export function DayScreen() {
       setAccountError(true)
     } finally {
       setAccountConnecting(false)
+    }
+  }
+
+  async function handleSyncNow() {
+    setSyncing(true)
+    setSyncError(false)
+
+    try {
+      await syncPendingChanges()
+    } catch {
+      setSyncError(true)
+    } finally {
+      setSyncing(false)
     }
   }
 
@@ -256,9 +273,13 @@ export function DayScreen() {
           accountSession={accountSession}
           dictionary={dictionary}
           open={settingsOpen}
+          pendingSyncCount={pendingSyncCount}
           settings={settings}
+          syncError={syncError}
+          syncing={syncing}
           onCreateGuestAccount={handleCreateGuestAccount}
           onOpenChange={setSettingsOpen}
+          onSyncNow={handleSyncNow}
           onUpdateSettings={updateSettings}
         />
       ) : null}

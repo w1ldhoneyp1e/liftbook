@@ -24,9 +24,13 @@ type SettingsDrawerProps = {
   accountSession: AccountSession | null
   dictionary: Dictionary
   open: boolean
+  pendingSyncCount: number
   settings: UserSettings
+  syncError: boolean
+  syncing: boolean
   onCreateGuestAccount: () => void
   onOpenChange: (open: boolean) => void
+  onSyncNow: () => void
   onUpdateSettings: (
     patch: Partial<Omit<UserSettings, "id" | "updatedAt">>
   ) => void
@@ -38,9 +42,13 @@ export function SettingsDrawer({
   accountSession,
   dictionary,
   open,
+  pendingSyncCount,
   settings,
+  syncError,
+  syncing,
   onCreateGuestAccount,
   onOpenChange,
+  onSyncNow,
   onUpdateSettings,
 }: SettingsDrawerProps) {
   return (
@@ -79,6 +87,31 @@ export function SettingsDrawer({
                 <p className="mt-2 text-xs text-destructive">
                   {dictionary.labels.connectionError}
                 </p>
+              ) : null}
+              {accountSession ? (
+                <div className="mt-3 rounded-md bg-background px-3 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-medium">
+                        {dictionary.labels.syncStatus}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {syncError
+                          ? dictionary.labels.syncFailed
+                          : pendingSyncCount > 0
+                            ? `${dictionary.labels.syncReady}: ${pendingSyncCount}`
+                            : dictionary.labels.syncSuccess}
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      disabled={syncing || pendingSyncCount === 0}
+                      onClick={onSyncNow}
+                    >
+                      {dictionary.actions.syncNow}
+                    </Button>
+                  </div>
+                </div>
               ) : null}
             </div>
           </section>

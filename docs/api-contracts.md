@@ -70,6 +70,8 @@ Response:
 
 ## Push Local Changes
 
+The web app can send pending local records manually from Settings after a guest account session exists.
+
 ```http
 POST /v1/sync/push
 Content-Type: application/json
@@ -149,3 +151,4 @@ Response:
 - Access tokens are development-only placeholders.
 - Sync responses currently accept valid changes without persistence.
 - Soft deletes from the client should be sent as `delete` operations.
+- The current web client marks accepted local records as `synced` and stores `nextCursor` on the local account session.

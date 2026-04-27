@@ -26,6 +26,7 @@ export const ru: Dictionary = {
     search: "Поиск",
     settings: "Настройки",
     start: "Старт",
+    syncNow: "Синхронизировать",
   },
   labels: {
     account: "Аккаунт",
@@ -43,6 +44,10 @@ export const ru: Dictionary = {
     previousResultDefaults: "Подставлять прошлый результат",
     restTimer: "Таймер отдыха",
     searchExercise: "Найти упражнение",
+    syncFailed: "Синхронизация не удалась",
+    syncReady: "Готово к синхронизации",
+    syncStatus: "Синхронизация",
+    syncSuccess: "Синхронизировано",
     today: "Сегодня",
     weightUnit: "Единицы веса",
   },

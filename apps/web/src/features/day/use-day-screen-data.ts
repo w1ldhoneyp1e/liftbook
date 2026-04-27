@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react"
 
-import { createGuestAccount as requestGuestAccount } from "@/shared/api/liftbook-api"
+import {
+  createGuestAccount as requestGuestAccount,
+  pushSyncChanges,
+  type SyncChange,
+  type SyncEntityType,
+} from "@/shared/api/liftbook-api"
 import { getDictionary } from "@/shared/i18n/dictionaries"
 import type {
   AccountSession,
@@ -24,6 +29,7 @@ type DayScreenData = {
   exerciseEntries: ExerciseEntry[]
   exercisesById: Record<string, Exercise>
   loading: boolean
+  pendingSyncCount: number
 }
 
 export function useDayScreenData(date: string) {
@@ -34,6 +40,7 @@ export function useDayScreenData(date: string) {
     exerciseEntries: [],
     exercisesById: {},
     loading: true,
+    pendingSyncCount: 0,
   })
 
   const load = useCallback(async () => {
@@ -47,6 +54,7 @@ export function useDayScreenData(date: string) {
         db.exerciseEntries.where("workoutDate").equals(date).sortBy("position"),
         db.exercises.toArray(),
       ])
+    const pendingSyncCount = await countPendingSyncRecords()
 
     setState({
       accountSession: accountSession ?? null,
@@ -62,6 +70,7 @@ export function useDayScreenData(date: string) {
         exercises.map((exercise) => [exercise.id, exercise])
       ),
       loading: false,
+      pendingSyncCount,
     })
   }, [date])
 
@@ -459,6 +468,29 @@ export function useDayScreenData(date: string) {
     await load()
   }, [load, state.settings?.locale])
 
+  const syncPendingChanges = useCallback(async () => {
+    const accountSession = await db.accountSessions.get("local")
+
+    if (!accountSession) {
+      throw new Error("Account session is required for sync")
+    }
+
+    const changes = await collectPendingSyncChanges()
+
+    if (changes.length === 0) {
+      return
+    }
+
+    const response = await pushSyncChanges({
+      accessToken: accountSession.accessToken,
+      changes,
+      cursor: accountSession.syncCursor,
+    })
+
+    await markAcceptedChangesSynced(response.accepted, response.nextCursor)
+    await load()
+  }, [load])
+
   return {
     ...state,
     addExercise,
@@ -471,10 +503,112 @@ export function useDayScreenData(date: string) {
     updateNumber,
     incrementNumber,
     renameCustomExercise,
+    syncPendingChanges,
     updateSettings,
     locale: state.settings?.locale ?? "en",
     dictionary: getDictionary(state.settings?.locale ?? "en"),
   }
+}
+
+async function countPendingSyncRecords() {
+  const [exercises, workoutDays, exerciseEntries, userSettings] =
+    await Promise.all([
+      db.exercises.where("syncStatus").equals("pending").count(),
+      db.workoutDays.where("syncStatus").equals("pending").count(),
+      db.exerciseEntries.where("syncStatus").equals("pending").count(),
+      db.userSettings.where("syncStatus").equals("pending").count(),
+    ])
+
+  return exercises + workoutDays + exerciseEntries + userSettings
+}
+
+async function collectPendingSyncChanges() {
+  const [exercises, workoutDays, exerciseEntries, userSettings] =
+    await Promise.all([
+      db.exercises.where("syncStatus").equals("pending").toArray(),
+      db.workoutDays.where("syncStatus").equals("pending").toArray(),
+      db.exerciseEntries.where("syncStatus").equals("pending").toArray(),
+      db.userSettings.where("syncStatus").equals("pending").toArray(),
+    ])
+
+  return [
+    ...exercises.map((exercise) => createSyncChange("exercise", exercise)),
+    ...workoutDays.map((workoutDay) =>
+      createSyncChange("workoutDay", workoutDay)
+    ),
+    ...exerciseEntries.map((exerciseEntry) =>
+      createSyncChange("exerciseEntry", exerciseEntry)
+    ),
+    ...userSettings.map((settings) =>
+      createSyncChange("userSettings", settings)
+    ),
+  ]
+}
+
+function createSyncChange(
+  entityType: SyncEntityType,
+  entity: {
+    id: string
+    deletedAt?: string
+    updatedAt?: string
+  }
+): SyncChange {
+  return {
+    entityType,
+    localId: entity.id,
+    operation: entity.deletedAt ? "delete" : "upsert",
+    payload: entity,
+    updatedAt: entity.updatedAt ?? new Date().toISOString(),
+  }
+}
+
+async function markAcceptedChangesSynced(
+  acceptedChanges: Array<{
+    entityType: SyncEntityType
+    localId: string
+  }>,
+  nextCursor: string
+) {
+  const now = new Date().toISOString()
+
+  await Promise.all(
+    acceptedChanges.map((change) =>
+      markEntitySynced(change.entityType, change.localId)
+    )
+  )
+
+  const accountSession = await db.accountSessions.get("local")
+
+  if (accountSession) {
+    await db.accountSessions.put({
+      ...accountSession,
+      syncCursor: nextCursor,
+      updatedAt: now,
+    })
+  }
+}
+
+async function markEntitySynced(entityType: SyncEntityType, localId: string) {
+  const patch = {
+    syncStatus: "synced" as const,
+  }
+
+  if (entityType === "exercise") {
+    await db.exercises.update(localId, patch)
+    return
+  }
+
+  if (entityType === "workoutDay") {
+    await db.workoutDays.update(localId, patch)
+    return
+  }
+
+  if (entityType === "exerciseEntry") {
+    await db.exerciseEntries.update(localId, patch)
+    return
+  }
+
+  await db.userSettings.update(localId as UserSettings["id"], patch)
 }
 
 function createLocalId(prefix: string) {
