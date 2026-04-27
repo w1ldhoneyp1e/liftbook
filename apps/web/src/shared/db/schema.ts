@@ -22,6 +22,16 @@ export class LiftbookDb extends Dexie {
       exerciseEntries: "id, workoutDate, exerciseId, position, updatedAt",
       userSettings: "id, locale, weightUnit, updatedAt",
     })
+
+    this.version(2).stores({
+      exercises:
+        "id, builtIn, *muscleGroupIds, trackingMode, updatedAt, deletedAt, syncStatus",
+      workoutDays:
+        "id, date, localOwnerId, updatedAt, deletedAt, syncStatus",
+      exerciseEntries:
+        "id, workoutDate, exerciseId, position, updatedAt, deletedAt, syncStatus",
+      userSettings: "id, locale, weightUnit, updatedAt, deletedAt, syncStatus",
+    })
   }
 }
 

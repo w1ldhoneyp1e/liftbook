@@ -44,6 +44,7 @@ Local persistence is the primary write path during workouts. Server sync should 
 - Update UI immediately.
 - Sync when online.
 - Resolve conflicts explicitly.
+- Prefer soft deletes for workout data so offline deletions can be synchronized later.
 
 Account support should not change the local-first write path. Authentication can unlock backup and multi-device sync, but the app must still let users log workouts when the network is unavailable.
 
@@ -111,6 +112,14 @@ Local data is the source of truth while the user is training. Server-side data b
 Future corporate integration should be modeled as selective data sharing, not as a default assumption that all personal workout data belongs to an organization.
 
 Data sharing should be consent-based. The integration model should make it possible to grant and revoke access to workout data scopes.
+
+## Sync Preparation
+
+Local entities that can later sync to the backend should have stable client ids, optional server ids, timestamps, a deleted timestamp, and a sync status.
+
+The current client marks local changes as `pending`. A later sync engine can scan pending records, push them to the backend, update `serverId`, and mark records as `synced` after confirmation.
+
+Conflict handling is intentionally not implemented in MVP UI yet. The data model reserves `conflict` as a sync status so the product can later surface records that need user or server-side resolution.
 
 ## Product Data Risk
 

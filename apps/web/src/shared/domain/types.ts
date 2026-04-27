@@ -4,6 +4,14 @@ export type WeightUnit = "kg" | "lb"
 
 export type DateState = "past" | "today" | "future"
 
+export type SyncStatus = "pending" | "synced" | "conflict"
+
+export type SyncMetadata = {
+  serverId?: string
+  deletedAt?: string
+  syncStatus: SyncStatus
+}
+
 export type MuscleGroupId =
   | "chest"
   | "back"
@@ -32,7 +40,7 @@ export type Exercise = {
   muscleGroupIds: MuscleGroupId[]
   trackingMode: ExerciseTrackingMode
   builtIn: boolean
-}
+} & Partial<SyncMetadata>
 
 export type SetEntry = {
   id: string
@@ -41,6 +49,7 @@ export type SetEntry = {
   reps?: number
   durationSeconds?: number
   distanceMeters?: number
+  deletedAt?: string
   createdAt: string
   updatedAt: string
 }
@@ -54,7 +63,7 @@ export type ExerciseEntry = {
   previousResultSourceId?: string
   createdAt: string
   updatedAt: string
-}
+} & Partial<SyncMetadata>
 
 export type WorkoutDay = {
   id: string
@@ -63,7 +72,7 @@ export type WorkoutDay = {
   inferredDurationSeconds?: number
   createdAt: string
   updatedAt: string
-}
+} & Partial<SyncMetadata>
 
 export type UserSettings = {
   id: "local"
@@ -75,4 +84,4 @@ export type UserSettings = {
   autoRestTimer: boolean
   previousResultDefaults: boolean
   updatedAt: string
-}
+} & Partial<SyncMetadata>

@@ -17,6 +17,7 @@ const defaultSettings: UserSettings = {
   repsStep: 1,
   autoRestTimer: false,
   previousResultDefaults: true,
+  syncStatus: "pending",
   updatedAt: now,
 }
 
@@ -27,6 +28,7 @@ const seedEntries: ExerciseEntry[] = [
     workoutDate: today,
     position: 0,
     createdAt: now,
+    syncStatus: "pending",
     updatedAt: now,
     setEntries: [
       {
@@ -61,6 +63,7 @@ const seedEntries: ExerciseEntry[] = [
     workoutDate: today,
     position: 1,
     createdAt: now,
+    syncStatus: "pending",
     updatedAt: now,
     setEntries: [
       {
@@ -88,6 +91,7 @@ const seedDay: WorkoutDay = {
   date: today,
   localOwnerId,
   createdAt: now,
+  syncStatus: "pending",
   updatedAt: now,
 }
 
@@ -101,7 +105,12 @@ export async function seedLocalDatabase() {
     await db.userSettings.put(defaultSettings)
   }
 
-  await db.exercises.bulkPut(starterExercises)
+  await db.exercises.bulkPut(
+    starterExercises.map((exercise) => ({
+      ...exercise,
+      syncStatus: "synced" as const,
+    }))
+  )
 
   if (dayCount === 0) {
     await db.transaction("rw", db.workoutDays, db.exerciseEntries, async () => {

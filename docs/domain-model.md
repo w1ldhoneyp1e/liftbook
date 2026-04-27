@@ -15,10 +15,13 @@ Represents a movement that can be added to a workout record.
 Important fields:
 
 - Stable id.
+- Optional server id after sync.
 - Localized name.
 - Muscle group ids.
 - Tracking mode.
 - Built-in or custom flag.
+- Sync status.
+- Deleted timestamp for custom exercises, when soft-deleted.
 
 ### Muscle Group
 
@@ -49,6 +52,9 @@ Important fields:
 - User id or local owner id.
 - Workout date.
 - Local created timestamp.
+- Last updated timestamp.
+- Optional deleted timestamp.
+- Sync status.
 - Optional title.
 - Optional notes.
 - Exercise entries.
@@ -66,6 +72,9 @@ Important fields:
 - Position/order.
 - Set entries.
 - Previous-result source, if defaults were generated from prior history.
+- Last updated timestamp.
+- Optional deleted timestamp.
+- Sync status.
 
 ### Set Entry
 
@@ -82,6 +91,9 @@ Possible fields depend on exercise tracking mode:
 - Distance.
 - Bodyweight flag.
 - Notes.
+- Optional deleted timestamp.
+
+Set entries are nested under an exercise entry in the local MVP model. Editing or deleting a set marks the parent exercise entry as sync-pending.
 
 ### Rest Timer Event
 
@@ -101,6 +113,21 @@ Important fields:
 - Previous-result defaults enabled flag.
 - Kg increment step, default 1 kg.
 - Lb increment step, default still open.
+- Last updated timestamp.
+- Sync status.
+
+## Sync Metadata
+
+Syncable local entities should carry enough metadata to later reconcile with a backend:
+
+- Local stable id.
+- Optional server id.
+- Created timestamp.
+- Updated timestamp.
+- Optional deleted timestamp.
+- Sync status: pending, synced, or conflict.
+
+Deletes should be soft deletes for syncable workout data. The UI hides deleted records immediately, while sync can still send the deletion to the backend later.
 
 ### Sharing Consent
 

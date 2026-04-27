@@ -44,10 +44,17 @@ export function useDayScreenData(date: string) {
 
     setState({
       settings: settings ?? null,
-      workoutDay: workoutDay ?? null,
-      exerciseEntries,
+      workoutDay: workoutDay && !workoutDay.deletedAt ? workoutDay : null,
+      exerciseEntries: exerciseEntries
+        .filter((entry) => !entry.deletedAt)
+        .map((entry) => ({
+          ...entry,
+          setEntries: entry.setEntries.filter((setEntry) => !setEntry.deletedAt),
+        })),
       exercisesById: Object.fromEntries(
-        exercises.map((exercise) => [exercise.id, exercise])
+        exercises
+          .filter((exercise) => !exercise.deletedAt)
+          .map((exercise) => [exercise.id, exercise])
       ),
       loading: false,
     })
@@ -74,6 +81,7 @@ export function useDayScreenData(date: string) {
       const now = new Date().toISOString()
       const updatedEntry: ExerciseEntry = {
         ...entry,
+        syncStatus: "pending",
         updatedAt: now,
         setEntries: entry.setEntries.map((setEntry) =>
           setEntry.id === setEntryId
@@ -98,7 +106,9 @@ export function useDayScreenData(date: string) {
       }
 
       const now = new Date().toISOString()
-      const previousSet = entry.setEntries.at(-1)
+      const previousSet = entry.setEntries
+        .filter((setEntry) => !setEntry.deletedAt)
+        .at(-1)
       const newSet: SetEntry = {
         id: createLocalId("set"),
         weight: previousSet?.weight ?? 0,
@@ -110,6 +120,7 @@ export function useDayScreenData(date: string) {
 
       await db.exerciseEntries.put({
         ...entry,
+        syncStatus: "pending",
         updatedAt: now,
         setEntries: [...entry.setEntries, newSet],
       })
@@ -127,11 +138,16 @@ export function useDayScreenData(date: string) {
         return
       }
 
+      const now = new Date().toISOString()
+
       await db.exerciseEntries.put({
         ...entry,
-        updatedAt: new Date().toISOString(),
-        setEntries: entry.setEntries.filter(
-          (setEntry) => setEntry.id !== setEntryId
+        syncStatus: "pending",
+        updatedAt: now,
+        setEntries: entry.setEntries.map((setEntry) =>
+          setEntry.id === setEntryId
+            ? { ...setEntry, deletedAt: now, updatedAt: now }
+            : setEntry
         ),
       })
 
@@ -143,29 +159,50 @@ export function useDayScreenData(date: string) {
   const deleteExercise = useCallback(
     async (exerciseEntryId: string) => {
       await db.transaction("rw", db.workoutDays, db.exerciseEntries, async () => {
-        await db.exerciseEntries.delete(exerciseEntryId)
+        const now = new Date().toISOString()
+        const entry = await db.exerciseEntries.get(exerciseEntryId)
+
+        if (!entry) {
+          return
+        }
+
+        await db.exerciseEntries.put({
+          ...entry,
+          deletedAt: now,
+          syncStatus: "pending",
+          updatedAt: now,
+        })
 
         const remainingEntries = await db.exerciseEntries
           .where("workoutDate")
           .equals(date)
           .sortBy("position")
+        const activeEntries = remainingEntries.filter(
+          (entry) => !entry.deletedAt
+        )
 
-        if (remainingEntries.length === 0) {
-          await db.workoutDays.delete(`day_${date}`)
+        if (activeEntries.length === 0) {
+          await db.workoutDays.update(`day_${date}`, {
+            deletedAt: now,
+            syncStatus: "pending",
+            updatedAt: now,
+          })
           return
         }
 
-        const now = new Date().toISOString()
-
         await db.exerciseEntries.bulkPut(
-          remainingEntries.map((entry, position) => ({
+          activeEntries.map((entry, position) => ({
             ...entry,
             position,
+            syncStatus: "pending",
             updatedAt: now,
           }))
         )
 
-        await db.workoutDays.update(`day_${date}`, { updatedAt: now })
+        await db.workoutDays.update(`day_${date}`, {
+          syncStatus: "pending",
+          updatedAt: now,
+        })
       })
 
       await load()
@@ -179,7 +216,11 @@ export function useDayScreenData(date: string) {
         await Promise.all([
           db.userSettings.get("local"),
           db.workoutDays.where("date").equals(date).first(),
-          db.exerciseEntries.where("workoutDate").equals(date).toArray(),
+          db.exerciseEntries
+            .where("workoutDate")
+            .equals(date)
+            .and((entry) => !entry.deletedAt)
+            .toArray(),
           db.exerciseEntries.where("exerciseId").equals(exerciseId).toArray(),
         ])
 
@@ -191,6 +232,7 @@ export function useDayScreenData(date: string) {
           date,
           localOwnerId: "local",
           createdAt: now,
+          syncStatus: "pending",
           updatedAt: now,
         } satisfies WorkoutDay)
 
@@ -198,39 +240,53 @@ export function useDayScreenData(date: string) {
         settings?.previousResultDefaults === false
           ? undefined
           : previousEntries
-              .filter((entry) => entry.workoutDate < date)
+              .filter((entry) => !entry.deletedAt && entry.workoutDate < date)
               .sort((a, b) => b.workoutDate.localeCompare(a.workoutDate))[0]
 
       const setEntries =
-        previousResult?.setEntries.map((setEntry) => ({
-          ...setEntry,
-          id: createLocalId("set"),
-          createdAt: now,
-          updatedAt: now,
-        })) ?? [
-          {
+        previousResult?.setEntries
+          .filter((setEntry) => !setEntry.deletedAt)
+          .map((setEntry) => ({
+            ...setEntry,
             id: createLocalId("set"),
-            weight: 0,
-            weightUnit: settings?.weightUnit ?? "kg",
-            reps: 0,
+            deletedAt: undefined,
             createdAt: now,
             updatedAt: now,
-          },
-        ]
+          })) ?? []
+
+      const initialSetEntries =
+        setEntries.length > 0
+          ? setEntries
+          : [
+              {
+                id: createLocalId("set"),
+                weight: 0,
+                weightUnit: settings?.weightUnit ?? "kg",
+                reps: 0,
+                createdAt: now,
+                updatedAt: now,
+              },
+            ]
 
       const exerciseEntry: ExerciseEntry = {
         id: createLocalId("entry"),
         exerciseId,
         workoutDate: date,
         position: entriesForDate.length,
-        setEntries,
+        setEntries: initialSetEntries,
         previousResultSourceId: previousResult?.id,
         createdAt: now,
+        syncStatus: "pending",
         updatedAt: now,
       }
 
       await db.transaction("rw", db.workoutDays, db.exerciseEntries, async () => {
-        await db.workoutDays.put({ ...workoutDay, updatedAt: now })
+        await db.workoutDays.put({
+          ...workoutDay,
+          deletedAt: undefined,
+          syncStatus: "pending",
+          updatedAt: now,
+        })
         await db.exerciseEntries.put(exerciseEntry)
       })
 
@@ -259,6 +315,7 @@ export function useDayScreenData(date: string) {
         muscleGroupIds: [muscleGroupId],
         trackingMode: "weight_reps",
         builtIn: false,
+        syncStatus: "pending",
       })
 
       await addExercise(exerciseId)
@@ -319,6 +376,7 @@ export function useDayScreenData(date: string) {
       await db.userSettings.put({
         ...currentSettings,
         ...patch,
+        syncStatus: "pending",
         updatedAt: new Date().toISOString(),
       })
 
