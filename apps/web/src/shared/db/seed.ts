@@ -92,9 +92,8 @@ const seedDay: WorkoutDay = {
 }
 
 export async function seedLocalDatabase() {
-  const [settingsCount, exerciseCount, dayCount] = await Promise.all([
+  const [settingsCount, dayCount] = await Promise.all([
     db.userSettings.count(),
-    db.exercises.count(),
     db.workoutDays.count(),
   ])
 
@@ -102,9 +101,7 @@ export async function seedLocalDatabase() {
     await db.userSettings.put(defaultSettings)
   }
 
-  if (exerciseCount === 0) {
-    await db.exercises.bulkPut(starterExercises)
-  }
+  await db.exercises.bulkPut(starterExercises)
 
   if (dayCount === 0) {
     await db.transaction("rw", db.workoutDays, db.exerciseEntries, async () => {
