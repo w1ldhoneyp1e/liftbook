@@ -130,7 +130,7 @@ Response:
 ## Pull Remote Changes
 
 ```http
-GET /v1/sync/pull?cursor=2026-04-27T12:00:01.000Z
+GET /v1/sync/pull?cursor=2026-04-27T12:00:01.000Z&clientId=local-device-id
 Authorization: Bearer dev_token
 ```
 
@@ -149,6 +149,6 @@ Response:
 
 - Guest account creation is a placeholder for future real identity.
 - Access tokens are development-only placeholders.
-- Sync responses currently accept valid changes without persistence.
+- Sync data is currently stored in memory only and resets when the API process restarts.
 - Soft deletes from the client should be sent as `delete` operations.
 - The current web client marks accepted local records as `synced` and stores `nextCursor` on the local account session.

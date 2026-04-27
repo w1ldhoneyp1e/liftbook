@@ -3,6 +3,8 @@ import { createServer } from "node:http"
 
 const defaultPort = 4000
 const maxBodySizeBytes = 1024 * 1024
+const syncEvents = []
+const syncRecords = new Map()
 
 const server = createServer(async (request, response) => {
   try {
@@ -60,15 +62,12 @@ const server = createServer(async (request, response) => {
       }
 
       const serverTime = new Date().toISOString()
+      const accepted = body.changes.map((change) =>
+        acceptSyncChange(body.clientId, change, serverTime)
+      )
 
       sendJson(response, 202, {
-        accepted: body.changes.map((change) => ({
-          localId: change.localId,
-          entityType: change.entityType,
-          operation: change.operation,
-          serverVersion: createServerVersion(change, serverTime),
-          status: "accepted",
-        })),
+        accepted,
         conflicts: [],
         nextCursor: serverTime,
         serverTime,
@@ -78,11 +77,16 @@ const server = createServer(async (request, response) => {
 
     if (request.method === "GET" && url.pathname === "/v1/sync/pull") {
       const serverTime = new Date().toISOString()
+      const cursor = url.searchParams.get("cursor")
+      const clientId = url.searchParams.get("clientId")
+      const changes = syncEvents
+        .filter((event) => !cursor || event.serverTime > cursor)
+        .filter((event) => !clientId || event.clientId === clientId)
 
       sendJson(response, 200, {
-        changes: [],
-        cursor: url.searchParams.get("cursor"),
-        nextCursor: serverTime,
+        changes,
+        cursor,
+        nextCursor: changes.at(-1)?.serverTime ?? serverTime,
         serverTime,
       })
       return
@@ -183,6 +187,38 @@ function validatePushBody(body) {
   }
 
   return null
+}
+
+function acceptSyncChange(clientId, change, serverTime) {
+  const serverVersion = createServerVersion(change, serverTime)
+  const event = {
+    id: `sync_${randomUUID()}`,
+    clientId,
+    entityType: change.entityType,
+    localId: change.localId,
+    operation: change.operation,
+    payload: change.payload ?? null,
+    serverTime,
+    serverVersion,
+    updatedAt: change.updatedAt ?? serverTime,
+  }
+  const recordKey = `${change.entityType}:${change.localId}`
+
+  syncEvents.push(event)
+
+  if (change.operation === "delete") {
+    syncRecords.delete(recordKey)
+  } else {
+    syncRecords.set(recordKey, event)
+  }
+
+  return {
+    localId: change.localId,
+    entityType: change.entityType,
+    operation: change.operation,
+    serverVersion,
+    status: "accepted",
+  }
 }
 
 function createDevelopmentToken(userId, issuedAt) {
