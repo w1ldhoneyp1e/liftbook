@@ -30,10 +30,14 @@ export function DayScreen() {
   const [collapsedExerciseIds, setCollapsedExerciseIds] = useState<string[]>([])
   const [restSeconds, setRestSeconds] = useState(0)
   const [restTimerRunning, setRestTimerRunning] = useState(false)
+  const [accountError, setAccountError] = useState(false)
+  const [accountConnecting, setAccountConnecting] = useState(false)
   const {
+    accountSession,
     addExercise,
     addCustomExercise,
     addSet,
+    createGuestAccount,
     deleteCustomExercise,
     deleteExercise,
     deleteSet,
@@ -96,6 +100,19 @@ export function DayScreen() {
     if (settings?.autoRestTimer) {
       setRestSeconds(0)
       setRestTimerRunning(true)
+    }
+  }
+
+  async function handleCreateGuestAccount() {
+    setAccountConnecting(true)
+    setAccountError(false)
+
+    try {
+      await createGuestAccount()
+    } catch {
+      setAccountError(true)
+    } finally {
+      setAccountConnecting(false)
     }
   }
 
@@ -234,9 +251,13 @@ export function DayScreen() {
 
       {settings ? (
         <SettingsDrawer
+          accountConnecting={accountConnecting}
+          accountError={accountError}
+          accountSession={accountSession}
           dictionary={dictionary}
           open={settingsOpen}
           settings={settings}
+          onCreateGuestAccount={handleCreateGuestAccount}
           onOpenChange={setSettingsOpen}
           onUpdateSettings={updateSettings}
         />

@@ -9,6 +9,7 @@ export type Dictionary = {
     addSet: string
     calendar: string
     cancel: string
+    createGuestAccount: string
     chooseExercise: string
     createCustomExercise: string
     collapse: string
@@ -30,8 +31,12 @@ export type Dictionary = {
     start: string
   }
   labels: {
+    account: string
+    accountConnected: string
+    accountLocalOnly: string
     allMuscleGroups: string
     autoRestTimer: string
+    connectionError: string
     exercises: string
     language: string
     loading: string

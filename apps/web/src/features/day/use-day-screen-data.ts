@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react"
 
+import { createGuestAccount as requestGuestAccount } from "@/shared/api/liftbook-api"
 import { getDictionary } from "@/shared/i18n/dictionaries"
 import type {
+  AccountSession,
   Exercise,
   ExerciseEntry,
   Locale,
@@ -16,6 +18,7 @@ import { db } from "@/shared/db/schema"
 import { seedLocalDatabase } from "@/shared/db/seed"
 
 type DayScreenData = {
+  accountSession: AccountSession | null
   settings: UserSettings | null
   workoutDay: WorkoutDay | null
   exerciseEntries: ExerciseEntry[]
@@ -25,6 +28,7 @@ type DayScreenData = {
 
 export function useDayScreenData(date: string) {
   const [state, setState] = useState<DayScreenData>({
+    accountSession: null,
     settings: null,
     workoutDay: null,
     exerciseEntries: [],
@@ -35,14 +39,17 @@ export function useDayScreenData(date: string) {
   const load = useCallback(async () => {
     await seedLocalDatabase()
 
-    const [settings, workoutDay, exerciseEntries, exercises] = await Promise.all([
-      db.userSettings.get("local"),
-      db.workoutDays.where("date").equals(date).first(),
-      db.exerciseEntries.where("workoutDate").equals(date).sortBy("position"),
-      db.exercises.toArray(),
-    ])
+    const [accountSession, settings, workoutDay, exerciseEntries, exercises] =
+      await Promise.all([
+        db.accountSessions.get("local"),
+        db.userSettings.get("local"),
+        db.workoutDays.where("date").equals(date).first(),
+        db.exerciseEntries.where("workoutDate").equals(date).sortBy("position"),
+        db.exercises.toArray(),
+      ])
 
     setState({
+      accountSession: accountSession ?? null,
       settings: settings ?? null,
       workoutDay: workoutDay && !workoutDay.deletedAt ? workoutDay : null,
       exerciseEntries: exerciseEntries
@@ -432,11 +439,32 @@ export function useDayScreenData(date: string) {
     [load]
   )
 
+  const createGuestAccount = useCallback(async () => {
+    const locale = state.settings?.locale ?? "en"
+    const response = await requestGuestAccount(locale)
+    const now = new Date().toISOString()
+
+    await db.accountSessions.put({
+      id: "local",
+      userId: response.user.id,
+      kind: response.user.kind,
+      accessToken: response.session.accessToken,
+      tokenType: response.session.tokenType,
+      expiresAt: response.session.expiresAt,
+      syncCursor: response.sync.cursor,
+      createdAt: response.user.createdAt,
+      updatedAt: now,
+    })
+
+    await load()
+  }, [load, state.settings?.locale])
+
   return {
     ...state,
     addExercise,
     addCustomExercise,
     addSet,
+    createGuestAccount,
     deleteCustomExercise,
     deleteExercise,
     deleteSet,

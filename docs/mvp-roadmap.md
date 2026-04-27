@@ -9,6 +9,7 @@ Core features:
 - Install/open as an app-like mobile experience.
 - Guest/local usage without signing in.
 - Account support or a clear account-ready path for backup/sync.
+- Optional guest account creation from settings when API is available.
 - Date-based workout navigation with current date shown by default.
 - Add workout records without requiring a strict start/finish flow.
 - Add exercises to workout.

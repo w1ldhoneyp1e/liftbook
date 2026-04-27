@@ -30,6 +30,8 @@ Response:
 
 ## Guest Account
 
+The web app can call this endpoint from Settings. The workout flow must continue working if the request fails or the user never creates an account.
+
 ```http
 POST /v1/auth/guest
 Content-Type: application/json

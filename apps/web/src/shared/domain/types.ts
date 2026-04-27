@@ -4,6 +4,8 @@ export type WeightUnit = "kg" | "lb"
 
 export type DateState = "past" | "today" | "future"
 
+export type AccountKind = "guest"
+
 export type SyncStatus = "pending" | "synced" | "conflict"
 
 export type SyncMetadata = {
@@ -75,6 +77,18 @@ export type WorkoutDay = {
   createdAt: string
   updatedAt: string
 } & Partial<SyncMetadata>
+
+export type AccountSession = {
+  id: "local"
+  userId: string
+  kind: AccountKind
+  accessToken: string
+  tokenType: "Bearer"
+  expiresAt: string
+  syncCursor?: string | null
+  createdAt: string
+  updatedAt: string
+}
 
 export type UserSettings = {
   id: "local"

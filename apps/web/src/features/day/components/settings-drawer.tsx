@@ -7,15 +7,25 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer"
+import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import type { Locale, UserSettings, WeightUnit } from "@/shared/domain/types"
+import type {
+  AccountSession,
+  Locale,
+  UserSettings,
+  WeightUnit,
+} from "@/shared/domain/types"
 import type { Dictionary } from "@/shared/i18n/dictionaries"
 
 type SettingsDrawerProps = {
+  accountConnecting: boolean
+  accountError: boolean
+  accountSession: AccountSession | null
   dictionary: Dictionary
   open: boolean
   settings: UserSettings
+  onCreateGuestAccount: () => void
   onOpenChange: (open: boolean) => void
   onUpdateSettings: (
     patch: Partial<Omit<UserSettings, "id" | "updatedAt">>
@@ -23,9 +33,13 @@ type SettingsDrawerProps = {
 }
 
 export function SettingsDrawer({
+  accountConnecting,
+  accountError,
+  accountSession,
   dictionary,
   open,
   settings,
+  onCreateGuestAccount,
   onOpenChange,
   onUpdateSettings,
 }: SettingsDrawerProps) {
@@ -38,6 +52,37 @@ export function SettingsDrawer({
         </DrawerHeader>
 
         <div className="space-y-5 px-4 pb-4">
+          <section className="space-y-2">
+            <Label className="text-sm font-medium">
+              {dictionary.labels.account}
+            </Label>
+            <div className="rounded-lg bg-muted px-3 py-3">
+              <div className="text-sm font-medium">
+                {accountSession
+                  ? dictionary.labels.accountConnected
+                  : dictionary.labels.accountLocalOnly}
+              </div>
+              <div className="mt-1 break-all text-xs text-muted-foreground">
+                {accountSession?.userId ?? "Liftbook"}
+              </div>
+              {!accountSession ? (
+                <Button
+                  className="mt-3 w-full"
+                  size="sm"
+                  disabled={accountConnecting}
+                  onClick={onCreateGuestAccount}
+                >
+                  {dictionary.actions.createGuestAccount}
+                </Button>
+              ) : null}
+              {accountError ? (
+                <p className="mt-2 text-xs text-destructive">
+                  {dictionary.labels.connectionError}
+                </p>
+              ) : null}
+            </div>
+          </section>
+
           <SettingsSegment<Locale>
             label={dictionary.labels.language}
             options={[

@@ -50,6 +50,8 @@ Account support should not change the local-first write path. Authentication can
 
 The app should support local/guest usage and later account attachment. This prevents sign-in from becoming a blocker during the first workout.
 
+The first web implementation stores a local guest account session in IndexedDB after a successful API request. This session is optional and should never block local workout writes.
+
 ## Repository Structure
 
 Use a pnpm monorepo:
