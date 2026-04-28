@@ -81,7 +81,7 @@ const server = createServer(async (request, response) => {
       const clientId = url.searchParams.get("clientId")
       const changes = syncEvents
         .filter((event) => !cursor || event.serverTime > cursor)
-        .filter((event) => !clientId || event.clientId === clientId)
+        .filter((event) => !clientId || event.clientId !== clientId)
 
       sendJson(response, 200, {
         changes,

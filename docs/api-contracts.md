@@ -134,6 +134,8 @@ GET /v1/sync/pull?cursor=2026-04-27T12:00:01.000Z&clientId=local-device-id
 Authorization: Bearer dev_token
 ```
 
+`clientId` identifies the requesting device. The API should not echo that device's own sync events back in pull results.
+
 Response:
 
 ```json
