@@ -45,6 +45,20 @@ type PushSyncResponse = {
   serverTime: string
 }
 
+type PullSyncResponse = {
+  changes: Array<
+    SyncChange & {
+      id: string
+      clientId: string
+      serverTime: string
+      serverVersion: string
+    }
+  >
+  cursor: string | null
+  nextCursor: string
+  serverTime: string
+}
+
 const apiBaseUrl =
   process.env.NEXT_PUBLIC_LIFTBOOK_API_URL ?? "http://localhost:4000"
 
@@ -94,6 +108,37 @@ export async function pushSyncChanges({
   }
 
   return (await response.json()) as PushSyncResponse
+}
+
+export async function pullSyncChanges({
+  accessToken,
+  cursor,
+}: {
+  accessToken: string
+  cursor?: string | null
+}) {
+  const searchParams = new URLSearchParams({
+    clientId: getClientId(),
+  })
+
+  if (cursor) {
+    searchParams.set("cursor", cursor)
+  }
+
+  const response = await fetch(
+    `${apiBaseUrl}/v1/sync/pull?${searchParams.toString()}`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  )
+
+  if (!response.ok) {
+    throw new Error(`Sync pull request failed: ${response.status}`)
+  }
+
+  return (await response.json()) as PullSyncResponse
 }
 
 function getClientId() {

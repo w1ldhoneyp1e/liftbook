@@ -93,6 +93,8 @@ The backend is not required for the first offline logging flow, but its contract
 
 The initial repository skeleton includes `apps/api` as a dependency-free Node service. It defines health, guest account, and sync endpoints before choosing a production web framework, database, or authentication provider.
 
+Backend implementation options are tracked in [Backend Research](backend-research.md). The likely direction is a TypeScript modular monolith with PostgreSQL and either Fastify or NestJS.
+
 ## Local Database Options
 
 ### Dexie

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 
 import {
   createGuestAccount as requestGuestAccount,
+  pullSyncChanges,
   pushSyncChanges,
   type SyncChange,
   type SyncEntityType,
@@ -475,19 +476,25 @@ export function useDayScreenData(date: string) {
       throw new Error("Account session is required for sync")
     }
 
+    const cursorBeforeSync = accountSession.syncCursor
     const changes = await collectPendingSyncChanges()
 
-    if (changes.length === 0) {
-      return
+    if (changes.length > 0) {
+      const pushResponse = await pushSyncChanges({
+        accessToken: accountSession.accessToken,
+        changes,
+        cursor: cursorBeforeSync,
+      })
+
+      await markAcceptedChangesSynced(pushResponse.accepted)
     }
 
-    const response = await pushSyncChanges({
+    const pullResponse = await pullSyncChanges({
       accessToken: accountSession.accessToken,
-      changes,
-      cursor: accountSession.syncCursor,
+      cursor: cursorBeforeSync,
     })
 
-    await markAcceptedChangesSynced(response.accepted, response.nextCursor)
+    await applyPulledChanges(pullResponse.changes, pullResponse.nextCursor)
     await load()
   }, [load])
 
@@ -566,24 +573,23 @@ async function markAcceptedChangesSynced(
   acceptedChanges: Array<{
     entityType: SyncEntityType
     localId: string
-  }>,
-  nextCursor: string
+  }>
 ) {
-  const now = new Date().toISOString()
-
   await Promise.all(
     acceptedChanges.map((change) =>
       markEntitySynced(change.entityType, change.localId)
     )
   )
+}
 
+async function updateSyncCursor(nextCursor: string) {
   const accountSession = await db.accountSessions.get("local")
 
   if (accountSession) {
     await db.accountSessions.put({
       ...accountSession,
       syncCursor: nextCursor,
-      updatedAt: now,
+      updatedAt: new Date().toISOString(),
     })
   }
 }
@@ -609,6 +615,222 @@ async function markEntitySynced(entityType: SyncEntityType, localId: string) {
   }
 
   await db.userSettings.update(localId as UserSettings["id"], patch)
+}
+
+async function applyPulledChanges(
+  changes: Array<SyncChange & { serverTime: string }>,
+  nextCursor: string
+) {
+  for (const change of changes) {
+    await applyPulledChange(change)
+  }
+
+  await updateSyncCursor(nextCursor)
+}
+
+async function applyPulledChange(change: SyncChange & { serverTime: string }) {
+  if (change.entityType === "exercise") {
+    await applyPulledExercise(change)
+    return
+  }
+
+  if (change.entityType === "workoutDay") {
+    await applyPulledWorkoutDay(change)
+    return
+  }
+
+  if (change.entityType === "exerciseEntry") {
+    await applyPulledExerciseEntry(change)
+    return
+  }
+
+  await applyPulledUserSettings(change)
+}
+
+async function applyPulledExercise(change: SyncChange & { serverTime: string }) {
+  const existingExercise = await db.exercises.get(change.localId)
+
+  if (existingExercise?.syncStatus === "pending") {
+    await db.exercises.put({ ...existingExercise, syncStatus: "conflict" })
+    return
+  }
+
+  if (change.operation === "delete") {
+    if (existingExercise) {
+      await db.exercises.put({
+        ...existingExercise,
+        deletedAt: existingExercise.deletedAt ?? change.serverTime,
+        syncStatus: "synced",
+      })
+    }
+
+    return
+  }
+
+  if (isExercisePayload(change.payload)) {
+    await db.exercises.put({
+      ...change.payload,
+      syncStatus: "synced",
+    })
+  }
+}
+
+async function applyPulledWorkoutDay(
+  change: SyncChange & { serverTime: string }
+) {
+  const existingWorkoutDay = await db.workoutDays.get(change.localId)
+
+  if (existingWorkoutDay?.syncStatus === "pending") {
+    await db.workoutDays.put({ ...existingWorkoutDay, syncStatus: "conflict" })
+    return
+  }
+
+  if (change.operation === "delete") {
+    if (existingWorkoutDay) {
+      await db.workoutDays.put({
+        ...existingWorkoutDay,
+        deletedAt: existingWorkoutDay.deletedAt ?? change.serverTime,
+        syncStatus: "synced",
+      })
+    }
+
+    return
+  }
+
+  if (isWorkoutDayPayload(change.payload)) {
+    await db.workoutDays.put({
+      ...change.payload,
+      syncStatus: "synced",
+    })
+  }
+}
+
+async function applyPulledExerciseEntry(
+  change: SyncChange & { serverTime: string }
+) {
+  const existingExerciseEntry = await db.exerciseEntries.get(change.localId)
+
+  if (existingExerciseEntry?.syncStatus === "pending") {
+    await db.exerciseEntries.put({
+      ...existingExerciseEntry,
+      syncStatus: "conflict",
+    })
+    return
+  }
+
+  if (change.operation === "delete") {
+    if (existingExerciseEntry) {
+      await db.exerciseEntries.put({
+        ...existingExerciseEntry,
+        deletedAt: existingExerciseEntry.deletedAt ?? change.serverTime,
+        syncStatus: "synced",
+      })
+    }
+
+    return
+  }
+
+  if (isExerciseEntryPayload(change.payload)) {
+    await db.exerciseEntries.put({
+      ...change.payload,
+      syncStatus: "synced",
+    })
+  }
+}
+
+async function applyPulledUserSettings(
+  change: SyncChange & { serverTime: string }
+) {
+  const existingSettings = await db.userSettings.get("local")
+
+  if (existingSettings?.syncStatus === "pending") {
+    await db.userSettings.put({
+      ...existingSettings,
+      syncStatus: "conflict",
+    })
+    return
+  }
+
+  if (change.operation === "delete") {
+    return
+  }
+
+  if (isUserSettingsPayload(change.payload)) {
+    await db.userSettings.put({
+      ...change.payload,
+      id: "local",
+      syncStatus: "synced",
+    } as UserSettings)
+  }
+}
+
+function isRecord(payload: unknown): payload is Record<string, unknown> {
+  return (
+    typeof payload === "object" &&
+    payload !== null
+  )
+}
+
+function isExercisePayload(payload: unknown): payload is Exercise {
+  if (!isRecord(payload)) {
+    return false
+  }
+
+  return (
+    typeof payload.id === "string" &&
+    isRecord(payload.name) &&
+    Array.isArray(payload.muscleGroupIds) &&
+    typeof payload.trackingMode === "string" &&
+    typeof payload.builtIn === "boolean"
+  )
+}
+
+function isWorkoutDayPayload(payload: unknown): payload is WorkoutDay {
+  if (!isRecord(payload)) {
+    return false
+  }
+
+  return (
+    typeof payload.id === "string" &&
+    typeof payload.date === "string" &&
+    typeof payload.localOwnerId === "string" &&
+    typeof payload.createdAt === "string" &&
+    typeof payload.updatedAt === "string"
+  )
+}
+
+function isExerciseEntryPayload(payload: unknown): payload is ExerciseEntry {
+  if (!isRecord(payload)) {
+    return false
+  }
+
+  return (
+    typeof payload.id === "string" &&
+    typeof payload.exerciseId === "string" &&
+    typeof payload.workoutDate === "string" &&
+    typeof payload.position === "number" &&
+    Array.isArray(payload.setEntries) &&
+    typeof payload.createdAt === "string" &&
+    typeof payload.updatedAt === "string"
+  )
+}
+
+function isUserSettingsPayload(payload: unknown): payload is UserSettings {
+  if (!isRecord(payload)) {
+    return false
+  }
+
+  return (
+    payload.id === "local" &&
+    (payload.locale === "en" || payload.locale === "ru") &&
+    (payload.weightUnit === "kg" || payload.weightUnit === "lb") &&
+    typeof payload.kgStep === "number" &&
+    typeof payload.lbStep === "number" &&
+    typeof payload.repsStep === "number" &&
+    typeof payload.autoRestTimer === "boolean" &&
+    typeof payload.previousResultDefaults === "boolean" &&
+    typeof payload.updatedAt === "string"
+  )
 }
 
 function createLocalId(prefix: string) {

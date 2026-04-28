@@ -42,6 +42,7 @@ The API skeleton lives in `apps/api`.
 - [Product brief](docs/product-brief.md)
 - [Requirements](docs/requirements.md)
 - [Architecture](docs/architecture.md)
+- [Backend research](docs/backend-research.md)
 - [Domain model draft](docs/domain-model.md)
 - [Exercise catalog plan](docs/exercise-catalog.md)
 - [MVP UX flow](docs/ux-flow.md)
