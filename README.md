@@ -39,6 +39,13 @@ The API skeleton lives in `apps/api`.
 
 ## Docs
 
+Language mirrors:
+
+- [English docs](docs/en/product-brief.md)
+- [Русская документация](docs/ru/product-brief.md)
+
+Current root docs:
+
 - [Product brief](docs/product-brief.md)
 - [Requirements](docs/requirements.md)
 - [Architecture](docs/architecture.md)
