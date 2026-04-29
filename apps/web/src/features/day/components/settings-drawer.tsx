@@ -22,6 +22,12 @@ type SettingsDrawerProps = {
   accountConnecting: boolean
   accountError: boolean
   accountSession: AccountSession | null
+  conflictItems: Array<{
+    id: string
+    label: string
+    type: "exercise" | "exerciseEntry" | "userSettings" | "workoutDay"
+  }>
+  conflictResolving: boolean
   dictionary: Dictionary
   open: boolean
   settings: UserSettings
@@ -33,6 +39,7 @@ type SettingsDrawerProps = {
   syncError: boolean
   syncing: boolean
   onCreateGuestAccount: () => void
+  onKeepLocalConflicts: () => void
   onOpenChange: (open: boolean) => void
   onSyncNow: () => void
   onUpdateSettings: (
@@ -44,6 +51,8 @@ export function SettingsDrawer({
   accountConnecting,
   accountError,
   accountSession,
+  conflictItems,
+  conflictResolving,
   dictionary,
   open,
   settings,
@@ -51,6 +60,7 @@ export function SettingsDrawer({
   syncError,
   syncing,
   onCreateGuestAccount,
+  onKeepLocalConflicts,
   onOpenChange,
   onSyncNow,
   onUpdateSettings,
@@ -134,6 +144,41 @@ export function SettingsDrawer({
                       value={syncSummary.conflict}
                     />
                   </div>
+                  {syncSummary.conflict > 0 ? (
+                    <div className="mt-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-3">
+                      <div className="text-sm font-medium text-rose-700">
+                        {dictionary.labels.syncConflicts}
+                      </div>
+                      <p className="mt-1 text-xs text-rose-600">
+                        {dictionary.labels.syncConflictsHelp}
+                      </p>
+                      <div className="mt-3 space-y-2">
+                        {conflictItems.map((item) => (
+                          <div
+                            key={item.id}
+                            className="flex items-center justify-between gap-3 rounded-md bg-background px-2 py-2"
+                          >
+                            <div className="min-w-0">
+                              <div className="truncate text-xs font-medium">
+                                {getConflictTypeLabel(dictionary, item.type)}
+                              </div>
+                              <div className="truncate text-xs text-muted-foreground">
+                                {item.label}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <Button
+                        className="mt-3 w-full"
+                        size="sm"
+                        disabled={conflictResolving}
+                        onClick={onKeepLocalConflicts}
+                      >
+                        {dictionary.actions.keepLocalVersion}
+                      </Button>
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
             </div>
@@ -178,6 +223,25 @@ export function SettingsDrawer({
       </DrawerContent>
     </Drawer>
   )
+}
+
+function getConflictTypeLabel(
+  dictionary: Dictionary,
+  type: "exercise" | "exerciseEntry" | "userSettings" | "workoutDay"
+) {
+  if (type === "exercise") {
+    return dictionary.labels.syncExercise
+  }
+
+  if (type === "exerciseEntry") {
+    return dictionary.labels.syncTrainingEntry
+  }
+
+  if (type === "workoutDay") {
+    return dictionary.labels.syncTrainingDay
+  }
+
+  return dictionary.labels.syncSettings
 }
 
 type SyncBadgeProps = {

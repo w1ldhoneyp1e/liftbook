@@ -10,6 +10,7 @@ export type Dictionary = {
     calendar: string
     cancel: string
     createGuestAccount: string
+    keepLocalVersion: string
     chooseExercise: string
     createCustomExercise: string
     collapse: string
@@ -49,11 +50,16 @@ export type Dictionary = {
     searchExercise: string
     syncFailed: string
     syncConflicts: string
+    syncConflictsHelp: string
+    syncExercise: string
     syncPending: string
     syncReady: string
+    syncSettings: string
     syncSynced: string
     syncStatus: string
     syncSuccess: string
+    syncTrainingDay: string
+    syncTrainingEntry: string
     today: string
     weightUnit: string
   }
