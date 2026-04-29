@@ -72,6 +72,8 @@ Content-Type: application/json
 
 Web app может вручную отправить pending local records из Settings после появления guest account session.
 
+Текущий клиент также может запускать такой же push автоматически, когда возвращается сеть и guest session уже существует.
+
 ```http
 POST /v1/sync/push
 Content-Type: application/json

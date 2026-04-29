@@ -72,6 +72,8 @@ Response:
 
 The web app can send pending local records manually from Settings after a guest account session exists.
 
+The current client may also trigger the same push automatically when connectivity returns and a guest session is present.
+
 ```http
 POST /v1/sync/push
 Content-Type: application/json

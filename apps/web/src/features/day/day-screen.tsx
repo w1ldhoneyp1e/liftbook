@@ -1,7 +1,7 @@
 "use client"
 
 import { Plus } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import type { MuscleGroupId } from "@/shared/domain/types"
@@ -21,6 +21,10 @@ import {
 import { useDayScreenData } from "./use-day-screen-data"
 
 export function DayScreen() {
+  const autoSyncSignatureRef = useRef<string | null>(null)
+  const [isOnline, setIsOnline] = useState(() =>
+    typeof navigator === "undefined" ? true : navigator.onLine
+  )
   const today = toDateKey(new Date())
   const [selectedDate, setSelectedDate] = useState(today)
   const [calendarOpen, setCalendarOpen] = useState(false)
@@ -85,6 +89,20 @@ export function DayScreen() {
     return () => window.clearInterval(intervalId)
   }, [restTimerRunning])
 
+  useEffect(() => {
+    function handleOnlineStatusChange() {
+      setIsOnline(window.navigator.onLine)
+    }
+
+    window.addEventListener("online", handleOnlineStatusChange)
+    window.addEventListener("offline", handleOnlineStatusChange)
+
+    return () => {
+      window.removeEventListener("online", handleOnlineStatusChange)
+      window.removeEventListener("offline", handleOnlineStatusChange)
+    }
+  }, [])
+
   async function handleAddExercise(exerciseId: string) {
     await addExercise(exerciseId)
     setExercisePickerOpen(false)
@@ -120,17 +138,43 @@ export function DayScreen() {
     }
   }
 
-  async function handleSyncNow() {
+  const runSync = useCallback(async () => {
     setSyncing(true)
     setSyncError(false)
 
     try {
       await syncPendingChanges()
+      autoSyncSignatureRef.current = null
+      setSyncError(false)
     } catch {
       setSyncError(true)
     } finally {
       setSyncing(false)
     }
+  }, [syncPendingChanges])
+
+  useEffect(() => {
+    if (!accountSession || !isOnline || syncing || syncSummary.pending === 0) {
+      return
+    }
+
+    const signature = `${accountSession.userId}:${syncSummary.pending}:${isOnline}`
+
+    if (autoSyncSignatureRef.current === signature) {
+      return
+    }
+
+    autoSyncSignatureRef.current = signature
+
+    const timeoutId = window.setTimeout(() => {
+      void runSync()
+    }, 350)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [accountSession, isOnline, runSync, syncSummary.pending, syncing])
+
+  async function handleSyncNow() {
+    await runSync()
   }
 
   function handleSelectCalendarDate(date: Date | undefined) {

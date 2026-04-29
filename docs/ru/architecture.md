@@ -125,7 +125,7 @@ Workout experience должен быть client-side offline-first app shell. Н
 
 Текущий клиент помечает локальные изменения как `pending`. Будущий sync engine сможет искать pending records, отправлять их на backend, обновлять `serverId` и помечать records как `synced`.
 
-Первый sync UI ручной и находится в Settings. Он отправляет pending local records в API, помечает принятые records как `synced` и сохраняет cursor в локальной account session.
+Первый sync UI находится в Settings, а клиент также пытается синхронизироваться автоматически, когда устройство онлайн, guest session уже существует и есть pending local records. Он отправляет pending local records в API, помечает принятые records как `synced` и сохраняет cursor в локальной account session.
 
 Conflict handling намеренно не реализован в MVP UI. Модель данных резервирует `conflict`, чтобы позже показать записи, которые требуют пользовательского или серверного разрешения.
 
