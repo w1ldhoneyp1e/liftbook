@@ -154,11 +154,16 @@ export function DayScreen() {
   }, [syncPendingChanges])
 
   useEffect(() => {
-    if (!accountSession || !isOnline || syncing || syncSummary.pending === 0) {
+    if (!accountSession || !isOnline || syncing) {
       return
     }
 
-    const signature = `${accountSession.userId}:${syncSummary.pending}:${isOnline}`
+    const signature = [
+      accountSession.userId,
+      accountSession.syncCursor ?? "initial",
+      syncSummary.pending,
+      isOnline ? "online" : "offline",
+    ].join(":")
 
     if (autoSyncSignatureRef.current === signature) {
       return

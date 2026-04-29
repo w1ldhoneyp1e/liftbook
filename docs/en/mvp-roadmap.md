@@ -10,8 +10,8 @@ Core features:
 - Guest/local usage without signing in.
 - Account support or a clear account-ready path for backup/sync.
 - Optional guest account creation from settings when API is available.
-- Manual push sync for pending local records after guest account creation.
-- Automatic sync retry when connectivity returns.
+- Manual sync after guest account creation.
+- Automatic sync when connectivity is available, plus automatic `pull` for changes coming from other devices.
 - Date-based workout navigation with current date shown by default.
 - Add workout records without requiring a strict start/finish flow.
 - Add exercises to workout.

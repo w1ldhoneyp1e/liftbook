@@ -125,9 +125,9 @@ Local entities that can later sync to the backend should have stable client ids,
 
 The current client marks local changes as `pending`. A later sync engine can scan pending records, push them to the backend, update `serverId`, and mark records as `synced` after confirmation.
 
-The first sync UI lives in Settings, and the client also attempts automatic sync when the device is online, a guest session exists, and there are pending local records. It sends pending local records to the API, marks accepted records as `synced`, and stores the returned cursor on the local account session.
+The first sync UI lives in Settings, and the client also attempts automatic sync when the device is online and a guest session exists. If there are pending local records, it pushes them to the API first. Even without pending local records, the client may still perform `pull` to fetch changes from other devices, and it stores the returned cursor on the local account session.
 
-Conflict handling is intentionally not implemented in MVP UI yet. The data model reserves `conflict` as a sync status so the product can later surface records that need user or server-side resolution.
+Simple conflicts are currently resolved by the system using `updatedAt`. A user-facing manual conflict UI is not part of the main MVP flow.
 
 ## Product Data Risk
 

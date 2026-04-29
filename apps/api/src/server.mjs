@@ -86,7 +86,7 @@ const server = createServer(async (request, response) => {
       sendJson(response, 200, {
         changes,
         cursor,
-        nextCursor: changes.at(-1)?.serverTime ?? serverTime,
+        nextCursor: changes.at(-1)?.serverTime ?? cursor ?? serverTime,
         serverTime,
       })
       return

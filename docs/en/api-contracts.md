@@ -72,7 +72,7 @@ Response:
 
 The web app can send pending local records manually from Settings after a guest account session exists.
 
-The current client may also trigger the same push automatically when connectivity returns and a guest session is present.
+The current client may also trigger sync automatically when the device is online and a guest session is present. If there are no pending local records, the client may still perform `pull` to fetch changes from other devices.
 
 ```http
 POST /v1/sync/push
@@ -144,10 +144,12 @@ Response:
 {
   "changes": [],
   "cursor": "2026-04-27T12:00:01.000Z",
-  "nextCursor": "2026-04-27T12:05:00.000Z",
+  "nextCursor": "2026-04-27T12:00:01.000Z",
   "serverTime": "2026-04-27T12:05:00.000Z"
 }
 ```
+
+If there are no new changes, `nextCursor` should stay equal to the incoming `cursor`. This lets the client safely run automatic `pull` without creating needless loops.
 
 ## Notes
 
