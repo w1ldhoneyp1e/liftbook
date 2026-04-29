@@ -4,6 +4,7 @@ import { dirname, resolve } from "node:path"
 const defaultStoreState = {
   version: 1,
   users: [],
+  devices: [],
   sessions: [],
   syncEvents: [],
   syncRecords: [],
@@ -34,6 +35,7 @@ export async function createFileStoreFromPath(filePath) {
         storage: "file",
         filePath,
         users: state.users.length,
+        devices: state.devices.length,
         sessions: state.sessions.length,
         syncEvents: state.syncEvents.length,
         syncRecords: state.syncRecords.length,
@@ -60,6 +62,14 @@ export async function createFileStoreFromPath(filePath) {
       state = {
         ...state,
         users: [...state.users, user],
+        devices: clientId
+          ? upsertDevice(state.devices, {
+              userId,
+              clientId,
+              createdAt: now,
+              updatedAt: now,
+            })
+          : state.devices,
         sessions: [...state.sessions, session],
       }
 
@@ -100,6 +110,14 @@ export async function createFileStoreFromPath(filePath) {
 
       state = {
         ...state,
+        devices: clientId
+          ? upsertDevice(state.devices, {
+              userId,
+              clientId,
+              createdAt: serverTime,
+              updatedAt: serverTime,
+            })
+          : state.devices,
         syncEvents: [...state.syncEvents, ...accepted],
         syncRecords: Array.from(nextRecords.values()),
       }
@@ -124,6 +142,7 @@ async function loadState(filePath) {
       ...defaultStoreState,
       ...parsed,
       users: Array.isArray(parsed.users) ? parsed.users : [],
+      devices: Array.isArray(parsed.devices) ? parsed.devices : [],
       sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
       syncEvents: Array.isArray(parsed.syncEvents) ? parsed.syncEvents : [],
       syncRecords: Array.isArray(parsed.syncRecords) ? parsed.syncRecords : [],
@@ -140,4 +159,24 @@ async function loadState(filePath) {
 
     throw error
   }
+}
+
+function upsertDevice(devices, nextDevice) {
+  const existingDevice = devices.find(
+    (device) =>
+      device.userId === nextDevice.userId && device.clientId === nextDevice.clientId
+  )
+
+  if (!existingDevice) {
+    return [...devices, nextDevice]
+  }
+
+  return devices.map((device) =>
+    device.userId === nextDevice.userId && device.clientId === nextDevice.clientId
+      ? {
+          ...device,
+          updatedAt: nextDevice.updatedAt,
+        }
+      : device
+  )
 }

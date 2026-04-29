@@ -19,8 +19,9 @@ export async function createPostgresStore(options) {
 
   return {
     async getHealthSummary() {
-      const [users, sessions, syncEvents, syncRecords] = await Promise.all([
+      const [users, devices, sessions, syncEvents, syncRecords] = await Promise.all([
         countRows(pool, "users"),
+        countRows(pool, "devices"),
         countRows(pool, "sessions"),
         countRows(pool, "sync_events"),
         countRows(pool, "sync_records"),
@@ -29,6 +30,7 @@ export async function createPostgresStore(options) {
       return {
         storage: "postgres",
         users,
+        devices,
         sessions,
         syncEvents,
         syncRecords,
@@ -123,6 +125,16 @@ export async function createPostgresStore(options) {
       )
 
       await withTransaction(pool, async (client) => {
+        if (clientId) {
+          await client.query(
+            `insert into devices (user_id, client_id, created_at, updated_at)
+             values ($1, $2, $3, $4)
+             on conflict (user_id, client_id)
+             do update set updated_at = excluded.updated_at`,
+            [userId, clientId, serverTime, serverTime]
+          )
+        }
+
         for (const event of accepted) {
           await client.query(
             `insert into sync_events (
