@@ -59,6 +59,8 @@ Today:
 - Example env file: [.env.example](/home/kirill-yashmetov/projects/liftbook/.env.example)
 - Local migration runner: [apps/api/scripts/run-migrations.mjs](/home/kirill-yashmetov/projects/liftbook/apps/api/scripts/run-migrations.mjs)
 
+The migration runner now keeps a `schema_migrations` table and skips files that were already applied.
+
 Recommended local flow:
 
 ```bash
