@@ -25,18 +25,12 @@ import { seedLocalDatabase } from "@/shared/db/seed"
 
 type DayScreenData = {
   accountSession: AccountSession | null
-  conflictItems: Array<{
-    id: string
-    label: string
-    type: "exercise" | "exerciseEntry" | "userSettings" | "workoutDay"
-  }>
   settings: UserSettings | null
   workoutDay: WorkoutDay | null
   exerciseEntries: ExerciseEntry[]
   exercisesById: Record<string, Exercise>
   loading: boolean
   syncSummary: {
-    conflict: number
     pending: number
     synced: number
   }
@@ -45,14 +39,12 @@ type DayScreenData = {
 export function useDayScreenData(date: string) {
   const [state, setState] = useState<DayScreenData>({
     accountSession: null,
-    conflictItems: [],
     settings: null,
     workoutDay: null,
     exerciseEntries: [],
     exercisesById: {},
     loading: true,
     syncSummary: {
-      conflict: 0,
       pending: 0,
       synced: 0,
     },
@@ -60,6 +52,7 @@ export function useDayScreenData(date: string) {
 
   const load = useCallback(async () => {
     await seedLocalDatabase()
+    await normalizeLegacyConflicts()
 
     const [
       accountSession,
@@ -67,30 +60,17 @@ export function useDayScreenData(date: string) {
       workoutDay,
       exerciseEntries,
       exercises,
-      conflictWorkoutDays,
-      conflictExerciseEntries,
     ] = await Promise.all([
       db.accountSessions.get("local"),
       db.userSettings.get("local"),
       db.workoutDays.where("date").equals(date).first(),
       db.exerciseEntries.where("workoutDate").equals(date).sortBy("position"),
       db.exercises.toArray(),
-      db.workoutDays.where("syncStatus").equals("conflict").toArray(),
-      db.exerciseEntries.where("syncStatus").equals("conflict").toArray(),
     ])
     const syncSummary = await getSyncSummary()
-    const locale = settings?.locale ?? "en"
-    const conflictItems = getConflictItems({
-      conflictExerciseEntries,
-      conflictWorkoutDays,
-      exercises,
-      locale,
-      userSettings: settings ?? null,
-    })
 
     setState({
       accountSession: accountSession ?? null,
-      conflictItems,
       settings: settings ?? null,
       workoutDay: workoutDay && !workoutDay.deletedAt ? workoutDay : null,
       exerciseEntries: exerciseEntries
@@ -530,37 +510,6 @@ export function useDayScreenData(date: string) {
     await load()
   }, [load])
 
-  const keepLocalConflicts = useCallback(async () => {
-    const [customExercises, workoutDays, exerciseEntries, userSettings] =
-      await Promise.all([
-        db.exercises
-          .filter(
-            (exercise) => !exercise.builtIn && exercise.syncStatus === "conflict"
-          )
-          .toArray(),
-        db.workoutDays.where("syncStatus").equals("conflict").toArray(),
-        db.exerciseEntries.where("syncStatus").equals("conflict").toArray(),
-        db.userSettings.where("syncStatus").equals("conflict").toArray(),
-      ])
-
-    await Promise.all([
-      ...customExercises.map((exercise) =>
-        db.exercises.update(exercise.id, { syncStatus: "pending" })
-      ),
-      ...workoutDays.map((workoutDay) =>
-        db.workoutDays.update(workoutDay.id, { syncStatus: "pending" })
-      ),
-      ...exerciseEntries.map((exerciseEntry) =>
-        db.exerciseEntries.update(exerciseEntry.id, { syncStatus: "pending" })
-      ),
-      ...userSettings.map((settings) =>
-        db.userSettings.update(settings.id, { syncStatus: "pending" })
-      ),
-    ])
-
-    await load()
-  }, [load])
-
   return {
     ...state,
     addExercise,
@@ -572,7 +521,6 @@ export function useDayScreenData(date: string) {
     deleteSet,
     updateNumber,
     incrementNumber,
-    keepLocalConflicts,
     renameCustomExercise,
     syncPendingChanges,
     updateSettings,
@@ -605,8 +553,6 @@ async function getSyncSummary() {
 
       if (status === "pending") {
         summary.pending += 1
-      } else if (status === "conflict") {
-        summary.conflict += 1
       } else if (status === "synced") {
         summary.synced += 1
       }
@@ -614,67 +560,10 @@ async function getSyncSummary() {
       return summary
     },
     {
-      conflict: 0,
       pending: 0,
       synced: 0,
     }
   )
-}
-
-function getConflictItems({
-  conflictExerciseEntries,
-  conflictWorkoutDays,
-  exercises,
-  locale,
-  userSettings,
-}: {
-  conflictExerciseEntries: ExerciseEntry[]
-  conflictWorkoutDays: WorkoutDay[]
-  exercises: Exercise[]
-  locale: Locale
-  userSettings: UserSettings | null
-}) {
-  const exercisesById = Object.fromEntries(
-    exercises.map((exercise) => [exercise.id, exercise])
-  )
-  const customExerciseConflicts = exercises
-    .filter((exercise) => !exercise.builtIn && exercise.syncStatus === "conflict")
-    .map((exercise) => ({
-      id: exercise.id,
-      label: exercise.name[locale],
-      type: "exercise" as const,
-    }))
-  const workoutDayConflicts = conflictWorkoutDays
-    .map((workoutDay) => ({
-      id: workoutDay.id,
-      label: workoutDay.date,
-      type: "workoutDay" as const,
-    }))
-  const exerciseEntryConflicts = conflictExerciseEntries
-    .map((exerciseEntry) => ({
-      id: exerciseEntry.id,
-      label:
-        exercisesById[exerciseEntry.exerciseId]?.name[locale] ??
-        exerciseEntry.exerciseId,
-      type: "exerciseEntry" as const,
-    }))
-  const settingsConflict =
-    userSettings?.syncStatus === "conflict"
-      ? [
-          {
-            id: userSettings.id,
-            label: "local",
-            type: "userSettings" as const,
-          },
-        ]
-      : []
-
-  return [
-    ...customExerciseConflicts,
-    ...workoutDayConflicts,
-    ...exerciseEntryConflicts,
-    ...settingsConflict,
-  ]
 }
 
 async function collectPendingSyncChanges() {
@@ -798,8 +687,8 @@ async function applyPulledChange(change: SyncChange & { serverTime: string }) {
 async function applyPulledExercise(change: SyncChange & { serverTime: string }) {
   const existingExercise = await db.exercises.get(change.localId)
 
-  if (existingExercise?.syncStatus === "pending") {
-    await db.exercises.put({ ...existingExercise, syncStatus: "conflict" })
+  if (existingExercise && shouldKeepLocalVersion(existingExercise, change)) {
+    await db.exercises.put({ ...existingExercise, syncStatus: "pending" })
     return
   }
 
@@ -828,8 +717,11 @@ async function applyPulledWorkoutDay(
 ) {
   const existingWorkoutDay = await db.workoutDays.get(change.localId)
 
-  if (existingWorkoutDay?.syncStatus === "pending") {
-    await db.workoutDays.put({ ...existingWorkoutDay, syncStatus: "conflict" })
+  if (
+    existingWorkoutDay &&
+    shouldKeepLocalVersion(existingWorkoutDay, change)
+  ) {
+    await db.workoutDays.put({ ...existingWorkoutDay, syncStatus: "pending" })
     return
   }
 
@@ -858,10 +750,13 @@ async function applyPulledExerciseEntry(
 ) {
   const existingExerciseEntry = await db.exerciseEntries.get(change.localId)
 
-  if (existingExerciseEntry?.syncStatus === "pending") {
+  if (
+    existingExerciseEntry &&
+    shouldKeepLocalVersion(existingExerciseEntry, change)
+  ) {
     await db.exerciseEntries.put({
       ...existingExerciseEntry,
-      syncStatus: "conflict",
+      syncStatus: "pending",
     })
     return
   }
@@ -891,10 +786,10 @@ async function applyPulledUserSettings(
 ) {
   const existingSettings = await db.userSettings.get("local")
 
-  if (existingSettings?.syncStatus === "pending") {
+  if (existingSettings && shouldKeepLocalVersion(existingSettings, change)) {
     await db.userSettings.put({
       ...existingSettings,
-      syncStatus: "conflict",
+      syncStatus: "pending",
     })
     return
   }
@@ -910,6 +805,66 @@ async function applyPulledUserSettings(
       syncStatus: "synced",
     } as UserSettings)
   }
+}
+
+async function normalizeLegacyConflicts() {
+  const [customExercises, workoutDays, exerciseEntries, userSettings] =
+    await Promise.all([
+      db.exercises
+        .filter(
+          (exercise) => !exercise.builtIn && exercise.syncStatus === "conflict"
+        )
+        .toArray(),
+      db.workoutDays.where("syncStatus").equals("conflict").toArray(),
+      db.exerciseEntries.where("syncStatus").equals("conflict").toArray(),
+      db.userSettings.where("syncStatus").equals("conflict").toArray(),
+    ])
+
+  if (
+    customExercises.length === 0 &&
+    workoutDays.length === 0 &&
+    exerciseEntries.length === 0 &&
+    userSettings.length === 0
+  ) {
+    return
+  }
+
+  await Promise.all([
+    ...customExercises.map((exercise) =>
+      db.exercises.update(exercise.id, { syncStatus: "pending" })
+    ),
+    ...workoutDays.map((workoutDay) =>
+      db.workoutDays.update(workoutDay.id, { syncStatus: "pending" })
+    ),
+    ...exerciseEntries.map((exerciseEntry) =>
+      db.exerciseEntries.update(exerciseEntry.id, { syncStatus: "pending" })
+    ),
+    ...userSettings.map((settings) =>
+      db.userSettings.update(settings.id, { syncStatus: "pending" })
+    ),
+  ])
+}
+
+function shouldKeepLocalVersion(
+  localEntity: { syncStatus?: string; updatedAt?: string },
+  remoteChange: SyncChange & { serverTime: string }
+) {
+  if (localEntity.syncStatus !== "pending" && localEntity.syncStatus !== "conflict") {
+    return false
+  }
+
+  const localUpdatedAt = Date.parse(localEntity.updatedAt ?? "")
+  const remoteUpdatedAt = Date.parse(remoteChange.updatedAt || remoteChange.serverTime)
+
+  if (!Number.isFinite(localUpdatedAt)) {
+    return false
+  }
+
+  if (!Number.isFinite(remoteUpdatedAt)) {
+    return true
+  }
+
+  return localUpdatedAt >= remoteUpdatedAt
 }
 
 function isRecord(payload: unknown): payload is Record<string, unknown> {

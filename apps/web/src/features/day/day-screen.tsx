@@ -32,7 +32,6 @@ export function DayScreen() {
   const [restTimerRunning, setRestTimerRunning] = useState(false)
   const [accountError, setAccountError] = useState(false)
   const [accountConnecting, setAccountConnecting] = useState(false)
-  const [conflictResolving, setConflictResolving] = useState(false)
   const [syncError, setSyncError] = useState(false)
   const [syncing, setSyncing] = useState(false)
   const {
@@ -40,7 +39,6 @@ export function DayScreen() {
     addExercise,
     addCustomExercise,
     addSet,
-    conflictItems,
     createGuestAccount,
     deleteCustomExercise,
     deleteExercise,
@@ -49,7 +47,6 @@ export function DayScreen() {
     exerciseEntries,
     exercisesById,
     incrementNumber,
-    keepLocalConflicts,
     locale,
     loading,
     renameCustomExercise,
@@ -133,17 +130,6 @@ export function DayScreen() {
       setSyncError(true)
     } finally {
       setSyncing(false)
-    }
-  }
-
-  async function handleKeepLocalConflicts() {
-    setConflictResolving(true)
-
-    try {
-      await keepLocalConflicts()
-      setSyncError(false)
-    } finally {
-      setConflictResolving(false)
     }
   }
 
@@ -285,8 +271,6 @@ export function DayScreen() {
           accountConnecting={accountConnecting}
           accountError={accountError}
           accountSession={accountSession}
-          conflictItems={conflictItems}
-          conflictResolving={conflictResolving}
           dictionary={dictionary}
           open={settingsOpen}
           settings={settings}
@@ -294,7 +278,6 @@ export function DayScreen() {
           syncError={syncError}
           syncing={syncing}
           onCreateGuestAccount={handleCreateGuestAccount}
-          onKeepLocalConflicts={handleKeepLocalConflicts}
           onOpenChange={setSettingsOpen}
           onSyncNow={handleSyncNow}
           onUpdateSettings={updateSettings}

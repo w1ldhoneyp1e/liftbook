@@ -22,24 +22,16 @@ type SettingsDrawerProps = {
   accountConnecting: boolean
   accountError: boolean
   accountSession: AccountSession | null
-  conflictItems: Array<{
-    id: string
-    label: string
-    type: "exercise" | "exerciseEntry" | "userSettings" | "workoutDay"
-  }>
-  conflictResolving: boolean
   dictionary: Dictionary
   open: boolean
   settings: UserSettings
   syncSummary: {
-    conflict: number
     pending: number
     synced: number
   }
   syncError: boolean
   syncing: boolean
   onCreateGuestAccount: () => void
-  onKeepLocalConflicts: () => void
   onOpenChange: (open: boolean) => void
   onSyncNow: () => void
   onUpdateSettings: (
@@ -51,8 +43,6 @@ export function SettingsDrawer({
   accountConnecting,
   accountError,
   accountSession,
-  conflictItems,
-  conflictResolving,
   dictionary,
   open,
   settings,
@@ -60,7 +50,6 @@ export function SettingsDrawer({
   syncError,
   syncing,
   onCreateGuestAccount,
-  onKeepLocalConflicts,
   onOpenChange,
   onSyncNow,
   onUpdateSettings,
@@ -112,10 +101,8 @@ export function SettingsDrawer({
                       <div className="text-xs text-muted-foreground">
                         {syncError
                           ? dictionary.labels.syncFailed
-                          : syncSummary.conflict > 0
-                            ? `${dictionary.labels.syncConflicts}: ${syncSummary.conflict}`
-                            : syncSummary.pending > 0
-                              ? `${dictionary.labels.syncReady}: ${syncSummary.pending}`
+                          : syncSummary.pending > 0
+                            ? `${dictionary.labels.syncReady}: ${syncSummary.pending}`
                             : dictionary.labels.syncSuccess}
                       </div>
                     </div>
@@ -139,46 +126,11 @@ export function SettingsDrawer({
                       value={syncSummary.synced}
                     />
                     <SyncBadge
-                      label={dictionary.labels.syncConflicts}
-                      tone="danger"
-                      value={syncSummary.conflict}
+                      label={dictionary.labels.syncStatus}
+                      tone="neutral"
+                      value={syncSummary.pending + syncSummary.synced}
                     />
                   </div>
-                  {syncSummary.conflict > 0 ? (
-                    <div className="mt-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-3">
-                      <div className="text-sm font-medium text-rose-700">
-                        {dictionary.labels.syncConflicts}
-                      </div>
-                      <p className="mt-1 text-xs text-rose-600">
-                        {dictionary.labels.syncConflictsHelp}
-                      </p>
-                      <div className="mt-3 space-y-2">
-                        {conflictItems.map((item) => (
-                          <div
-                            key={item.id}
-                            className="flex items-center justify-between gap-3 rounded-md bg-background px-2 py-2"
-                          >
-                            <div className="min-w-0">
-                              <div className="truncate text-xs font-medium">
-                                {getConflictTypeLabel(dictionary, item.type)}
-                              </div>
-                              <div className="truncate text-xs text-muted-foreground">
-                                {item.label}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <Button
-                        className="mt-3 w-full"
-                        size="sm"
-                        disabled={conflictResolving}
-                        onClick={onKeepLocalConflicts}
-                      >
-                        {dictionary.actions.keepLocalVersion}
-                      </Button>
-                    </div>
-                  ) : null}
                 </div>
               ) : null}
             </div>
@@ -225,28 +177,9 @@ export function SettingsDrawer({
   )
 }
 
-function getConflictTypeLabel(
-  dictionary: Dictionary,
-  type: "exercise" | "exerciseEntry" | "userSettings" | "workoutDay"
-) {
-  if (type === "exercise") {
-    return dictionary.labels.syncExercise
-  }
-
-  if (type === "exerciseEntry") {
-    return dictionary.labels.syncTrainingEntry
-  }
-
-  if (type === "workoutDay") {
-    return dictionary.labels.syncTrainingDay
-  }
-
-  return dictionary.labels.syncSettings
-}
-
 type SyncBadgeProps = {
   label: string
-  tone: "danger" | "success" | "warning"
+  tone: "neutral" | "success" | "warning"
   value: number
 }
 
@@ -256,7 +189,7 @@ function SyncBadge({ label, tone, value }: SyncBadgeProps) {
       ? "bg-emerald-50 text-emerald-700"
       : tone === "warning"
         ? "bg-amber-50 text-amber-700"
-        : "bg-rose-50 text-rose-700"
+        : "bg-zinc-100 text-zinc-700"
 
   return (
     <div className={`rounded-md px-2 py-2 text-center ${toneClassName}`}>
