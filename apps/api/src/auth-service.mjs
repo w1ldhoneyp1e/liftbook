@@ -30,7 +30,7 @@ export function createAuthService(store) {
         },
       }
     },
-    requireSession(request) {
+    async requireSession(request) {
       const authorization = request.headers.authorization
 
       if (!authorization?.startsWith("Bearer ")) {
@@ -38,7 +38,7 @@ export function createAuthService(store) {
       }
 
       const accessToken = authorization.slice("Bearer ".length)
-      const session = store.getSessionByAccessToken(accessToken)
+      const session = await store.getSessionByAccessToken(accessToken)
 
       if (!session) {
         return null

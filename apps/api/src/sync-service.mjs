@@ -42,9 +42,10 @@ export function createSyncService(store) {
 
       return null
     },
-    async pushChanges(body) {
+    async pushChanges(body, session) {
       const serverTime = new Date().toISOString()
       const acceptedEvents = await store.acceptSyncChanges({
+        userId: session.userId,
         clientId: body.clientId,
         changes: body.changes,
         serverTime,
@@ -64,9 +65,10 @@ export function createSyncService(store) {
         serverTime,
       }
     },
-    pullChanges({ cursor, clientId }) {
+    async pullChanges({ cursor, clientId, userId }) {
       const serverTime = new Date().toISOString()
-      const changes = store.listSyncEvents({
+      const changes = await store.listSyncEvents({
+        userId,
         cursor,
         clientId,
       })
@@ -81,12 +83,13 @@ export function createSyncService(store) {
   }
 }
 
-function acceptSyncChange(clientId, change, serverTime) {
+function acceptSyncChange({ userId, clientId, change, serverTime }) {
   const serverVersion = createServerVersion(change, serverTime)
 
   return {
     id: `sync_${randomUUID()}`,
     recordKey: `${change.entityType}:${change.localId}`,
+    userId,
     clientId,
     entityType: change.entityType,
     localId: change.localId,

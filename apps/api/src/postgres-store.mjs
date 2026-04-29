@@ -1,3 +1,7 @@
+import pg from "pg"
+
+const { Pool } = pg
+
 export async function createPostgresStore(options) {
   const databaseUrl = options?.databaseUrl ?? null
 
@@ -7,7 +11,235 @@ export async function createPostgresStore(options) {
     )
   }
 
-  throw new Error(
-    "Postgres storage driver is not implemented yet. Use LIFTBOOK_STORAGE_DRIVER=file for now."
-  )
+  const pool = new Pool({
+    connectionString: databaseUrl,
+  })
+
+  await pool.query("select 1")
+
+  return {
+    async getHealthSummary() {
+      const [users, sessions, syncEvents] = await Promise.all([
+        countRows(pool, "users"),
+        countRows(pool, "sessions"),
+        countRows(pool, "sync_events"),
+      ])
+
+      return {
+        storage: "postgres",
+        users,
+        sessions,
+        syncEvents,
+      }
+    },
+    async createGuestSession({
+      clientId,
+      locale,
+      now,
+      userId,
+      accessToken,
+      expiresAt,
+    }) {
+      const session = {
+        id: `session_${userId}`,
+        userId,
+        accessToken,
+        tokenType: "Bearer",
+        expiresAt,
+        createdAt: now,
+        updatedAt: now,
+      }
+      const user = {
+        id: userId,
+        kind: "guest",
+        clientId,
+        locale,
+        createdAt: now,
+      }
+
+      await withTransaction(pool, async (client) => {
+        await client.query(
+          `insert into users (id, kind, locale, created_at)
+           values ($1, $2, $3, $4)`,
+          [user.id, user.kind, user.locale, user.createdAt]
+        )
+
+        if (clientId) {
+          await client.query(
+            `insert into devices (user_id, client_id, created_at, updated_at)
+             values ($1, $2, $3, $4)
+             on conflict (user_id, client_id)
+             do update set updated_at = excluded.updated_at`,
+            [user.id, clientId, now, now]
+          )
+        }
+
+        await client.query(
+          `insert into sessions (id, user_id, access_token, token_type, expires_at, created_at, updated_at)
+           values ($1, $2, $3, $4, $5, $6, $7)`,
+          [
+            session.id,
+            session.userId,
+            session.accessToken,
+            session.tokenType,
+            session.expiresAt,
+            session.createdAt,
+            session.updatedAt,
+          ]
+        )
+      })
+
+      return {
+        user,
+        session,
+      }
+    },
+    async getSessionByAccessToken(accessToken) {
+      const result = await pool.query(
+        `select id, user_id, access_token, token_type, expires_at, created_at, updated_at
+         from sessions
+         where access_token = $1
+         limit 1`,
+        [accessToken]
+      )
+
+      if (result.rows.length === 0) {
+        return null
+      }
+
+      return mapSessionRow(result.rows[0])
+    },
+    async acceptSyncChanges({
+      userId,
+      clientId,
+      changes,
+      serverTime,
+      buildAcceptedChange,
+    }) {
+      const accepted = changes.map((change) =>
+        buildAcceptedChange({ userId, clientId, change, serverTime })
+      )
+
+      await withTransaction(pool, async (client) => {
+        for (const event of accepted) {
+          await client.query(
+            `insert into sync_events (
+               id,
+               record_key,
+               user_id,
+               client_id,
+               entity_type,
+               local_id,
+               operation,
+               payload,
+               server_time,
+               server_version,
+               updated_at
+             ) values (
+               $1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9, $10, $11
+             )`,
+            [
+              event.id,
+              event.recordKey,
+              event.userId,
+              event.clientId,
+              event.entityType,
+              event.localId,
+              event.operation,
+              JSON.stringify(event.payload),
+              event.serverTime,
+              event.serverVersion,
+              event.updatedAt,
+            ]
+          )
+        }
+      })
+
+      return accepted
+    },
+    async listSyncEvents({ userId, cursor, clientId }) {
+      const conditions = ["user_id = $1"]
+      const values = [userId]
+
+      if (cursor) {
+        values.push(cursor)
+        conditions.push(`server_time > $${values.length}`)
+      }
+
+      if (clientId) {
+        values.push(clientId)
+        conditions.push(`client_id <> $${values.length}`)
+      }
+
+      const result = await pool.query(
+        `select
+           id,
+           record_key,
+           user_id,
+           client_id,
+           entity_type,
+           local_id,
+           operation,
+           payload,
+           server_time,
+           server_version,
+           updated_at
+         from sync_events
+         where ${conditions.join(" and ")}
+         order by server_time asc`,
+        values
+      )
+
+      return result.rows.map(mapSyncEventRow)
+    },
+  }
+}
+
+async function countRows(pool, tableName) {
+  const result = await pool.query(`select count(*)::int as count from ${tableName}`)
+  return result.rows[0]?.count ?? 0
+}
+
+async function withTransaction(pool, callback) {
+  const client = await pool.connect()
+
+  try {
+    await client.query("begin")
+    const result = await callback(client)
+    await client.query("commit")
+    return result
+  } catch (error) {
+    await client.query("rollback")
+    throw error
+  } finally {
+    client.release()
+  }
+}
+
+function mapSessionRow(row) {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    accessToken: row.access_token,
+    tokenType: row.token_type,
+    expiresAt: row.expires_at.toISOString(),
+    createdAt: row.created_at.toISOString(),
+    updatedAt: row.updated_at.toISOString(),
+  }
+}
+
+function mapSyncEventRow(row) {
+  return {
+    id: row.id,
+    recordKey: row.record_key,
+    userId: row.user_id,
+    clientId: row.client_id,
+    entityType: row.entity_type,
+    localId: row.local_id,
+    operation: row.operation,
+    payload: row.payload,
+    serverTime: row.server_time.toISOString(),
+    serverVersion: row.server_version,
+    updatedAt: row.updated_at.toISOString(),
+  }
 }

@@ -31,7 +31,7 @@ const server = createServer(async (request, response) => {
         config: {
           storageDriver: config.storage.driver,
         },
-        store: storage.getHealthSummary(),
+        store: await storage.getHealthSummary(),
       })
       return
     }
@@ -43,7 +43,9 @@ const server = createServer(async (request, response) => {
     }
 
     if (request.method === "POST" && url.pathname === "/v1/sync/push") {
-      if (!authService.requireSession(request)) {
+      const session = await authService.requireSession(request)
+
+      if (!session) {
         sendJson(response, 401, { error: "Unauthorized" })
         return
       }
@@ -56,19 +58,29 @@ const server = createServer(async (request, response) => {
         return
       }
 
-      sendJson(response, 202, await syncService.pushChanges(body))
+      sendJson(response, 202, await syncService.pushChanges(body, session))
       return
     }
 
     if (request.method === "GET" && url.pathname === "/v1/sync/pull") {
-      if (!authService.requireSession(request)) {
+      const session = await authService.requireSession(request)
+
+      if (!session) {
         sendJson(response, 401, { error: "Unauthorized" })
         return
       }
 
       const cursor = url.searchParams.get("cursor")
       const clientId = url.searchParams.get("clientId")
-      sendJson(response, 200, syncService.pullChanges({ cursor, clientId }))
+      sendJson(
+        response,
+        200,
+        await syncService.pullChanges({
+          cursor,
+          clientId,
+          userId: session.userId,
+        })
+      )
       return
     }
 

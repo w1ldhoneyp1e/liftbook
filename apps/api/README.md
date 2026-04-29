@@ -2,7 +2,10 @@
 
 Minimal backend skeleton for account and sync contracts.
 
-It intentionally has no external runtime dependencies yet. The current version persists guest sessions and sync events to a local JSON file so the API can survive restarts before we move to PostgreSQL.
+It now supports two backend storage paths:
+
+- file-based local persistence for fast iteration;
+- PostgreSQL-backed persistence for the real backend path.
 
 The storage layer already goes through a driver boundary, so a future PostgreSQL adapter can replace the file store without rewriting auth/sync routes.
 
@@ -32,7 +35,7 @@ pnpm db:migrate
 
 - `push` and `pull` require `Authorization: Bearer <accessToken>`.
 - The storage path can be overridden with `LIFTBOOK_DATA_FILE`.
-- The storage driver is selected with `LIFTBOOK_STORAGE_DRIVER` and currently supports `file` and the `postgres` placeholder.
+- The storage driver is selected with `LIFTBOOK_STORAGE_DRIVER` and supports `file` and `postgres`.
 
 ## Configuration
 
@@ -45,8 +48,8 @@ Supported environment variables:
 
 Today:
 
-- `LIFTBOOK_STORAGE_DRIVER=file` is the working default.
-- `LIFTBOOK_STORAGE_DRIVER=postgres` is a prepared boundary and currently returns a clear not-implemented error.
+- `LIFTBOOK_STORAGE_DRIVER=file` is the working default for local-only API storage.
+- `LIFTBOOK_STORAGE_DRIVER=postgres` works when PostgreSQL is available and migrations have been applied.
 
 ## PostgreSQL Preparation
 
@@ -54,3 +57,11 @@ Today:
 - Initial SQL sketch: [apps/api/db/migrations/0001_initial.sql](/home/kirill-yashmetov/projects/liftbook/apps/api/db/migrations/0001_initial.sql)
 - Example env file: [.env.example](/home/kirill-yashmetov/projects/liftbook/.env.example)
 - Local migration runner: [apps/api/scripts/run-migrations.mjs](/home/kirill-yashmetov/projects/liftbook/apps/api/scripts/run-migrations.mjs)
+
+Recommended local flow:
+
+```bash
+pnpm db:up
+pnpm db:migrate
+LIFTBOOK_STORAGE_DRIVER=postgres pnpm dev:api
+```

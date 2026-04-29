@@ -29,7 +29,7 @@ export async function createFileStoreFromPath(filePath) {
   }
 
   return {
-    getHealthSummary() {
+    async getHealthSummary() {
       return {
         storage: "file",
         filePath,
@@ -67,15 +67,21 @@ export async function createFileStoreFromPath(filePath) {
         session,
       }))
     },
-    getSessionByAccessToken(accessToken) {
+    async getSessionByAccessToken(accessToken) {
       return (
         state.sessions.find((session) => session.accessToken === accessToken) ??
         null
       )
     },
-    acceptSyncChanges({ clientId, changes, serverTime, buildAcceptedChange }) {
+    acceptSyncChanges({
+      userId,
+      clientId,
+      changes,
+      serverTime,
+      buildAcceptedChange,
+    }) {
       const accepted = changes.map((change) =>
-        buildAcceptedChange(clientId, change, serverTime)
+        buildAcceptedChange({ userId, clientId, change, serverTime })
       )
 
       const nextRecords = new Map(
@@ -99,8 +105,9 @@ export async function createFileStoreFromPath(filePath) {
 
       return queuePersist().then(() => accepted)
     },
-    listSyncEvents({ cursor, clientId }) {
+    async listSyncEvents({ userId, cursor, clientId }) {
       return state.syncEvents
+        .filter((event) => event.userId === userId)
         .filter((event) => !cursor || event.serverTime > cursor)
         .filter((event) => !clientId || event.clientId !== clientId)
     },

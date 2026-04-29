@@ -14,6 +14,8 @@
 
 Поверх этого теперь есть и локальный migration flow: SQL-файлы из `apps/api/db/migrations` можно применять через `pnpm db:migrate`, который прокидывает их в `psql` внутри compose-сервиса `postgres`.
 
+Следующий рубеж тоже уже взят: `postgres` driver в API теперь не placeholder, а реальная storage-ветка. При наличии `DATABASE_URL` и примененных миграций backend может сохранять `users`, `sessions` и `sync_events` в PostgreSQL.
+
 ## Текущая рекомендация
 
 Использовать TypeScript modular monolith с PostgreSQL как основной БД.
