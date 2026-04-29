@@ -16,6 +16,8 @@ On top of that, there is now a local migration flow: SQL files from `apps/api/db
 
 The next milestone is now in place too: the API `postgres` driver is no longer a placeholder. With `DATABASE_URL` and applied migrations, the backend can persist `users`, `sessions`, and `sync_events` in PostgreSQL.
 
+The backend now also keeps `sync_records` as the current server-side entity state. That matters for the next stage, where an append-only event log alone is no longer enough.
+
 ## Current Recommendation
 
 Use a TypeScript modular monolith with PostgreSQL as the primary database.

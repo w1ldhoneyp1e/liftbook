@@ -36,6 +36,7 @@ export async function createFileStoreFromPath(filePath) {
         users: state.users.length,
         sessions: state.sessions.length,
         syncEvents: state.syncEvents.length,
+        syncRecords: state.syncRecords.length,
       }
     },
     createGuestSession({ clientId, locale, now, userId, accessToken, expiresAt }) {

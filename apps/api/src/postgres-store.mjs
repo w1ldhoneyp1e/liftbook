@@ -19,10 +19,11 @@ export async function createPostgresStore(options) {
 
   return {
     async getHealthSummary() {
-      const [users, sessions, syncEvents] = await Promise.all([
+      const [users, sessions, syncEvents, syncRecords] = await Promise.all([
         countRows(pool, "users"),
         countRows(pool, "sessions"),
         countRows(pool, "sync_events"),
+        countRows(pool, "sync_records"),
       ])
 
       return {
@@ -30,6 +31,7 @@ export async function createPostgresStore(options) {
         users,
         sessions,
         syncEvents,
+        syncRecords,
       }
     },
     async createGuestSession({
@@ -140,6 +142,55 @@ export async function createPostgresStore(options) {
              )`,
             [
               event.id,
+              event.recordKey,
+              event.userId,
+              event.clientId,
+              event.entityType,
+              event.localId,
+              event.operation,
+              JSON.stringify(event.payload),
+              event.serverTime,
+              event.serverVersion,
+              event.updatedAt,
+            ]
+          )
+
+          if (event.operation === "delete") {
+            await client.query(
+              `delete from sync_records
+               where record_key = $1 and user_id = $2`,
+              [event.recordKey, event.userId]
+            )
+            continue
+          }
+
+          await client.query(
+            `insert into sync_records (
+               record_key,
+               user_id,
+               client_id,
+               entity_type,
+               local_id,
+               operation,
+               payload,
+               server_time,
+               server_version,
+               updated_at
+             ) values (
+               $1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10
+             )
+             on conflict (record_key)
+             do update set
+               user_id = excluded.user_id,
+               client_id = excluded.client_id,
+               entity_type = excluded.entity_type,
+               local_id = excluded.local_id,
+               operation = excluded.operation,
+               payload = excluded.payload,
+               server_time = excluded.server_time,
+               server_version = excluded.server_version,
+               updated_at = excluded.updated_at`,
+            [
               event.recordKey,
               event.userId,
               event.clientId,

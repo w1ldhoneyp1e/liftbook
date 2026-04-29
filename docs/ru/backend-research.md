@@ -16,6 +16,8 @@
 
 Следующий рубеж тоже уже взят: `postgres` driver в API теперь не placeholder, а реальная storage-ветка. При наличии `DATABASE_URL` и примененных миграций backend может сохранять `users`, `sessions` и `sync_events` в PostgreSQL.
 
+Дополнительно backend теперь хранит и `sync_records` как текущее server-side состояние сущностей. Это полезно для следующего этапа, где одного append-only event log уже мало.
+
 ## Текущая рекомендация
 
 Использовать TypeScript modular monolith с PostgreSQL как основной БД.

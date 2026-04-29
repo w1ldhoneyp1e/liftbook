@@ -55,6 +55,7 @@ Today:
 
 - Docker Compose service: [docker-compose.yml](/home/kirill-yashmetov/projects/liftbook/docker-compose.yml)
 - Initial SQL sketch: [apps/api/db/migrations/0001_initial.sql](/home/kirill-yashmetov/projects/liftbook/apps/api/db/migrations/0001_initial.sql)
+- Current-state records migration: [apps/api/db/migrations/0002_sync_records.sql](/home/kirill-yashmetov/projects/liftbook/apps/api/db/migrations/0002_sync_records.sql)
 - Example env file: [.env.example](/home/kirill-yashmetov/projects/liftbook/.env.example)
 - Local migration runner: [apps/api/scripts/run-migrations.mjs](/home/kirill-yashmetov/projects/liftbook/apps/api/scripts/run-migrations.mjs)
 
