@@ -113,6 +113,19 @@ export async function createPostgresStore(options) {
 
       return mapSessionRow(result.rows[0])
     },
+    async touchDevice({ userId, clientId, now }) {
+      if (!clientId) {
+        return
+      }
+
+      await pool.query(
+        `insert into devices (user_id, client_id, created_at, updated_at)
+         values ($1, $2, $3, $4)
+         on conflict (user_id, client_id)
+         do update set updated_at = excluded.updated_at`,
+        [userId, clientId, now, now]
+      )
+    },
     async acceptSyncChanges({
       userId,
       clientId,

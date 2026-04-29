@@ -72,6 +72,13 @@ const server = createServer(async (request, response) => {
 
       const cursor = url.searchParams.get("cursor")
       const clientId = url.searchParams.get("clientId")
+      const validationError = syncService.validatePullParams(clientId)
+
+      if (validationError) {
+        sendJson(response, 400, { error: validationError })
+        return
+      }
+
       sendJson(
         response,
         200,

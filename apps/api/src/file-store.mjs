@@ -84,6 +84,23 @@ export async function createFileStoreFromPath(filePath) {
         null
       )
     },
+    async touchDevice({ userId, clientId, now }) {
+      if (!clientId) {
+        return
+      }
+
+      state = {
+        ...state,
+        devices: upsertDevice(state.devices, {
+          userId,
+          clientId,
+          createdAt: now,
+          updatedAt: now,
+        }),
+      }
+
+      await queuePersist()
+    },
     acceptSyncChanges({
       userId,
       clientId,

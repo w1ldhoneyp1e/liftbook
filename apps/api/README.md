@@ -36,6 +36,7 @@ pnpm db:migrate
 ## Notes
 
 - `push` and `pull` require `Authorization: Bearer <accessToken>`.
+- `pull` also requires `clientId` in the query string.
 - The storage path can be overridden with `LIFTBOOK_DATA_FILE`.
 - The storage driver is selected with `LIFTBOOK_STORAGE_DRIVER` and supports `file` and `postgres`.
 

@@ -42,6 +42,13 @@ export function createSyncService(store) {
 
       return null
     },
+    validatePullParams(clientId) {
+      if (typeof clientId !== "string" || clientId.length === 0) {
+        return "clientId is required"
+      }
+
+      return null
+    },
     async pushChanges(body, session) {
       const serverTime = new Date().toISOString()
       const acceptedEvents = await store.acceptSyncChanges({
@@ -67,6 +74,11 @@ export function createSyncService(store) {
     },
     async pullChanges({ cursor, clientId, userId }) {
       const serverTime = new Date().toISOString()
+      await store.touchDevice({
+        userId,
+        clientId,
+        now: serverTime,
+      })
       const changes = await store.listSyncEvents({
         userId,
         cursor,
