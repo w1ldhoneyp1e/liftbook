@@ -12,6 +12,8 @@ There is now also a dedicated config layer and a placeholder `postgres` driver. 
 
 Local PostgreSQL preparation is now in the repo as well: `docker-compose.yml`, `.env.example`, and the first SQL sketch in `apps/api/db/migrations/0001_initial.sql`. This is not runtime DB integration yet, but it already makes the future schema and local developer flow concrete.
 
+On top of that, there is now a local migration flow: SQL files from `apps/api/db/migrations` can be applied with `pnpm db:migrate`, which pipes them into `psql` inside the compose `postgres` service.
+
 ## Current Recommendation
 
 Use a TypeScript modular monolith with PostgreSQL as the primary database.

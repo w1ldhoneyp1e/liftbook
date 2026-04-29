@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node src/server.mjs",
     "start": "node src/server.mjs",
-    "db:migrate": "node -e \"console.log('Apply SQL from apps/api/db/migrations/*.sql to DATABASE_URL')\"",
+    "db:migrate": "node scripts/run-migrations.mjs",
     "build": "node --check src/server.mjs",
     "lint": "node --check src/server.mjs"
   }

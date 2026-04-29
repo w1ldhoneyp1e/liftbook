@@ -12,6 +12,8 @@
 
 Локальная подготовка под PostgreSQL тоже уже добавлена: `docker-compose.yml`, `.env.example` и первый SQL-скелет `apps/api/db/migrations/0001_initial.sql`. Это еще не реальная БД-интеграция в runtime, но уже конкретизирует будущую схему и локальный developer flow.
 
+Поверх этого теперь есть и локальный migration flow: SQL-файлы из `apps/api/db/migrations` можно применять через `pnpm db:migrate`, который прокидывает их в `psql` внутри compose-сервиса `postgres`.
+
 ## Текущая рекомендация
 
 Использовать TypeScript modular monolith с PostgreSQL как основной БД.
