@@ -8,6 +8,7 @@
     "start": "node src/server.mjs",
     "db:migrate": "node scripts/run-migrations.mjs",
     "smoke:sync": "node scripts/smoke-sync-postgres.mjs",
+    "smoke:postgres:stack": "node scripts/run-postgres-smoke-stack.mjs",
     "build": "node --check src/server.mjs",
     "lint": "node --check src/server.mjs"
   },

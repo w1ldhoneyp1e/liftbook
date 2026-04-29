@@ -77,4 +77,5 @@ pnpm db:up
 pnpm db:migrate
 LIFTBOOK_STORAGE_DRIVER=postgres pnpm dev:api
 pnpm --filter api smoke:sync
+pnpm --filter api smoke:postgres:stack
 ```
