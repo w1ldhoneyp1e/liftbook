@@ -9,6 +9,8 @@ It now supports two backend storage paths:
 
 The backend now tracks not only users and sessions, but also known client devices involved in sync.
 
+Authorized API usage also updates `sessions.updated_at`, so session records behave like live server-side objects rather than write-once placeholders.
+
 The storage layer already goes through a driver boundary, so a future PostgreSQL adapter can replace the file store without rewriting auth/sync routes.
 
 ```bash

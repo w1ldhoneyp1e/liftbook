@@ -113,6 +113,14 @@ export async function createPostgresStore(options) {
 
       return mapSessionRow(result.rows[0])
     },
+    async touchSession({ accessToken, now }) {
+      await pool.query(
+        `update sessions
+         set updated_at = $2
+         where access_token = $1`,
+        [accessToken, now]
+      )
+    },
     async touchDevice({ userId, clientId, now }) {
       if (!clientId) {
         return

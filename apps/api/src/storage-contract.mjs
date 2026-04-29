@@ -2,6 +2,7 @@ const requiredStorageMethods = [
   "getHealthSummary",
   "createGuestSession",
   "getSessionByAccessToken",
+  "touchSession",
   "touchDevice",
   "acceptSyncChanges",
   "listSyncEvents",

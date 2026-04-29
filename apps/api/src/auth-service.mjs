@@ -48,6 +48,11 @@ export function createAuthService(store) {
         return null
       }
 
+      await store.touchSession({
+        accessToken,
+        now: new Date().toISOString(),
+      })
+
       return session
     },
   }

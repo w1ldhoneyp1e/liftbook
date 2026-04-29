@@ -84,6 +84,23 @@ export async function createFileStoreFromPath(filePath) {
         null
       )
     },
+    async touchSession({ accessToken, now }) {
+      const nextSessions = state.sessions.map((session) =>
+        session.accessToken === accessToken
+          ? {
+              ...session,
+              updatedAt: now,
+            }
+          : session
+      )
+
+      state = {
+        ...state,
+        sessions: nextSessions,
+      }
+
+      await queuePersist()
+    },
     async touchDevice({ userId, clientId, now }) {
       if (!clientId) {
         return
