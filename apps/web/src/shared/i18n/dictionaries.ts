@@ -52,7 +52,10 @@ export type Dictionary = {
     syncConflicts: string
     syncConflictsHelp: string
     syncExercise: string
+    syncInProgress: string
+    syncOffline: string
     syncPending: string
+    syncRecords: string
     syncReady: string
     syncSettings: string
     syncSynced: string

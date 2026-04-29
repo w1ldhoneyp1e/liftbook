@@ -29,6 +29,7 @@ type SettingsDrawerProps = {
     pending: number
     synced: number
   }
+  isOnline: boolean
   syncError: boolean
   syncing: boolean
   onCreateGuestAccount: () => void
@@ -47,6 +48,7 @@ export function SettingsDrawer({
   open,
   settings,
   syncSummary,
+  isOnline,
   syncError,
   syncing,
   onCreateGuestAccount,
@@ -54,6 +56,16 @@ export function SettingsDrawer({
   onSyncNow,
   onUpdateSettings,
 }: SettingsDrawerProps) {
+  const syncStatusText = syncError
+    ? dictionary.labels.syncFailed
+    : syncing
+      ? dictionary.labels.syncInProgress
+      : !isOnline
+        ? dictionary.labels.syncOffline
+        : syncSummary.pending > 0
+          ? `${dictionary.labels.syncReady}: ${syncSummary.pending}`
+          : dictionary.labels.syncSuccess
+
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="mx-auto max-h-[92svh] max-w-md rounded-t-xl bg-background">
@@ -99,16 +111,12 @@ export function SettingsDrawer({
                         {dictionary.labels.syncStatus}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {syncError
-                          ? dictionary.labels.syncFailed
-                          : syncSummary.pending > 0
-                            ? `${dictionary.labels.syncReady}: ${syncSummary.pending}`
-                            : dictionary.labels.syncSuccess}
+                        {syncStatusText}
                       </div>
                     </div>
                     <Button
                       size="sm"
-                      disabled={syncing || syncSummary.pending === 0}
+                      disabled={syncing || !isOnline}
                       onClick={onSyncNow}
                     >
                       {dictionary.actions.syncNow}
@@ -126,7 +134,7 @@ export function SettingsDrawer({
                       value={syncSummary.synced}
                     />
                     <SyncBadge
-                      label={dictionary.labels.syncStatus}
+                      label={dictionary.labels.syncRecords}
                       tone="neutral"
                       value={syncSummary.pending + syncSummary.synced}
                     />

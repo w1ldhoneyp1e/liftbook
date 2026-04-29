@@ -324,6 +324,7 @@ export function DayScreen() {
           open={settingsOpen}
           settings={settings}
           syncSummary={syncSummary}
+          isOnline={isOnline}
           syncError={syncError}
           syncing={syncing}
           onCreateGuestAccount={handleCreateGuestAccount}
