@@ -9,7 +9,7 @@ const defaultStoreState = {
   syncRecords: [],
 }
 
-export async function createStore() {
+export async function createFileStore() {
   const filePath = resolve(
     process.cwd(),
     process.env.LIFTBOOK_DATA_FILE ?? ".data/store.json"
@@ -27,7 +27,6 @@ export async function createStore() {
   }
 
   return {
-    filePath,
     getHealthSummary() {
       return {
         storage: "file",
@@ -120,7 +119,12 @@ async function loadState(filePath) {
       syncRecords: Array.isArray(parsed.syncRecords) ? parsed.syncRecords : [],
     }
   } catch (error) {
-    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "ENOENT"
+    ) {
       return defaultStoreState
     }
 

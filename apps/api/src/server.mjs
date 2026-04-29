@@ -2,13 +2,13 @@ import { createServer } from "node:http"
 
 import { createAuthService } from "./auth-service.mjs"
 import { getRequestOrigin, readJsonBody, sendJson, setCorsHeaders } from "./http.mjs"
-import { createStore } from "./store.mjs"
+import { createStorage } from "./storage.mjs"
 import { createSyncService } from "./sync-service.mjs"
 
 const defaultPort = 4000
-const store = await createStore()
-const authService = createAuthService(store)
-const syncService = createSyncService(store)
+const storage = await createStorage()
+const authService = createAuthService(storage)
+const syncService = createSyncService(storage)
 
 const server = createServer(async (request, response) => {
   try {
@@ -27,7 +27,7 @@ const server = createServer(async (request, response) => {
         ok: true,
         service: "liftbook-api",
         time: new Date().toISOString(),
-        store: store.getHealthSummary(),
+        store: storage.getHealthSummary(),
       })
       return
     }

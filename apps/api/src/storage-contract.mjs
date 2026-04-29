@@ -1,0 +1,17 @@
+const requiredStorageMethods = [
+  "getHealthSummary",
+  "createGuestSession",
+  "getSessionByAccessToken",
+  "acceptSyncChanges",
+  "listSyncEvents",
+]
+
+export function ensureStorageContract(storage) {
+  for (const methodName of requiredStorageMethods) {
+    if (typeof storage?.[methodName] !== "function") {
+      throw new Error(`Storage adapter must implement ${methodName}()`)
+    }
+  }
+
+  return storage
+}

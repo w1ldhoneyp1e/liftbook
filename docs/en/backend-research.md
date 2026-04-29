@@ -6,6 +6,8 @@ This document tracks the backend direction before we replace the current in-memo
 
 That transition has already started: the current API is no longer fully in-memory. Guest sessions and sync events are now persisted to a local JSON store. This is not production persistence yet, but it is a useful step between process memory and PostgreSQL.
 
+The next preparation layer is also in place: the file store now sits behind a storage driver boundary. That means the move to PostgreSQL can happen by adding a new adapter rather than rewriting the auth/sync service layer.
+
 ## Current Recommendation
 
 Use a TypeScript modular monolith with PostgreSQL as the primary database.

@@ -6,6 +6,8 @@
 
 Промежуточный этап уже начался: текущий API больше не полностью in-memory. Guest sessions и sync events сохраняются в локальный JSON store. Это не production persistence, но уже полезный шаг между "процесс-память" и PostgreSQL.
 
+Следующий подготовительный слой тоже уже заложен: file store подключен через storage driver boundary. Это значит, что переход на PostgreSQL может идти через новый adapter, без переписывания auth/sync service слоя.
+
 ## Текущая рекомендация
 
 Использовать TypeScript modular monolith с PostgreSQL как основной БД.
