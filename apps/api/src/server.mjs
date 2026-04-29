@@ -1,10 +1,11 @@
 import { createHash, randomUUID } from "node:crypto"
 import { createServer } from "node:http"
 
+import { createStore } from "./store.mjs"
+
 const defaultPort = 4000
 const maxBodySizeBytes = 1024 * 1024
-const syncEvents = []
-const syncRecords = new Map()
+const store = await createStore()
 
 const server = createServer(async (request, response) => {
   try {
@@ -23,6 +24,7 @@ const server = createServer(async (request, response) => {
         ok: true,
         service: "liftbook-api",
         time: new Date().toISOString(),
+        store: store.getHealthSummary(),
       })
       return
     }
@@ -31,19 +33,25 @@ const server = createServer(async (request, response) => {
       const body = await readJsonBody(request)
       const now = new Date().toISOString()
       const userId = `guest_${randomUUID()}`
+      const clientId = typeof body.clientId === "string" ? body.clientId : null
+      const locale = body.locale === "ru" ? "ru" : "en"
+      const accessToken = createDevelopmentToken(userId, now)
+      const expiresAt = addDays(new Date(), 30).toISOString()
+      const { user, session } = await store.createGuestSession({
+        clientId,
+        locale,
+        now,
+        userId,
+        accessToken,
+        expiresAt,
+      })
 
       sendJson(response, 201, {
-        user: {
-          id: userId,
-          kind: "guest",
-          clientId: typeof body.clientId === "string" ? body.clientId : null,
-          locale: body.locale === "ru" ? "ru" : "en",
-          createdAt: now,
-        },
+        user,
         session: {
-          accessToken: createDevelopmentToken(userId, now),
-          tokenType: "Bearer",
-          expiresAt: addDays(new Date(), 30).toISOString(),
+          accessToken: session.accessToken,
+          tokenType: session.tokenType,
+          expiresAt: session.expiresAt,
         },
         sync: {
           cursor: null,
@@ -53,6 +61,11 @@ const server = createServer(async (request, response) => {
     }
 
     if (request.method === "POST" && url.pathname === "/v1/sync/push") {
+      if (!requireSession(request)) {
+        sendJson(response, 401, { error: "Unauthorized" })
+        return
+      }
+
       const body = await readJsonBody(request)
       const validationError = validatePushBody(body)
 
@@ -62,12 +75,21 @@ const server = createServer(async (request, response) => {
       }
 
       const serverTime = new Date().toISOString()
-      const accepted = body.changes.map((change) =>
-        acceptSyncChange(body.clientId, change, serverTime)
-      )
+      const acceptedEvents = await store.acceptSyncChanges({
+        clientId: body.clientId,
+        changes: body.changes,
+        serverTime,
+        buildAcceptedChange: acceptSyncChange,
+      })
 
       sendJson(response, 202, {
-        accepted,
+        accepted: acceptedEvents.map((event) => ({
+          localId: event.localId,
+          entityType: event.entityType,
+          operation: event.operation,
+          serverVersion: event.serverVersion,
+          status: "accepted",
+        })),
         conflicts: [],
         nextCursor: serverTime,
         serverTime,
@@ -76,12 +98,18 @@ const server = createServer(async (request, response) => {
     }
 
     if (request.method === "GET" && url.pathname === "/v1/sync/pull") {
+      if (!requireSession(request)) {
+        sendJson(response, 401, { error: "Unauthorized" })
+        return
+      }
+
       const serverTime = new Date().toISOString()
       const cursor = url.searchParams.get("cursor")
       const clientId = url.searchParams.get("clientId")
-      const changes = syncEvents
-        .filter((event) => !cursor || event.serverTime > cursor)
-        .filter((event) => !clientId || event.clientId !== clientId)
+      const changes = store.listSyncEvents({
+        cursor,
+        clientId,
+      })
 
       sendJson(response, 200, {
         changes,
@@ -189,10 +217,32 @@ function validatePushBody(body) {
   return null
 }
 
+function requireSession(request) {
+  const authorization = request.headers.authorization
+
+  if (!authorization?.startsWith("Bearer ")) {
+    return null
+  }
+
+  const accessToken = authorization.slice("Bearer ".length)
+  const session = store.getSessionByAccessToken(accessToken)
+
+  if (!session) {
+    return null
+  }
+
+  if (new Date(session.expiresAt).getTime() <= Date.now()) {
+    return null
+  }
+
+  return session
+}
+
 function acceptSyncChange(clientId, change, serverTime) {
   const serverVersion = createServerVersion(change, serverTime)
-  const event = {
+  return {
     id: `sync_${randomUUID()}`,
+    recordKey: `${change.entityType}:${change.localId}`,
     clientId,
     entityType: change.entityType,
     localId: change.localId,
@@ -201,23 +251,6 @@ function acceptSyncChange(clientId, change, serverTime) {
     serverTime,
     serverVersion,
     updatedAt: change.updatedAt ?? serverTime,
-  }
-  const recordKey = `${change.entityType}:${change.localId}`
-
-  syncEvents.push(event)
-
-  if (change.operation === "delete") {
-    syncRecords.delete(recordKey)
-  } else {
-    syncRecords.set(recordKey, event)
-  }
-
-  return {
-    localId: change.localId,
-    entityType: change.entityType,
-    operation: change.operation,
-    serverVersion,
-    status: "accepted",
   }
 }
 

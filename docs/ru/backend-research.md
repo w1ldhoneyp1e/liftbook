@@ -4,6 +4,8 @@
 
 Документ отслеживает backend-направление до замены текущего in-memory API skeleton на persistent service.
 
+Промежуточный этап уже начался: текущий API больше не полностью in-memory. Guest sessions и sync events сохраняются в локальный JSON store. Это не production persistence, но уже полезный шаг между "процесс-память" и PostgreSQL.
+
 ## Текущая рекомендация
 
 Использовать TypeScript modular monolith с PostgreSQL как основной БД.
@@ -256,10 +258,10 @@ JWT_SECRET=...
 
 ## Предлагаемые backend milestones
 
-1. Заменить in-memory sync storage на PostgreSQL tables.
+1. Заменить file-based store на PostgreSQL tables.
 2. Добавить migrations и database connection config.
-3. Сохранять guest users и sessions.
-4. Сохранять sync events и current entity snapshots.
+3. Перенести guest users и sessions в БД.
+4. Перенести sync events и current entity snapshots в БД.
 5. Добавить pull sync, исключающий events запрашивающего client.
 6. Добавить conflict detection rules.
 7. Добавить production auth после стабилизации guest sync path.

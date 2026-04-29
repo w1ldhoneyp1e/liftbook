@@ -24,7 +24,14 @@ Response:
 {
   "ok": true,
   "service": "liftbook-api",
-  "time": "2026-04-27T12:00:00.000Z"
+  "time": "2026-04-27T12:00:00.000Z",
+  "store": {
+    "storage": "file",
+    "filePath": "/absolute/path/to/apps/api/.data/store.json",
+    "users": 1,
+    "sessions": 1,
+    "syncEvents": 3
+  }
 }
 ```
 
@@ -155,6 +162,7 @@ If there are no new changes, `nextCursor` should stay equal to the incoming `cur
 
 - Guest account creation is a placeholder for future real identity.
 - Access tokens are development-only placeholders.
-- Sync data is currently stored in memory only and resets when the API process restarts.
+- Guest sessions and sync data are currently stored in a local JSON file and survive API restarts.
 - Soft deletes from the client should be sent as `delete` operations.
 - The current web client marks accepted local records as `synced` and stores `nextCursor` on the local account session.
+- `push` and `pull` require a valid `Bearer` token from the guest session.

@@ -24,7 +24,14 @@ GET /health
 {
   "ok": true,
   "service": "liftbook-api",
-  "time": "2026-04-27T12:00:00.000Z"
+  "time": "2026-04-27T12:00:00.000Z",
+  "store": {
+    "storage": "file",
+    "filePath": "/absolute/path/to/apps/api/.data/store.json",
+    "users": 1,
+    "sessions": 1,
+    "syncEvents": 3
+  }
 }
 ```
 
@@ -155,6 +162,7 @@ Authorization: Bearer dev_token
 
 - Создание гостевого аккаунта — placeholder для будущей реальной identity.
 - Access tokens сейчас development-only placeholders.
-- Sync data хранится только в памяти процесса и сбрасывается при перезапуске API.
+- Guest sessions и sync data сейчас хранятся в локальном JSON-файле и переживают перезапуск API.
 - Soft deletes с клиента должны отправляться как `delete`.
 - Текущий web client помечает принятые local records как `synced` и сохраняет `nextCursor` в локальную account session.
+- `push` и `pull` требуют валидный `Bearer` token из guest session.

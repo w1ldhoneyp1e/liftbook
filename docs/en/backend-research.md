@@ -4,6 +4,8 @@ Date: 2026-04-28
 
 This document tracks the backend direction before we replace the current in-memory API skeleton with a persistent service.
 
+That transition has already started: the current API is no longer fully in-memory. Guest sessions and sync events are now persisted to a local JSON store. This is not production persistence yet, but it is a useful step between process memory and PostgreSQL.
+
 ## Current Recommendation
 
 Use a TypeScript modular monolith with PostgreSQL as the primary database.
@@ -256,7 +258,7 @@ Phase 3:
 
 ## Proposed Backend Milestones
 
-1. Replace in-memory sync storage with PostgreSQL tables.
+1. Replace the file-based store with PostgreSQL tables.
 2. Add migrations and database connection config.
 3. Persist guest users and sessions.
 4. Persist sync events and current entity snapshots.
