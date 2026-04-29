@@ -10,10 +10,12 @@ const defaultStoreState = {
 }
 
 export async function createFileStore() {
-  const filePath = resolve(
-    process.cwd(),
-    process.env.LIFTBOOK_DATA_FILE ?? ".data/store.json"
+  return createFileStoreFromPath(
+    resolve(process.cwd(), process.env.LIFTBOOK_DATA_FILE ?? ".data/store.json")
   )
+}
+
+export async function createFileStoreFromPath(filePath) {
   let state = await loadState(filePath)
   let writeChain = Promise.resolve()
 

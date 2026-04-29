@@ -25,4 +25,18 @@ Default local storage: `apps/api/.data/store.json`.
 
 - `push` and `pull` require `Authorization: Bearer <accessToken>`.
 - The storage path can be overridden with `LIFTBOOK_DATA_FILE`.
-- The storage driver is selected with `LIFTBOOK_STORAGE_DRIVER` and currently supports `file`.
+- The storage driver is selected with `LIFTBOOK_STORAGE_DRIVER` and currently supports `file` and the `postgres` placeholder.
+
+## Configuration
+
+Supported environment variables:
+
+- `PORT`
+- `LIFTBOOK_STORAGE_DRIVER`
+- `LIFTBOOK_DATA_FILE`
+- `DATABASE_URL`
+
+Today:
+
+- `LIFTBOOK_STORAGE_DRIVER=file` is the working default.
+- `LIFTBOOK_STORAGE_DRIVER=postgres` is a prepared boundary and currently returns a clear not-implemented error.

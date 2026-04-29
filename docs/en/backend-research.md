@@ -8,6 +8,8 @@ That transition has already started: the current API is no longer fully in-memor
 
 The next preparation layer is also in place: the file store now sits behind a storage driver boundary. That means the move to PostgreSQL can happen by adding a new adapter rather than rewriting the auth/sync service layer.
 
+There is now also a dedicated config layer and a placeholder `postgres` driver. This lets us lock the env contract (`PORT`, `LIFTBOOK_STORAGE_DRIVER`, `LIFTBOOK_DATA_FILE`, `DATABASE_URL`) before adding a real database client.
+
 ## Current Recommendation
 
 Use a TypeScript modular monolith with PostgreSQL as the primary database.

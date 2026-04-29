@@ -8,6 +8,8 @@
 
 Следующий подготовительный слой тоже уже заложен: file store подключен через storage driver boundary. Это значит, что переход на PostgreSQL может идти через новый adapter, без переписывания auth/sync service слоя.
 
+Дополнительно уже выделен config layer и placeholder для `postgres` driver. Это позволяет заранее зафиксировать env-контракт (`PORT`, `LIFTBOOK_STORAGE_DRIVER`, `LIFTBOOK_DATA_FILE`, `DATABASE_URL`) еще до подключения реального database client.
+
 ## Текущая рекомендация
 
 Использовать TypeScript modular monolith с PostgreSQL как основной БД.

@@ -1,12 +1,13 @@
 import { createServer } from "node:http"
 
 import { createAuthService } from "./auth-service.mjs"
+import { loadConfig } from "./config.mjs"
 import { getRequestOrigin, readJsonBody, sendJson, setCorsHeaders } from "./http.mjs"
 import { createStorage } from "./storage.mjs"
 import { createSyncService } from "./sync-service.mjs"
 
-const defaultPort = 4000
-const storage = await createStorage()
+const config = loadConfig()
+const storage = await createStorage(config)
 const authService = createAuthService(storage)
 const syncService = createSyncService(storage)
 
@@ -27,6 +28,9 @@ const server = createServer(async (request, response) => {
         ok: true,
         service: "liftbook-api",
         time: new Date().toISOString(),
+        config: {
+          storageDriver: config.storage.driver,
+        },
         store: storage.getHealthSummary(),
       })
       return
@@ -76,8 +80,6 @@ const server = createServer(async (request, response) => {
   }
 })
 
-const port = Number(process.env.PORT ?? defaultPort)
-
-server.listen(port, () => {
-  console.log(`Liftbook API listening on http://localhost:${port}`)
+server.listen(config.port, () => {
+  console.log(`Liftbook API listening on http://localhost:${config.port}`)
 })
