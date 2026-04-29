@@ -56,6 +56,7 @@ type PullSyncResponse = {
   >
   cursor: string | null
   nextCursor: string
+  hasMore: boolean
   serverTime: string
 }
 

@@ -13,6 +13,8 @@ Authorized API usage also updates `sessions.updated_at`, so session records beha
 
 `cursor` should now be treated as an opaque server token that represents a position in the sync event log.
 
+`pull` responses are page-based. The server limits how many sync events are returned at once and marks whether more pages are available with `hasMore`.
+
 Current-state sync records are now scoped per user internally, so two different users can safely have the same local entity ids without overwriting each other on the backend.
 
 The storage layer already goes through a driver boundary, so a future PostgreSQL adapter can replace the file store without rewriting auth/sync routes.
@@ -54,11 +56,13 @@ Supported environment variables:
 - `LIFTBOOK_STORAGE_DRIVER`
 - `LIFTBOOK_DATA_FILE`
 - `DATABASE_URL`
+- `LIFTBOOK_SYNC_PULL_PAGE_SIZE`
 
 Today:
 
 - `LIFTBOOK_STORAGE_DRIVER=file` is the working default for local-only API storage.
 - `LIFTBOOK_STORAGE_DRIVER=postgres` works when PostgreSQL is available and migrations have been applied.
+- `LIFTBOOK_SYNC_PULL_PAGE_SIZE` controls how many events one `pull` page may return. Default: `100`.
 
 ## PostgreSQL Preparation
 

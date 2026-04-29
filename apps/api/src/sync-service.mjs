@@ -7,7 +7,9 @@ const supportedEntityTypes = [
   "userSettings",
 ]
 
-export function createSyncService(store) {
+export function createSyncService(store, options = {}) {
+  const pullPageSize = Math.max(1, Number(options.pullPageSize ?? 100))
+
   return {
     validatePushBody(body) {
       if (!body || typeof body !== "object") {
@@ -80,17 +82,19 @@ export function createSyncService(store) {
         clientId,
         now: serverTime,
       })
-      const changes = await store.listSyncEvents({
+      const { changes, hasMore } = await store.listSyncEvents({
         userId,
         cursor,
         clientId,
+        limit: pullPageSize,
       })
+      const nextCursor = changes.at(-1)?.cursor ?? cursor ?? serverTime
 
       return {
         changes,
         cursor,
-        nextCursor:
-          changes.at(-1)?.cursor ?? cursor ?? serverTime,
+        nextCursor,
+        hasMore,
         serverTime,
       }
     },

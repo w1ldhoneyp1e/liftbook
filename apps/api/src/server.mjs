@@ -9,7 +9,7 @@ import { createSyncService } from "./sync-service.mjs"
 const config = loadConfig()
 const storage = await createStorage(config)
 const authService = createAuthService(storage)
-const syncService = createSyncService(storage)
+const syncService = createSyncService(storage, config.sync)
 
 const server = createServer(async (request, response) => {
   try {
@@ -30,6 +30,7 @@ const server = createServer(async (request, response) => {
         time: new Date().toISOString(),
         config: {
           storageDriver: config.storage.driver,
+          syncPullPageSize: config.sync.pullPageSize,
         },
         store: await storage.getHealthSummary(),
       })

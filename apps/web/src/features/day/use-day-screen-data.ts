@@ -501,12 +501,7 @@ export function useDayScreenData(date: string) {
       await markAcceptedChangesSynced(pushResponse.accepted)
     }
 
-    const pullResponse = await pullSyncChanges({
-      accessToken: accountSession.accessToken,
-      cursor: cursorBeforeSync,
-    })
-
-    await applyPulledChanges(pullResponse.changes, pullResponse.nextCursor)
+    await pullAllSyncChanges(accountSession.accessToken, cursorBeforeSync)
     await load()
   }, [load])
 
@@ -663,6 +658,24 @@ async function applyPulledChanges(
   }
 
   await updateSyncCursor(nextCursor)
+}
+
+async function pullAllSyncChanges(accessToken: string, initialCursor?: string | null) {
+  let cursor = initialCursor ?? null
+
+  while (true) {
+    const pullResponse = await pullSyncChanges({
+      accessToken,
+      cursor,
+    })
+
+    await applyPulledChanges(pullResponse.changes, pullResponse.nextCursor)
+    cursor = pullResponse.nextCursor
+
+    if (!pullResponse.hasMore) {
+      return
+    }
+  }
 }
 
 async function applyPulledChange(change: SyncChange & { serverTime: string }) {

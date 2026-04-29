@@ -152,11 +152,14 @@ Response:
   "changes": [],
   "cursor": "1",
   "nextCursor": "1",
+  "hasMore": false,
   "serverTime": "2026-04-27T12:05:00.000Z"
 }
 ```
 
 If there are no new changes, `nextCursor` should stay equal to the incoming `cursor`. This lets the client safely run automatic `pull` without creating needless loops.
+
+If there are more changes than the server returns in one response, the API sets `hasMore: true`. The client should then immediately continue with the returned `nextCursor` until `hasMore` becomes `false`.
 
 The client should treat `cursor` as an opaque server token. In the current backend it is derived from sync event order, not from wall-clock time.
 

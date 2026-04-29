@@ -259,10 +259,11 @@ export async function createPostgresStore(options) {
 
       return persistedEvents
     },
-    async listSyncEvents({ userId, cursor, clientId }) {
+    async listSyncEvents({ userId, cursor, clientId, limit }) {
       const conditions = ["user_id = $1"]
       const values = [userId]
       const parsedCursor = parseCursor(cursor)
+      const pageSize = normalizeLimit(limit)
 
       if (parsedCursor !== null) {
         values.push(parsedCursor)
@@ -277,7 +278,8 @@ export async function createPostgresStore(options) {
         conditions.push(`client_id <> $${values.length}`)
       }
 
-      const result = await pool.query(
+      values.push(pageSize + 1)
+      const pagedResult = await pool.query(
         `select
            id,
            sequence,
@@ -293,11 +295,18 @@ export async function createPostgresStore(options) {
            updated_at
          from sync_events
          where ${conditions.join(" and ")}
-         order by sequence asc nulls last, server_time asc`,
+         order by sequence asc nulls last, server_time asc
+         limit $${values.length}`,
         values
       )
+      const rows = pagedResult.rows
+      const hasMore = rows.length > pageSize
+      const changes = rows.slice(0, pageSize).map(mapSyncEventRow)
 
-      return result.rows.map(mapSyncEventRow)
+      return {
+        changes,
+        hasMore,
+      }
     },
   }
 }
@@ -373,4 +382,9 @@ function normalizeSequence(value) {
 
   const parsed = Number(value)
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+}
+
+function normalizeLimit(limit) {
+  const parsed = Number(limit)
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : 100
 }

@@ -20,6 +20,7 @@ const serverProcess = spawn("node", [serverEntry], {
     PORT: port,
     DATABASE_URL: databaseUrl,
     LIFTBOOK_STORAGE_DRIVER: "postgres",
+    LIFTBOOK_SYNC_PULL_PAGE_SIZE: "1",
   },
   stdio: ["ignore", "pipe", "pipe"],
 })

@@ -5,6 +5,7 @@ const userBClientId = `smoke-user-b-${Date.now()}`
 const pullClientA = `${userAClientId}-reader`
 const pullClientB = `${userBClientId}-reader`
 const sharedLocalId = `shared_local_${Date.now()}`
+const secondLocalId = `second_local_${Date.now()}`
 
 const userA = await createGuestAccount(userAClientId, "en")
 const userB = await createGuestAccount(userBClientId, "ru")
@@ -15,6 +16,12 @@ const pushA = await pushSyncChange({
   localId: sharedLocalId,
   date: "2026-04-30",
 })
+const pushASecond = await pushSyncChange({
+  accessToken: userA.session.accessToken,
+  clientId: userAClientId,
+  localId: secondLocalId,
+  date: "2026-05-02",
+})
 
 const pushB = await pushSyncChange({
   accessToken: userB.session.accessToken,
@@ -24,6 +31,10 @@ const pushB = await pushSyncChange({
 })
 
 assert(isSequenceCursor(pushA.nextCursor), "user A push cursor should be sequence-based")
+assert(
+  isSequenceCursor(pushASecond.nextCursor),
+  "user A second push cursor should be sequence-based"
+)
 assert(isSequenceCursor(pushB.nextCursor), "user B push cursor should be sequence-based")
 
 const initialPullA = await pullSyncChanges({
@@ -37,15 +48,20 @@ const initialPullB = await pullSyncChanges({
 
 assert(
   initialPullA.changes.length === 1,
-  "user A should receive exactly one remote change"
+  "user A should receive exactly one change on the first paged pull"
 )
 assert(
   initialPullB.changes.length === 1,
   "user B should receive exactly one remote change"
 )
+assert(initialPullA.hasMore === true, "user A first pull should report hasMore")
+assert(
+  initialPullB.hasMore === false,
+  "user B first pull should not report hasMore for a single event"
+)
 assert(
   initialPullA.changes[0].payload?.date === "2026-04-30",
-  "user A should receive only its own synced payload"
+  "user A first pull should receive the oldest synced payload first"
 )
 assert(
   initialPullB.changes[0].payload?.date === "2026-05-01",
@@ -72,20 +88,47 @@ const repeatPullB = await pullSyncChanges({
 })
 
 assert(
-  repeatPullA.changes.length === 0,
-  "user A repeat pull should have no new changes"
+  repeatPullA.changes.length === 1,
+  "user A second paged pull should return the remaining change"
 )
 assert(
   repeatPullB.changes.length === 0,
   "user B repeat pull should have no new changes"
 )
 assert(
-  repeatPullA.nextCursor === initialPullA.nextCursor,
-  "user A repeat pull should preserve cursor"
+  repeatPullA.changes[0].payload?.date === "2026-05-02",
+  "user A second paged pull should return the newer payload"
+)
+assert(
+  repeatPullA.hasMore === false,
+  "user A second paged pull should finish pagination"
 )
 assert(
   repeatPullB.nextCursor === initialPullB.nextCursor,
   "user B repeat pull should preserve cursor"
+)
+assert(
+  repeatPullB.hasMore === false,
+  "user B repeat pull should report no further pages"
+)
+
+const finalPullA = await pullSyncChanges({
+  accessToken: userA.session.accessToken,
+  clientId: pullClientA,
+  cursor: repeatPullA.nextCursor,
+})
+
+assert(
+  finalPullA.changes.length === 0,
+  "user A final pull should have no new changes"
+)
+assert(
+  finalPullA.nextCursor === repeatPullA.nextCursor,
+  "user A final pull should preserve cursor"
+)
+assert(
+  finalPullA.hasMore === false,
+  "user A final pull should report no further pages"
 )
 
 console.log("Postgres sync smoke test passed.")

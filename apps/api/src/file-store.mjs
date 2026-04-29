@@ -169,10 +169,10 @@ export async function createFileStoreFromPath(filePath) {
 
       return queuePersist().then(() => accepted)
     },
-    async listSyncEvents({ userId, cursor, clientId }) {
+    async listSyncEvents({ userId, cursor, clientId, limit }) {
       const parsedCursor = parseCursor(cursor)
-
-      return state.syncEvents
+      const pageSize = normalizeLimit(limit)
+      const matchingEvents = state.syncEvents
         .filter((event) => event.userId === userId)
         .filter((event) =>
           parsedCursor === null
@@ -180,6 +180,12 @@ export async function createFileStoreFromPath(filePath) {
             : (event.sequence ?? 0) > parsedCursor
         )
         .filter((event) => !clientId || event.clientId !== clientId)
+      const changes = matchingEvents.slice(0, pageSize)
+
+      return {
+        changes,
+        hasMore: matchingEvents.length > pageSize,
+      }
     },
   }
 }
@@ -241,6 +247,11 @@ function parseCursor(cursor) {
 
   const parsed = Number(cursor)
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+}
+
+function normalizeLimit(limit) {
+  const parsed = Number(limit)
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : 100
 }
 
 function getStorageKey(record) {
