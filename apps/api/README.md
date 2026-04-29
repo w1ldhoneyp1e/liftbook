@@ -13,6 +13,8 @@ Authorized API usage also updates `sessions.updated_at`, so session records beha
 
 `cursor` should now be treated as an opaque server token that represents a position in the sync event log.
 
+Current-state sync records are now scoped per user internally, so two different users can safely have the same local entity ids without overwriting each other on the backend.
+
 The storage layer already goes through a driver boundary, so a future PostgreSQL adapter can replace the file store without rewriting auth/sync routes.
 
 ```bash

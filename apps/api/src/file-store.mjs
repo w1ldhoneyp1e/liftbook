@@ -135,16 +135,21 @@ export async function createFileStoreFromPath(filePath) {
       }))
 
       const nextRecords = new Map(
-        state.syncRecords.map((record) => [record.recordKey, record])
+        state.syncRecords.map((record) => [
+          getStorageKey(record),
+          withStorageKey(record),
+        ])
       )
 
       for (const event of accepted) {
+        const storageKey = getStorageKey(event)
+
         if (event.operation === "delete") {
-          nextRecords.delete(event.recordKey)
+          nextRecords.delete(storageKey)
           continue
         }
 
-        nextRecords.set(event.recordKey, event)
+        nextRecords.set(storageKey, withStorageKey(event))
       }
 
       state = {
@@ -236,4 +241,15 @@ function parseCursor(cursor) {
 
   const parsed = Number(cursor)
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+}
+
+function getStorageKey(record) {
+  return record.storageKey ?? `${record.userId}:${record.recordKey}`
+}
+
+function withStorageKey(record) {
+  return {
+    ...record,
+    storageKey: getStorageKey(record),
+  }
 }

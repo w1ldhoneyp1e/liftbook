@@ -18,6 +18,8 @@ The next milestone is now in place too: the API `postgres` driver is no longer a
 
 The backend now also keeps `sync_records` as the current server-side entity state. That matters for the next stage, where an append-only event log alone is no longer enough.
 
+That current-state layer is now scoped per user internally, so identical local ids from different users no longer collide in server storage.
+
 ## Current Recommendation
 
 Use a TypeScript modular monolith with PostgreSQL as the primary database.

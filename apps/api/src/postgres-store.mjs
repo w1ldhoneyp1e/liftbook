@@ -214,6 +214,7 @@ export async function createPostgresStore(options) {
 
           await client.query(
             `insert into sync_records (
+               storage_key,
                record_key,
                user_id,
                client_id,
@@ -225,10 +226,11 @@ export async function createPostgresStore(options) {
                server_version,
                updated_at
              ) values (
-               $1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10
+               $1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9, $10, $11
              )
-             on conflict (record_key)
+             on conflict (storage_key)
              do update set
+               storage_key = excluded.storage_key,
                user_id = excluded.user_id,
                client_id = excluded.client_id,
                entity_type = excluded.entity_type,
@@ -239,6 +241,7 @@ export async function createPostgresStore(options) {
                server_version = excluded.server_version,
                updated_at = excluded.updated_at`,
             [
+              persistedEventWithCursor.storageKey,
               persistedEventWithCursor.recordKey,
               persistedEventWithCursor.userId,
               persistedEventWithCursor.clientId,

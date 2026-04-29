@@ -103,6 +103,7 @@ function acceptSyncChange({ userId, clientId, change, serverTime }) {
   return {
     id: `sync_${randomUUID()}`,
     recordKey: `${change.entityType}:${change.localId}`,
+    storageKey: `${userId}:${change.entityType}:${change.localId}`,
     userId,
     clientId,
     entityType: change.entityType,

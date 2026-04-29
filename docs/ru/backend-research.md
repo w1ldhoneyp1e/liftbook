@@ -18,6 +18,8 @@
 
 Дополнительно backend теперь хранит и `sync_records` как текущее server-side состояние сущностей. Это полезно для следующего этапа, где одного append-only event log уже мало.
 
+Этот current-state слой теперь еще и user-scoped внутри backend, так что одинаковые local ids у разных пользователей больше не конфликтуют в server storage.
+
 ## Текущая рекомендация
 
 Использовать TypeScript modular monolith с PostgreSQL как основной БД.
