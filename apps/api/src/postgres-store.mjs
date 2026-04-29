@@ -144,6 +144,7 @@ export async function createPostgresStore(options) {
       const accepted = changes.map((change) =>
         buildAcceptedChange({ userId, clientId, change, serverTime })
       )
+      const persistedEvents = []
 
       await withTransaction(pool, async (client) => {
         if (clientId) {
@@ -157,9 +158,10 @@ export async function createPostgresStore(options) {
         }
 
         for (const event of accepted) {
-          await client.query(
+          const insertEventResult = await client.query(
             `insert into sync_events (
                id,
+               sequence,
                record_key,
                user_id,
                client_id,
@@ -171,8 +173,9 @@ export async function createPostgresStore(options) {
                server_version,
                updated_at
              ) values (
-               $1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9, $10, $11
-             )`,
+               $1, default, $2, $3, $4, $5, $6, $7, $8::jsonb, $9, $10, $11
+             )
+             returning sequence`,
             [
               event.id,
               event.recordKey,
@@ -187,12 +190,24 @@ export async function createPostgresStore(options) {
               event.updatedAt,
             ]
           )
+          const persistedSequence = normalizeSequence(
+            insertEventResult.rows[0]?.sequence
+          )
+          const persistedEventWithCursor = {
+            ...event,
+            sequence: persistedSequence,
+            cursor:
+              persistedSequence !== null
+                ? String(persistedSequence)
+                : event.serverTime,
+          }
+          persistedEvents.push(persistedEventWithCursor)
 
           if (event.operation === "delete") {
             await client.query(
               `delete from sync_records
                where record_key = $1 and user_id = $2`,
-              [event.recordKey, event.userId]
+              [persistedEventWithCursor.recordKey, persistedEventWithCursor.userId]
             )
             continue
           }
@@ -224,28 +239,32 @@ export async function createPostgresStore(options) {
                server_version = excluded.server_version,
                updated_at = excluded.updated_at`,
             [
-              event.recordKey,
-              event.userId,
-              event.clientId,
-              event.entityType,
-              event.localId,
-              event.operation,
-              JSON.stringify(event.payload),
-              event.serverTime,
-              event.serverVersion,
-              event.updatedAt,
+              persistedEventWithCursor.recordKey,
+              persistedEventWithCursor.userId,
+              persistedEventWithCursor.clientId,
+              persistedEventWithCursor.entityType,
+              persistedEventWithCursor.localId,
+              persistedEventWithCursor.operation,
+              JSON.stringify(persistedEventWithCursor.payload),
+              persistedEventWithCursor.serverTime,
+              persistedEventWithCursor.serverVersion,
+              persistedEventWithCursor.updatedAt,
             ]
           )
         }
       })
 
-      return accepted
+      return persistedEvents
     },
     async listSyncEvents({ userId, cursor, clientId }) {
       const conditions = ["user_id = $1"]
       const values = [userId]
+      const parsedCursor = parseCursor(cursor)
 
-      if (cursor) {
+      if (parsedCursor !== null) {
+        values.push(parsedCursor)
+        conditions.push(`sequence > $${values.length}`)
+      } else if (cursor) {
         values.push(cursor)
         conditions.push(`server_time > $${values.length}`)
       }
@@ -258,6 +277,7 @@ export async function createPostgresStore(options) {
       const result = await pool.query(
         `select
            id,
+           sequence,
            record_key,
            user_id,
            client_id,
@@ -270,7 +290,7 @@ export async function createPostgresStore(options) {
            updated_at
          from sync_events
          where ${conditions.join(" and ")}
-         order by server_time asc`,
+         order by sequence asc nulls last, server_time asc`,
         values
       )
 
@@ -313,8 +333,14 @@ function mapSessionRow(row) {
 }
 
 function mapSyncEventRow(row) {
+  const normalizedSequence = normalizeSequence(row.sequence)
+
   return {
     id: row.id,
+    cursor:
+      normalizedSequence !== null
+        ? String(normalizedSequence)
+        : row.server_time.toISOString(),
     recordKey: row.record_key,
     userId: row.user_id,
     clientId: row.client_id,
@@ -326,4 +352,22 @@ function mapSyncEventRow(row) {
     serverVersion: row.server_version,
     updatedAt: row.updated_at.toISOString(),
   }
+}
+
+function parseCursor(cursor) {
+  if (!cursor) {
+    return null
+  }
+
+  const parsed = Number(cursor)
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+}
+
+function normalizeSequence(value) {
+  if (value === null || value === undefined) {
+    return null
+  }
+
+  const parsed = Number(value)
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null
 }

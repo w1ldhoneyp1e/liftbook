@@ -3,6 +3,7 @@ import { dirname, resolve } from "node:path"
 
 const defaultStoreState = {
   version: 1,
+  nextSequence: 1,
   users: [],
   devices: [],
   sessions: [],
@@ -127,7 +128,11 @@ export async function createFileStoreFromPath(filePath) {
     }) {
       const accepted = changes.map((change) =>
         buildAcceptedChange({ userId, clientId, change, serverTime })
-      )
+      ).map((event, index) => ({
+        ...event,
+        sequence: state.nextSequence + index,
+        cursor: String(state.nextSequence + index),
+      }))
 
       const nextRecords = new Map(
         state.syncRecords.map((record) => [record.recordKey, record])
@@ -152,6 +157,7 @@ export async function createFileStoreFromPath(filePath) {
               updatedAt: serverTime,
             })
           : state.devices,
+        nextSequence: state.nextSequence + accepted.length,
         syncEvents: [...state.syncEvents, ...accepted],
         syncRecords: Array.from(nextRecords.values()),
       }
@@ -159,9 +165,15 @@ export async function createFileStoreFromPath(filePath) {
       return queuePersist().then(() => accepted)
     },
     async listSyncEvents({ userId, cursor, clientId }) {
+      const parsedCursor = parseCursor(cursor)
+
       return state.syncEvents
         .filter((event) => event.userId === userId)
-        .filter((event) => !cursor || event.serverTime > cursor)
+        .filter((event) =>
+          parsedCursor === null
+            ? !cursor || event.serverTime > cursor
+            : (event.sequence ?? 0) > parsedCursor
+        )
         .filter((event) => !clientId || event.clientId !== clientId)
     },
   }
@@ -175,6 +187,8 @@ async function loadState(filePath) {
     return {
       ...defaultStoreState,
       ...parsed,
+      nextSequence:
+        typeof parsed.nextSequence === "number" ? parsed.nextSequence : 1,
       users: Array.isArray(parsed.users) ? parsed.users : [],
       devices: Array.isArray(parsed.devices) ? parsed.devices : [],
       sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
@@ -213,4 +227,13 @@ function upsertDevice(devices, nextDevice) {
         }
       : device
   )
+}
+
+function parseCursor(cursor) {
+  if (!cursor) {
+    return null
+  }
+
+  const parsed = Number(cursor)
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null
 }

@@ -68,7 +68,8 @@ export function createSyncService(store) {
           status: "accepted",
         })),
         conflicts: [],
-        nextCursor: serverTime,
+        nextCursor:
+          acceptedEvents.at(-1)?.cursor ?? body.cursor ?? serverTime,
         serverTime,
       }
     },
@@ -88,7 +89,8 @@ export function createSyncService(store) {
       return {
         changes,
         cursor,
-        nextCursor: changes.at(-1)?.serverTime ?? cursor ?? serverTime,
+        nextCursor:
+          changes.at(-1)?.cursor ?? cursor ?? serverTime,
         serverTime,
       }
     },

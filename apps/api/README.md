@@ -11,6 +11,8 @@ The backend now tracks not only users and sessions, but also known client device
 
 Authorized API usage also updates `sessions.updated_at`, so session records behave like live server-side objects rather than write-once placeholders.
 
+`cursor` should now be treated as an opaque server token that represents a position in the sync event log.
+
 The storage layer already goes through a driver boundary, so a future PostgreSQL adapter can replace the file store without rewriting auth/sync routes.
 
 ```bash

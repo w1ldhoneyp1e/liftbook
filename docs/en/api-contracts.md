@@ -131,7 +131,7 @@ Response:
     }
   ],
   "conflicts": [],
-  "nextCursor": "2026-04-27T12:00:01.000Z",
+  "nextCursor": "1",
   "serverTime": "2026-04-27T12:00:01.000Z"
 }
 ```
@@ -139,7 +139,7 @@ Response:
 ## Pull Remote Changes
 
 ```http
-GET /v1/sync/pull?cursor=2026-04-27T12:00:01.000Z&clientId=local-device-id
+GET /v1/sync/pull?cursor=1&clientId=local-device-id
 Authorization: Bearer dev_token
 ```
 
@@ -150,13 +150,15 @@ Response:
 ```json
 {
   "changes": [],
-  "cursor": "2026-04-27T12:00:01.000Z",
-  "nextCursor": "2026-04-27T12:00:01.000Z",
+  "cursor": "1",
+  "nextCursor": "1",
   "serverTime": "2026-04-27T12:05:00.000Z"
 }
 ```
 
 If there are no new changes, `nextCursor` should stay equal to the incoming `cursor`. This lets the client safely run automatic `pull` without creating needless loops.
+
+The client should treat `cursor` as an opaque server token. In the current backend it is derived from sync event order, not from wall-clock time.
 
 ## Notes
 

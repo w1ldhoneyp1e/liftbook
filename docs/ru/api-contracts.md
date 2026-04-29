@@ -131,7 +131,7 @@ Authorization: Bearer dev_token
     }
   ],
   "conflicts": [],
-  "nextCursor": "2026-04-27T12:00:01.000Z",
+  "nextCursor": "1",
   "serverTime": "2026-04-27T12:00:01.000Z"
 }
 ```
@@ -139,7 +139,7 @@ Authorization: Bearer dev_token
 ## Получение удаленных изменений
 
 ```http
-GET /v1/sync/pull?cursor=2026-04-27T12:00:01.000Z&clientId=local-device-id
+GET /v1/sync/pull?cursor=1&clientId=local-device-id
 Authorization: Bearer dev_token
 ```
 
@@ -150,13 +150,15 @@ Authorization: Bearer dev_token
 ```json
 {
   "changes": [],
-  "cursor": "2026-04-27T12:00:01.000Z",
-  "nextCursor": "2026-04-27T12:00:01.000Z",
+  "cursor": "1",
+  "nextCursor": "1",
   "serverTime": "2026-04-27T12:05:00.000Z"
 }
 ```
 
 Если новых изменений нет, `nextCursor` должен остаться равным входящему `cursor`. Это позволяет клиенту безопасно делать автоматический `pull` без лишних циклов.
+
+Клиент должен воспринимать `cursor` как непрозрачный серверный токен. В текущем backend он основан на порядке sync events, а не на wall-clock времени.
 
 ## Заметки
 
