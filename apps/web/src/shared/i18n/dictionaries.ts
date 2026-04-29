@@ -48,7 +48,10 @@ export type Dictionary = {
     restTimer: string
     searchExercise: string
     syncFailed: string
+    syncConflicts: string
+    syncPending: string
     syncReady: string
+    syncSynced: string
     syncStatus: string
     syncSuccess: string
     today: string

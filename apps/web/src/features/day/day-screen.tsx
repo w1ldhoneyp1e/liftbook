@@ -49,9 +49,9 @@ export function DayScreen() {
     incrementNumber,
     locale,
     loading,
-    pendingSyncCount,
     renameCustomExercise,
     settings,
+    syncSummary,
     syncPendingChanges,
     updateSettings,
     updateNumber,
@@ -273,8 +273,8 @@ export function DayScreen() {
           accountSession={accountSession}
           dictionary={dictionary}
           open={settingsOpen}
-          pendingSyncCount={pendingSyncCount}
           settings={settings}
+          syncSummary={syncSummary}
           syncError={syncError}
           syncing={syncing}
           onCreateGuestAccount={handleCreateGuestAccount}

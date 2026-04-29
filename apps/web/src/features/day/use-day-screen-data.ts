@@ -30,7 +30,11 @@ type DayScreenData = {
   exerciseEntries: ExerciseEntry[]
   exercisesById: Record<string, Exercise>
   loading: boolean
-  pendingSyncCount: number
+  syncSummary: {
+    conflict: number
+    pending: number
+    synced: number
+  }
 }
 
 export function useDayScreenData(date: string) {
@@ -41,7 +45,11 @@ export function useDayScreenData(date: string) {
     exerciseEntries: [],
     exercisesById: {},
     loading: true,
-    pendingSyncCount: 0,
+    syncSummary: {
+      conflict: 0,
+      pending: 0,
+      synced: 0,
+    },
   })
 
   const load = useCallback(async () => {
@@ -55,7 +63,7 @@ export function useDayScreenData(date: string) {
         db.exerciseEntries.where("workoutDate").equals(date).sortBy("position"),
         db.exercises.toArray(),
       ])
-    const pendingSyncCount = await countPendingSyncRecords()
+    const syncSummary = await getSyncSummary()
 
     setState({
       accountSession: accountSession ?? null,
@@ -71,7 +79,7 @@ export function useDayScreenData(date: string) {
         exercises.map((exercise) => [exercise.id, exercise])
       ),
       loading: false,
-      pendingSyncCount,
+      syncSummary,
     })
   }, [date])
 
@@ -517,16 +525,44 @@ export function useDayScreenData(date: string) {
   }
 }
 
-async function countPendingSyncRecords() {
-  const [exercises, workoutDays, exerciseEntries, userSettings] =
+async function getSyncSummary() {
+  const [customExercises, workoutDays, exerciseEntries, userSettings] =
     await Promise.all([
-      db.exercises.where("syncStatus").equals("pending").count(),
-      db.workoutDays.where("syncStatus").equals("pending").count(),
-      db.exerciseEntries.where("syncStatus").equals("pending").count(),
-      db.userSettings.where("syncStatus").equals("pending").count(),
+      db.exercises
+        .filter((exercise) => !exercise.builtIn)
+        .toArray(),
+      db.workoutDays.toArray(),
+      db.exerciseEntries.toArray(),
+      db.userSettings.toArray(),
     ])
 
-  return exercises + workoutDays + exerciseEntries + userSettings
+  const syncableRecords = [
+    ...customExercises,
+    ...workoutDays,
+    ...exerciseEntries,
+    ...userSettings,
+  ]
+
+  return syncableRecords.reduce(
+    (summary, record) => {
+      const status = record.syncStatus
+
+      if (status === "pending") {
+        summary.pending += 1
+      } else if (status === "conflict") {
+        summary.conflict += 1
+      } else if (status === "synced") {
+        summary.synced += 1
+      }
+
+      return summary
+    },
+    {
+      conflict: 0,
+      pending: 0,
+      synced: 0,
+    }
+  )
 }
 
 async function collectPendingSyncChanges() {

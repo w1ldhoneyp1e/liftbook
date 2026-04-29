@@ -24,8 +24,12 @@ type SettingsDrawerProps = {
   accountSession: AccountSession | null
   dictionary: Dictionary
   open: boolean
-  pendingSyncCount: number
   settings: UserSettings
+  syncSummary: {
+    conflict: number
+    pending: number
+    synced: number
+  }
   syncError: boolean
   syncing: boolean
   onCreateGuestAccount: () => void
@@ -42,8 +46,8 @@ export function SettingsDrawer({
   accountSession,
   dictionary,
   open,
-  pendingSyncCount,
   settings,
+  syncSummary,
   syncError,
   syncing,
   onCreateGuestAccount,
@@ -98,18 +102,37 @@ export function SettingsDrawer({
                       <div className="text-xs text-muted-foreground">
                         {syncError
                           ? dictionary.labels.syncFailed
-                          : pendingSyncCount > 0
-                            ? `${dictionary.labels.syncReady}: ${pendingSyncCount}`
+                          : syncSummary.conflict > 0
+                            ? `${dictionary.labels.syncConflicts}: ${syncSummary.conflict}`
+                            : syncSummary.pending > 0
+                              ? `${dictionary.labels.syncReady}: ${syncSummary.pending}`
                             : dictionary.labels.syncSuccess}
                       </div>
                     </div>
                     <Button
                       size="sm"
-                      disabled={syncing || pendingSyncCount === 0}
+                      disabled={syncing || syncSummary.pending === 0}
                       onClick={onSyncNow}
                     >
                       {dictionary.actions.syncNow}
                     </Button>
+                  </div>
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    <SyncBadge
+                      label={dictionary.labels.syncPending}
+                      tone="warning"
+                      value={syncSummary.pending}
+                    />
+                    <SyncBadge
+                      label={dictionary.labels.syncSynced}
+                      tone="success"
+                      value={syncSummary.synced}
+                    />
+                    <SyncBadge
+                      label={dictionary.labels.syncConflicts}
+                      tone="danger"
+                      value={syncSummary.conflict}
+                    />
                   </div>
                 </div>
               ) : null}
@@ -154,6 +177,28 @@ export function SettingsDrawer({
         </div>
       </DrawerContent>
     </Drawer>
+  )
+}
+
+type SyncBadgeProps = {
+  label: string
+  tone: "danger" | "success" | "warning"
+  value: number
+}
+
+function SyncBadge({ label, tone, value }: SyncBadgeProps) {
+  const toneClassName =
+    tone === "success"
+      ? "bg-emerald-50 text-emerald-700"
+      : tone === "warning"
+        ? "bg-amber-50 text-amber-700"
+        : "bg-rose-50 text-rose-700"
+
+  return (
+    <div className={`rounded-md px-2 py-2 text-center ${toneClassName}`}>
+      <div className="text-sm font-semibold">{value}</div>
+      <div className="mt-0.5 text-[10px] leading-tight">{label}</div>
+    </div>
   )
 }
 
