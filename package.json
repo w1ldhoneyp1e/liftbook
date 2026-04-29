@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "pnpm --filter web dev",
     "dev:api": "pnpm --filter api dev",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
     "build": "pnpm --filter web build && pnpm --filter api build",
     "lint": "pnpm --filter web lint && pnpm --filter api lint"
   }

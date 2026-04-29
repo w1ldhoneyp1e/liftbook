@@ -10,6 +10,8 @@ The next preparation layer is also in place: the file store now sits behind a st
 
 There is now also a dedicated config layer and a placeholder `postgres` driver. This lets us lock the env contract (`PORT`, `LIFTBOOK_STORAGE_DRIVER`, `LIFTBOOK_DATA_FILE`, `DATABASE_URL`) before adding a real database client.
 
+Local PostgreSQL preparation is now in the repo as well: `docker-compose.yml`, `.env.example`, and the first SQL sketch in `apps/api/db/migrations/0001_initial.sql`. This is not runtime DB integration yet, but it already makes the future schema and local developer flow concrete.
+
 ## Current Recommendation
 
 Use a TypeScript modular monolith with PostgreSQL as the primary database.

@@ -10,6 +10,8 @@
 
 Дополнительно уже выделен config layer и placeholder для `postgres` driver. Это позволяет заранее зафиксировать env-контракт (`PORT`, `LIFTBOOK_STORAGE_DRIVER`, `LIFTBOOK_DATA_FILE`, `DATABASE_URL`) еще до подключения реального database client.
 
+Локальная подготовка под PostgreSQL тоже уже добавлена: `docker-compose.yml`, `.env.example` и первый SQL-скелет `apps/api/db/migrations/0001_initial.sql`. Это еще не реальная БД-интеграция в runtime, но уже конкретизирует будущую схему и локальный developer flow.
+
 ## Текущая рекомендация
 
 Использовать TypeScript modular monolith с PostgreSQL как основной БД.

@@ -14,6 +14,12 @@ Default URL: `http://localhost:4000`.
 
 Default local storage: `apps/api/.data/store.json`.
 
+Local PostgreSQL can be started from the repo root:
+
+```bash
+pnpm db:up
+```
+
 ## Routes
 
 - `GET /health`
@@ -40,3 +46,9 @@ Today:
 
 - `LIFTBOOK_STORAGE_DRIVER=file` is the working default.
 - `LIFTBOOK_STORAGE_DRIVER=postgres` is a prepared boundary and currently returns a clear not-implemented error.
+
+## PostgreSQL Preparation
+
+- Docker Compose service: [docker-compose.yml](/home/kirill-yashmetov/projects/liftbook/docker-compose.yml)
+- Initial SQL sketch: [apps/api/db/migrations/0001_initial.sql](/home/kirill-yashmetov/projects/liftbook/apps/api/db/migrations/0001_initial.sql)
+- Example env file: [.env.example](/home/kirill-yashmetov/projects/liftbook/.env.example)

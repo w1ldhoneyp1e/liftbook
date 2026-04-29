@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: liftbook-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: liftbook
+      POSTGRES_USER: liftbook
+      POSTGRES_PASSWORD: liftbook
+    ports:
+      - "5432:5432"
+    volumes:
+      - liftbook-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  liftbook-postgres-data:
