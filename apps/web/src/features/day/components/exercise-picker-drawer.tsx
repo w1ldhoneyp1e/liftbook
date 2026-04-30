@@ -105,17 +105,16 @@ export function ExercisePickerDrawer({
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              className="h-10 pl-9"
-              autoFocus
+              className="h-10 border-border/60 pl-9 focus-visible:ring-2 focus-visible:ring-ring/30"
               placeholder={dictionary.labels.searchExercise}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
           </div>
 
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          <div className="flex flex-wrap gap-2 pb-1">
             <button
-              className={`h-8 shrink-0 rounded-lg px-3 text-sm ${
+              className={`h-8 rounded-lg px-3 text-sm ${
                 selectedMuscleGroup === null
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted text-foreground"
@@ -128,7 +127,7 @@ export function ExercisePickerDrawer({
             {muscleGroups.map((muscleGroup) => (
               <button
                 key={muscleGroup}
-                className={`h-8 shrink-0 rounded-lg px-3 text-sm ${
+                className={`h-8 rounded-lg px-3 text-sm ${
                   selectedMuscleGroup === muscleGroup
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted text-foreground"

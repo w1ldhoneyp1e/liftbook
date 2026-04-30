@@ -35,6 +35,7 @@ export function RestTimerRow({
       </div>
       <div className="flex shrink-0 gap-2">
         <Button
+          variant="outline"
           size="icon-sm"
           aria-label={running ? dictionary.actions.pause : dictionary.actions.start}
           onClick={onToggleRunning}
