@@ -1,6 +1,6 @@
 "use client"
 
-import { Timer } from "lucide-react"
+import { Pause, Play, RotateCcw, Timer } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import type { Dictionary } from "@/shared/i18n/dictionaries"
@@ -34,11 +34,20 @@ export function RestTimerRow({
         </div>
       </div>
       <div className="flex shrink-0 gap-2">
-        <Button size="sm" onClick={onToggleRunning}>
-          {running ? dictionary.actions.pause : dictionary.actions.start}
+        <Button
+          size="icon-sm"
+          aria-label={running ? dictionary.actions.pause : dictionary.actions.start}
+          onClick={onToggleRunning}
+        >
+          {running ? <Pause /> : <Play />}
         </Button>
-        <Button variant="outline" size="sm" onClick={onReset}>
-          {dictionary.actions.reset}
+        <Button
+          variant="outline"
+          size="icon-sm"
+          aria-label={dictionary.actions.reset}
+          onClick={onReset}
+        >
+          <RotateCcw />
         </Button>
       </div>
     </section>
