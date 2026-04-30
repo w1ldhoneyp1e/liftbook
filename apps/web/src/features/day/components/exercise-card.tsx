@@ -210,15 +210,17 @@ export function ExerciseCard({
                         {exerciseName} · {index + 1}
                       </p>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label={dictionary.actions.deleteSet}
-                      className="text-muted-foreground hover:text-destructive"
-                      onClick={() => onDeleteSet(entry.id, set.id)}
-                    >
-                      <Trash2 />
-                    </Button>
+                    {!isCreatingSet ? (
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={dictionary.actions.deleteSet}
+                        className="text-muted-foreground hover:text-destructive"
+                        onClick={() => onDeleteSet(entry.id, set.id)}
+                      >
+                        <Trash2 />
+                      </Button>
+                    ) : null}
                   </div>
 
                   <div className="space-y-2">
@@ -256,7 +258,7 @@ export function ExerciseCard({
                     />
                   </div>
 
-                  <div className="mt-3 flex justify-end">
+                  <div className="mt-3 flex justify-start">
                     {isCreatingSet ? (
                       <div className="flex w-full justify-between gap-2">
                         <Button

@@ -67,8 +67,8 @@ export function SettingsDrawer({
           : dictionary.labels.syncSuccess
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="mx-auto max-h-[92svh] max-w-md rounded-t-xl bg-background">
+    <Drawer direction="top" open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="mx-auto max-h-[92svh] max-w-md rounded-b-2xl bg-background">
         <DrawerHeader className="text-left">
           <DrawerTitle>{dictionary.actions.settings}</DrawerTitle>
           <DrawerDescription>Liftbook</DrawerDescription>
