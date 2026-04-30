@@ -72,7 +72,6 @@ export function ExerciseCard({
   const [editorSetId, setEditorSetId] = useState<string | null>(null)
   const [creatingSetId, setCreatingSetId] = useState<string | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [confirmingExerciseDelete, setConfirmingExerciseDelete] = useState(false)
 
   const editorSet = activeSets.find((setEntry) => setEntry.id === editorSetId)
 
@@ -128,13 +127,7 @@ export function ExerciseCard({
           <Popover
             open={menuOpen}
             withBackdrop={false}
-            onOpenChange={(open) => {
-              setMenuOpen(open)
-
-              if (!open) {
-                setConfirmingExerciseDelete(false)
-              }
-            }}
+            onOpenChange={setMenuOpen}
           >
             <PopoverTrigger
               render={
@@ -149,45 +142,18 @@ export function ExerciseCard({
             />
             <PopoverPositioner side="top" align="end" sideOffset={8}>
               <PopoverPopup className="min-w-40 p-1.5">
-                {confirmingExerciseDelete ? (
-                  <div className="space-y-2 p-1">
-                    <p className="text-sm text-foreground">
-                      {dictionary.actions.deleteExercise}?
-                    </p>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="flex-1"
-                        onClick={() => setConfirmingExerciseDelete(false)}
-                      >
-                        {dictionary.actions.cancel}
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="flex-1"
-                        onClick={() => {
-                          setMenuOpen(false)
-                          setConfirmingExerciseDelete(false)
-                          onDeleteExercise(entry.id)
-                        }}
-                      >
-                        {dictionary.actions.deleteExercise}
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-start text-destructive hover:text-destructive"
-                    onClick={() => setConfirmingExerciseDelete(true)}
-                  >
-                    <X />
-                    {dictionary.actions.deleteExercise}
-                  </Button>
-                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start text-destructive hover:text-destructive"
+                  onClick={() => {
+                    setMenuOpen(false)
+                    onDeleteExercise(entry.id)
+                  }}
+                >
+                  <X />
+                  {dictionary.actions.deleteExercise}
+                </Button>
               </PopoverPopup>
             </PopoverPositioner>
           </Popover>
