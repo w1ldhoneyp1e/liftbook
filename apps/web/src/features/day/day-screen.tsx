@@ -31,7 +31,6 @@ export function DayScreen() {
   const [exercisePickerOpen, setExercisePickerOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [touchStartX, setTouchStartX] = useState<number | null>(null)
-  const [collapsedExerciseIds, setCollapsedExerciseIds] = useState<string[]>([])
   const [restSeconds, setRestSeconds] = useState(0)
   const [restTimerRunning, setRestTimerRunning] = useState(false)
   const [accountError, setAccountError] = useState(false)
@@ -73,10 +72,6 @@ export function DayScreen() {
     dictionary,
     selectedDate
   )
-  const allExercisesCollapsed =
-    exerciseEntries.length > 0 &&
-    exerciseEntries.every((entry) => collapsedExerciseIds.includes(entry.id))
-
   useEffect(() => {
     if (!restTimerRunning) {
       return
@@ -117,12 +112,14 @@ export function DayScreen() {
   }
 
   async function handleAddSet(exerciseEntryId: string) {
-    await addSet(exerciseEntryId)
+    const newSetId = await addSet(exerciseEntryId)
 
     if (settings?.autoRestTimer) {
       setRestSeconds(0)
       setRestTimerRunning(true)
     }
+
+    return newSetId
   }
 
   async function handleCreateGuestAccount() {
@@ -214,24 +211,10 @@ export function DayScreen() {
     handleShiftDate(deltaX < 0 ? 1 : -1)
   }
 
-  function handleToggleAllExercises() {
-    setCollapsedExerciseIds(
-      allExercisesCollapsed ? [] : exerciseEntries.map((entry) => entry.id)
-    )
-  }
-
-  function handleToggleExercise(exerciseEntryId: string) {
-    setCollapsedExerciseIds((current) =>
-      current.includes(exerciseEntryId)
-        ? current.filter((id) => id !== exerciseEntryId)
-        : [...current, exerciseEntryId]
-    )
-  }
-
   return (
     <div className="flex min-h-svh justify-center bg-zinc-100 text-foreground">
       <main
-        className="flex min-h-svh w-full max-w-md flex-col bg-background"
+        className="relative flex min-h-svh w-full max-w-md flex-col bg-background"
         onTouchStart={(event) => setTouchStartX(event.changedTouches[0].clientX)}
         onTouchEnd={(event) => handleTouchEnd(event.changedTouches[0].clientX)}
       >
@@ -263,8 +246,6 @@ export function DayScreen() {
         </div>
 
         <ExerciseList
-          allExercisesCollapsed={allExercisesCollapsed}
-          collapsedExerciseIds={collapsedExerciseIds}
           dictionary={dictionary}
           exerciseEntries={exerciseEntries}
           exercisesById={exercisesById}
@@ -277,14 +258,12 @@ export function DayScreen() {
           onDeleteExercise={deleteExercise}
           onDeleteSet={deleteSet}
           onIncrementNumber={incrementNumber}
-          onToggleAllExercises={handleToggleAllExercises}
-          onToggleExercise={handleToggleExercise}
           onUpdateNumber={updateNumber}
         />
 
         <Button
           size="icon-lg"
-          className="fixed bottom-5 right-5 z-30 size-12 rounded-full shadow-lg"
+          className="absolute bottom-5 right-5 z-30 size-12 rounded-full shadow-lg"
           aria-label={dictionary.actions.addExercise}
           onClick={() => setExercisePickerOpen(true)}
         >

@@ -1,8 +1,5 @@
 "use client"
 
-import { ChevronsDown, ChevronsUp } from "lucide-react"
-
-import { Button } from "@/components/ui/button"
 import type {
   Exercise,
   ExerciseEntry,
@@ -15,8 +12,6 @@ import type { Dictionary } from "@/shared/i18n/dictionaries"
 import { ExerciseCard } from "./exercise-card"
 
 type ExerciseListProps = {
-  allExercisesCollapsed: boolean
-  collapsedExerciseIds: string[]
   dictionary: Dictionary
   exerciseEntries: ExerciseEntry[]
   exercisesById: Record<string, Exercise>
@@ -25,7 +20,7 @@ type ExerciseListProps = {
   repsStep: number
   settings: UserSettings | null
   unit: WeightUnit
-  onAddSet: (exerciseEntryId: string) => void
+  onAddSet: (exerciseEntryId: string) => Promise<string | null>
   onDeleteExercise: (exerciseEntryId: string) => void
   onDeleteSet: (exerciseEntryId: string, setEntryId: string) => void
   onIncrementNumber: (
@@ -34,8 +29,6 @@ type ExerciseListProps = {
     field: "reps" | "weight",
     delta: number
   ) => void
-  onToggleAllExercises: () => void
-  onToggleExercise: (exerciseEntryId: string) => void
   onUpdateNumber: (
     exerciseEntryId: string,
     setEntryId: string,
@@ -45,8 +38,6 @@ type ExerciseListProps = {
 }
 
 export function ExerciseList({
-  allExercisesCollapsed,
-  collapsedExerciseIds,
   dictionary,
   exerciseEntries,
   exercisesById,
@@ -59,40 +50,34 @@ export function ExerciseList({
   onDeleteExercise,
   onDeleteSet,
   onIncrementNumber,
-  onToggleAllExercises,
-  onToggleExercise,
   onUpdateNumber,
 }: ExerciseListProps) {
   return (
     <section className="flex flex-1 flex-col gap-3 px-4 py-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold">
-          {dictionary.labels.exercises}
-        </h2>
-        <Button variant="ghost" size="sm" onClick={onToggleAllExercises}>
-          {allExercisesCollapsed ? <ChevronsDown /> : <ChevronsUp />}
-          {allExercisesCollapsed
-            ? dictionary.actions.expandAll
-            : dictionary.actions.collapseAll}
-        </Button>
-      </div>
+      <h2 className="text-base font-semibold">
+        {dictionary.labels.exercises}
+      </h2>
 
       {loading ? (
-        <div className="rounded-lg border border-border p-4 text-sm text-muted-foreground">
+        <div className="rounded-lg bg-muted/40 p-4 text-sm text-muted-foreground">
           {dictionary.labels.loading}
         </div>
       ) : null}
 
       {!loading && exerciseEntries.length === 0 ? (
-        <div className="rounded-lg bg-muted/60 p-4 text-sm text-muted-foreground">
-          {dictionary.actions.addExercise}
+        <div className="flex min-h-40 flex-col items-center justify-center gap-3 rounded-2xl bg-muted/20 px-5 py-8 text-center">
+          <p className="text-base font-medium text-foreground">
+            Add your first exercise today
+          </p>
+          <p className="max-w-[18rem] text-sm text-muted-foreground">
+            {dictionary.actions.addExercise}
+          </p>
         </div>
       ) : null}
 
       {exerciseEntries.map((entry) => (
         <ExerciseCard
           key={entry.id}
-          collapsed={collapsedExerciseIds.includes(entry.id)}
           dictionary={dictionary}
           entry={entry}
           exercise={exercisesById[entry.exerciseId]}
@@ -104,7 +89,6 @@ export function ExerciseList({
           onDeleteExercise={onDeleteExercise}
           onDeleteSet={onDeleteSet}
           onIncrementNumber={onIncrementNumber}
-          onToggle={onToggleExercise}
           onUpdateNumber={onUpdateNumber}
         />
       ))}

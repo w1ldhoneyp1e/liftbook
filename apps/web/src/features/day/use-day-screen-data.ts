@@ -129,7 +129,7 @@ export function useDayScreenData(date: string) {
       const settings = await db.userSettings.get("local")
 
       if (!entry) {
-        return
+        return null
       }
 
       const now = new Date().toISOString()
@@ -153,6 +153,7 @@ export function useDayScreenData(date: string) {
       })
 
       await load()
+      return newSet.id
     },
     [load]
   )

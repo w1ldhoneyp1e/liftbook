@@ -243,21 +243,24 @@ Status: implemented in the current pass.
 
 Solution:
 
-- Make exercise cards less table-like.
-- Header should show name, muscle group, and set count.
-- Sets should be repeated rows with soft background, set number, and two controls.
-- Use fewer harsh borders and dividers.
-- Add-set action should feel like the next potential set.
+- Make the exercise card compact and calm, without an outer border, shadow, or collapsing behavior.
+- Keep the header to the exercise name and muscle group.
+- Show sets inline as compact items.
+- Edit weight and reps in a popup opened by tapping a set.
+- Add a new set with a dedicated `+` button.
+- The `...` button next to the exercise currently contains only delete.
+- Keep edit/delete actions for a set inside the same popover/popup so the main list stays short.
 
 Files:
 
 - `apps/web/src/features/day/components/exercise-card.tsx`
 - `apps/web/src/features/day/components/set-number-control.tsx`
+- `apps/web/src/components/ui/popover.tsx`
 
 Definition of Done:
 
-- Exercise cards scan faster.
-- Sets feel like one working area.
+- Exercise cards are compact.
+- Sets are easy to edit without crowding the main screen.
 - UI remains mobile-first and does not break weight/reps input.
 
 ## 14. Make delete safer
