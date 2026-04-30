@@ -90,24 +90,24 @@ export function getDateButtonClassName(
   selected: boolean
 ) {
   if (selected && state === "today") {
-    return "border-emerald-200 bg-white text-emerald-950 shadow-sm"
+    return "bg-white text-emerald-900 shadow-[inset_0_0_0_1.5px_rgba(16,185,129,0.32)]"
   }
 
   if (selected && state === "future") {
-    return "border-sky-200 bg-white text-sky-950 shadow-sm"
+    return "bg-white text-sky-900 shadow-[inset_0_0_0_1.5px_rgba(14,165,233,0.3)]"
   }
 
   if (selected) {
-    return "border-zinc-200 bg-white text-zinc-950 shadow-sm"
+    return "bg-white text-zinc-900 shadow-[inset_0_0_0_1.5px_rgba(113,113,122,0.28)]"
   }
 
   if (state === "today") {
-    return "border-transparent bg-white/80 text-emerald-800"
+    return "bg-white/80 text-emerald-800"
   }
 
   if (state === "future") {
-    return "border-transparent bg-sky-50 text-sky-800"
+    return "bg-sky-50 text-sky-800"
   }
 
-  return "border-transparent bg-zinc-50 text-zinc-500"
+  return "bg-zinc-50 text-zinc-500"
 }
