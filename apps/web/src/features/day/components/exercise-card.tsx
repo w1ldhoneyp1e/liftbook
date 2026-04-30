@@ -31,7 +31,10 @@ type ExerciseCardProps = {
   unit: WeightUnit
   onAddSet: (exerciseEntryId: string) => Promise<string | null>
   onDeleteExercise: (exerciseEntryId: string) => void
-  onDeleteSet: (exerciseEntryId: string, setEntryId: string) => void
+  onDeleteSet: (
+    exerciseEntryId: string,
+    setEntryId: string
+  ) => Promise<void> | void
   onIncrementNumber: (
     exerciseEntryId: string,
     setEntryId: string,
@@ -67,6 +70,7 @@ export function ExerciseCard({
     [entry.setEntries]
   )
   const [editorSetId, setEditorSetId] = useState<string | null>(null)
+  const [creatingSetId, setCreatingSetId] = useState<string | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
 
   const editorSet = activeSets.find((setEntry) => setEntry.id === editorSetId)
@@ -74,8 +78,20 @@ export function ExerciseCard({
   async function handleAddSet() {
     const newSetId = await onAddSet(entry.id)
     if (newSetId) {
+      setCreatingSetId(newSetId)
       setEditorSetId(newSetId)
     }
+  }
+
+  async function handleCancelNewSet(setEntryId: string) {
+    await Promise.resolve(onDeleteSet(entry.id, setEntryId))
+    setCreatingSetId((current) => (current === setEntryId ? null : current))
+    setEditorSetId((current) => (current === setEntryId ? null : current))
+  }
+
+  function handleSaveNewSet(setEntryId: string) {
+    setCreatingSetId((current) => (current === setEntryId ? null : current))
+    setEditorSetId((current) => (current === setEntryId ? null : current))
   }
 
   const editorUnit = editorSet?.weightUnit ?? unit
@@ -149,6 +165,7 @@ export function ExerciseCard({
           const setUnit = set.weightUnit ?? unit
           const setWeight = set.weight ?? 0
           const setReps = set.reps ?? 0
+          const isCreatingSet = creatingSetId === set.id
 
           return (
             <Popover
@@ -156,6 +173,9 @@ export function ExerciseCard({
               open={editorSetId === set.id && editorSet != null}
               onOpenChange={(open) => {
                 if (!open) {
+                  if (isCreatingSet) {
+                    return
+                  }
                   setEditorSetId((current) => (current === set.id ? null : current))
                 } else {
                   setEditorSetId(set.id)
@@ -237,13 +257,34 @@ export function ExerciseCard({
                   </div>
 
                   <div className="mt-3 flex justify-end">
-                    <Button
-                      variant="ghost"
-                      size="default"
-                      onClick={() => setEditorSetId(null)}
-                    >
-                      {dictionary.actions.cancel}
-                    </Button>
+                    {isCreatingSet ? (
+                      <div className="flex w-full justify-between gap-2">
+                        <Button
+                          variant="ghost"
+                          size="default"
+                          onClick={() => {
+                            void handleCancelNewSet(set.id)
+                          }}
+                        >
+                          {dictionary.actions.cancel}
+                        </Button>
+                        <Button
+                          variant="default"
+                          size="default"
+                          onClick={() => handleSaveNewSet(set.id)}
+                        >
+                          {dictionary.actions.save}
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="default"
+                        onClick={() => setEditorSetId(null)}
+                      >
+                        {dictionary.actions.cancel}
+                      </Button>
+                    )}
                   </div>
                 </PopoverPopup>
               </PopoverPositioner>

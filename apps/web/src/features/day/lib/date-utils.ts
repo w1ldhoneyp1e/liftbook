@@ -90,15 +90,15 @@ export function getDateButtonClassName(
   selected: boolean
 ) {
   if (selected && state === "today") {
-    return "bg-white text-emerald-900 ring-2 ring-emerald-500/30"
+    return "bg-white text-emerald-900 shadow-[inset_0_0_0_1.5px_rgba(16,185,129,0.32)]"
   }
 
   if (selected && state === "future") {
-    return "bg-white text-sky-900 ring-2 ring-sky-500/30"
+    return "bg-white text-sky-900 shadow-[inset_0_0_0_1.5px_rgba(14,165,233,0.3)]"
   }
 
   if (selected) {
-    return "bg-white text-zinc-900 ring-2 ring-zinc-400/30"
+    return "bg-white text-zinc-900 shadow-[inset_0_0_0_1.5px_rgba(113,113,122,0.28)]"
   }
 
   if (state === "today") {

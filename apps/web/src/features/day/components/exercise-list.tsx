@@ -22,7 +22,10 @@ type ExerciseListProps = {
   unit: WeightUnit
   onAddSet: (exerciseEntryId: string) => Promise<string | null>
   onDeleteExercise: (exerciseEntryId: string) => void
-  onDeleteSet: (exerciseEntryId: string, setEntryId: string) => void
+  onDeleteSet: (
+    exerciseEntryId: string,
+    setEntryId: string
+  ) => Promise<void> | void
   onIncrementNumber: (
     exerciseEntryId: string,
     setEntryId: string,
