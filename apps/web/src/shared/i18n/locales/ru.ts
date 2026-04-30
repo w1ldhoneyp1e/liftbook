@@ -36,6 +36,8 @@ export const ru: Dictionary = {
     allMuscleGroups: "Все",
     autoRestTimer: "Автотаймер отдыха",
     connectionError: "Не удалось подключиться",
+    emptyDayOnDate: "Добавьте первое упражнение на {date}",
+    emptyDayToday: "Добавьте первое упражнение на сегодня",
     exercises: "Упражнения",
     language: "Язык",
     loading: "Загрузка...",

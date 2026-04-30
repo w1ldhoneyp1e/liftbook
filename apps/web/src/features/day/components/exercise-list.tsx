@@ -18,7 +18,9 @@ type ExerciseListProps = {
   loading: boolean
   locale: Locale
   repsStep: number
+  selectedDate: string
   settings: UserSettings | null
+  today: string
   unit: WeightUnit
   onAddSet: (exerciseEntryId: string) => Promise<string | null>
   onDeleteExercise: (exerciseEntryId: string) => void
@@ -47,7 +49,9 @@ export function ExerciseList({
   loading,
   locale,
   repsStep,
+  selectedDate,
   settings,
+  today,
   unit,
   onAddSet,
   onDeleteExercise,
@@ -55,6 +59,17 @@ export function ExerciseList({
   onIncrementNumber,
   onUpdateNumber,
 }: ExerciseListProps) {
+  const emptyDayLabel =
+    selectedDate === today
+      ? dictionary.labels.emptyDayToday
+      : dictionary.labels.emptyDayOnDate.replace(
+          "{date}",
+          new Intl.DateTimeFormat(locale, {
+            day: "2-digit",
+            month: "2-digit",
+          }).format(new Date(`${selectedDate}T12:00:00`))
+        )
+
   return (
     <section className="flex flex-1 flex-col gap-4 px-4 py-4">
       {loading ? (
@@ -64,9 +79,9 @@ export function ExerciseList({
       ) : null}
 
       {!loading && exerciseEntries.length === 0 ? (
-        <div className="flex min-h-44 flex-col items-center justify-center gap-3 rounded-2xl bg-muted/20 px-5 py-8 text-center">
+        <div className="flex min-h-[52svh] flex-col items-center justify-center gap-3 px-5 py-8 text-center">
           <p className="text-lg font-medium text-foreground">
-            Add your first exercise today
+            {emptyDayLabel}
           </p>
           <p className="max-w-[18rem] text-base text-muted-foreground">
             {dictionary.actions.addExercise}

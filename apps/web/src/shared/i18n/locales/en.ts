@@ -36,6 +36,8 @@ export const en: Dictionary = {
     allMuscleGroups: "All",
     autoRestTimer: "Auto rest timer",
     connectionError: "Connection failed",
+    emptyDayOnDate: "Add your first exercise on {date}",
+    emptyDayToday: "Add your first exercise today",
     exercises: "Exercises",
     language: "Language",
     loading: "Loading...",

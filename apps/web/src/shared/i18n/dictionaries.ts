@@ -39,6 +39,8 @@ export type Dictionary = {
     allMuscleGroups: string
     autoRestTimer: string
     connectionError: string
+    emptyDayOnDate: string
+    emptyDayToday: string
     exercises: string
     language: string
     loading: string

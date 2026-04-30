@@ -267,7 +267,9 @@ export function DayScreen() {
             loading={loading}
             locale={locale}
             repsStep={repsStep}
+            selectedDate={selectedDate}
             settings={settings}
+            today={today}
             unit={unit}
             onAddSet={handleAddSet}
             onDeleteExercise={deleteExercise}
