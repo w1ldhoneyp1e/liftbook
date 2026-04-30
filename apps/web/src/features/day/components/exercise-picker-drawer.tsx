@@ -45,16 +45,27 @@ export function ExercisePickerDrawer({
   const [editingExerciseId, setEditingExerciseId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState("")
 
+  function resetFilters() {
+    setSelectedMuscleGroup(null)
+    setQuery("")
+    setEditingExerciseId(null)
+    setEditingName("")
+  }
+
   const filteredExercises = exercises
     .filter((exercise) => !exercise.deletedAt)
-    .filter(
-      (exercise) =>
+    .filter((exercise) => {
+      const normalizedQuery = query.trim().toLowerCase()
+      const matchesQuery =
+        normalizedQuery.length === 0 ||
+        exercise.name[locale].toLowerCase().includes(normalizedQuery)
+      const matchesMuscleGroup =
+        normalizedQuery.length > 0 ||
         !selectedMuscleGroup ||
         exercise.muscleGroupIds.includes(selectedMuscleGroup)
-    )
-    .filter((exercise) =>
-      exercise.name[locale].toLowerCase().includes(query.trim().toLowerCase())
-    )
+
+      return matchesQuery && matchesMuscleGroup
+    })
     .sort((a, b) => a.name[locale].localeCompare(b.name[locale]))
   const canCreateCustomExercise = query.trim().length > 0
 
@@ -74,7 +85,16 @@ export function ExercisePickerDrawer({
   }
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
+    <Drawer
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (nextOpen) {
+          resetFilters()
+        }
+
+        onOpenChange(nextOpen)
+      }}
+    >
       <DrawerContent className="mx-auto max-h-[92svh] max-w-md rounded-t-xl bg-background">
         <DrawerHeader className="text-left">
           <DrawerTitle>{dictionary.actions.chooseExercise}</DrawerTitle>
@@ -86,6 +106,7 @@ export function ExercisePickerDrawer({
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               className="h-10 pl-9"
+              autoFocus
               placeholder={dictionary.labels.searchExercise}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
