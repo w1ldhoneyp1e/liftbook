@@ -147,7 +147,6 @@ export function DayScreen() {
 
       try {
         await syncPendingChanges()
-        autoSyncSignatureRef.current = null
         if (mode === "manual") {
           setSyncError(false)
         }

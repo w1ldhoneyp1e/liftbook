@@ -118,7 +118,10 @@ export function SettingsDrawer({
                     </div>
                     <Button
                       size="sm"
-                      disabled={syncing || !isOnline}
+                      disabled={
+                        !isOnline ||
+                        (syncing && syncMode === "manual")
+                      }
                       onClick={onSyncNow}
                     >
                       {dictionary.actions.syncNow}
