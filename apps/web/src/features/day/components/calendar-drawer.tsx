@@ -38,12 +38,12 @@ export function CalendarDrawer({
           <DrawerDescription>{selectedDate}</DrawerDescription>
         </DrawerHeader>
 
-        <div className="min-h-[410px] px-4 pb-4">
+        <div className="h-[430px] px-4 pb-4">
           <Calendar
             mode="single"
             locale={{ code: locale }}
             selected={new Date(`${selectedDate}T12:00:00`)}
-            className="mx-auto [--cell-size:--spacing(10)]"
+            className="mx-auto h-full [--cell-size:--spacing(10)]"
             style={{ "--cell-size": "2.75rem" } as CSSProperties}
             onSelect={onSelectDate}
           />
