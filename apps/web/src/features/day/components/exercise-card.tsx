@@ -99,7 +99,7 @@ export function ExerciseCard({
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
-            size="icon-xs"
+            size="icon-sm"
             aria-label={dictionary.actions.addSet}
             onClick={() => {
               void handleAddSet()
@@ -112,11 +112,11 @@ export function ExerciseCard({
             <PopoverTrigger
               render={
                 <button
-                  className="inline-flex size-6 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  className="inline-flex size-7 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                   type="button"
                   aria-label={dictionary.actions.deleteExercise}
                 >
-                  <MoreVertical className="size-4" />
+                  <MoreVertical className="size-[18px]" />
                 </button>
               }
             />
@@ -185,11 +185,10 @@ export function ExerciseCard({
                       <p className="text-base font-semibold">
                         {exerciseName} · {index + 1}
                       </p>
-                      <p className="text-sm text-muted-foreground">Set</p>
                     </div>
                     <Button
                       variant="ghost"
-                      size="icon-xs"
+                      size="icon-sm"
                       aria-label={dictionary.actions.deleteSet}
                       className="text-muted-foreground hover:text-destructive"
                       onClick={() => onDeleteSet(entry.id, set.id)}
@@ -236,7 +235,7 @@ export function ExerciseCard({
                   <div className="mt-3 flex justify-end">
                     <Button
                       variant="ghost"
-                      size="sm"
+                      size="default"
                       onClick={() => setEditorSetId(null)}
                     >
                       {dictionary.actions.cancel}
