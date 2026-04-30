@@ -37,6 +37,7 @@ export function DayScreen() {
   const [accountConnecting, setAccountConnecting] = useState(false)
   const [syncError, setSyncError] = useState(false)
   const [syncing, setSyncing] = useState(false)
+  const [syncMode, setSyncMode] = useState<"auto" | "manual" | null>(null)
   const {
     accountSession,
     addExercise,
@@ -135,20 +136,32 @@ export function DayScreen() {
     }
   }
 
-  const runSync = useCallback(async () => {
-    setSyncing(true)
-    setSyncError(false)
+  const runSync = useCallback(
+    async (mode: "auto" | "manual") => {
+      setSyncing(true)
+      setSyncMode(mode)
 
-    try {
-      await syncPendingChanges()
-      autoSyncSignatureRef.current = null
-      setSyncError(false)
-    } catch {
-      setSyncError(true)
-    } finally {
-      setSyncing(false)
-    }
-  }, [syncPendingChanges])
+      if (mode === "manual") {
+        setSyncError(false)
+      }
+
+      try {
+        await syncPendingChanges()
+        autoSyncSignatureRef.current = null
+        if (mode === "manual") {
+          setSyncError(false)
+        }
+      } catch {
+        if (mode === "manual") {
+          setSyncError(true)
+        }
+      } finally {
+        setSyncing(false)
+        setSyncMode(null)
+      }
+    },
+    [syncPendingChanges]
+  )
 
   useEffect(() => {
     if (!accountSession || !isOnline || syncing) {
@@ -169,14 +182,14 @@ export function DayScreen() {
     autoSyncSignatureRef.current = signature
 
     const timeoutId = window.setTimeout(() => {
-      void runSync()
+      void runSync("auto")
     }, 350)
 
     return () => window.clearTimeout(timeoutId)
   }, [accountSession, isOnline, runSync, syncSummary.pending, syncing])
 
   async function handleSyncNow() {
-    await runSync()
+    await runSync("manual")
   }
 
   function handleSelectCalendarDate(date: Date | undefined) {
@@ -308,6 +321,7 @@ export function DayScreen() {
           settings={settings}
           syncSummary={syncSummary}
           isOnline={isOnline}
+          syncMode={syncMode}
           syncError={syncError}
           syncing={syncing}
           onCreateGuestAccount={handleCreateGuestAccount}

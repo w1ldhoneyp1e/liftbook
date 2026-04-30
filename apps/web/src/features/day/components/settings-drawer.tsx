@@ -30,6 +30,7 @@ type SettingsDrawerProps = {
     synced: number
   }
   isOnline: boolean
+  syncMode: "auto" | "manual" | null
   syncError: boolean
   syncing: boolean
   onCreateGuestAccount: () => void
@@ -49,6 +50,7 @@ export function SettingsDrawer({
   settings,
   syncSummary,
   isOnline,
+  syncMode,
   syncError,
   syncing,
   onCreateGuestAccount,
@@ -58,7 +60,7 @@ export function SettingsDrawer({
 }: SettingsDrawerProps) {
   const syncStatusText = syncError
     ? dictionary.labels.syncFailed
-    : syncing
+    : syncing && (syncMode === "manual" || syncSummary.pending > 0)
       ? dictionary.labels.syncInProgress
       : !isOnline
         ? dictionary.labels.syncOffline
