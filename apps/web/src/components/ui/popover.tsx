@@ -20,10 +20,12 @@ function PopoverPositioner({
   ...props
 }: PopoverPrimitive.Positioner.Props & React.RefAttributes<HTMLDivElement>) {
   return (
-    <PopoverPrimitive.Positioner
-      className={cn("z-50 outline-none", className)}
-      {...props}
-    />
+    <PopoverPrimitive.Portal>
+      <PopoverPrimitive.Positioner
+        className={cn("z-50 outline-none", className)}
+        {...props}
+      />
+    </PopoverPrimitive.Portal>
   )
 }
 
