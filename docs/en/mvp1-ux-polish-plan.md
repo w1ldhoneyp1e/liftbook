@@ -4,64 +4,6 @@ Date: 2026-04-30
 
 Goal: close MVP 1 UX notes without adding new product directions. This document is written so another model can implement each item one by one without extra context.
 
-## 1. Date strip drag should scroll dates, not change day
-
-Problem: dragging the date strip on mobile triggers the page-level swipe and changes the selected date.
-
-Solution:
-
-- Move day-changing swipe handling from the whole `main` element to the content area below the sticky header.
-- Or stop touch propagation inside the date strip.
-- Preferred: date strip drag scrolls the strip; content swipe changes day.
-
-Files:
-
-- `apps/web/src/features/day/day-screen.tsx`
-- `apps/web/src/features/day/components/date-header.tsx`
-
-Definition of Done:
-
-- The date strip scrolls horizontally by touch.
-- Selected date does not change while scrolling the strip.
-- Swiping the main day content still changes the date.
-
-## 2. Show more dates in the strip
-
-Problem: the date strip has too few dates.
-
-Solution:
-
-- Show 2 weeks before and 1 week after the selected date.
-- Make sure the selected date remains visible.
-
-Files:
-
-- `apps/web/src/features/day/lib/date-utils.ts`
-
-Definition of Done:
-
-- The strip includes roughly 14 days back and 7 days forward.
-- No visible horizontal scrollbar in WebKit or Firefox.
-
-## 3. Fix selected date styling
-
-Problem: the selected date shadow looks like a clipped border.
-
-Solution:
-
-- Remove the odd shadow outline.
-- Use a clear `border` or soft `ring` that is not visually clipped.
-- Keep `past / today / future` tones.
-
-Files:
-
-- `apps/web/src/features/day/lib/date-utils.ts`
-- `apps/web/src/features/day/components/date-header.tsx`
-
-Definition of Done:
-
-- Selected date looks complete.
-- The top edge does not look cut off.
 
 ## 4. Improve empty day
 
