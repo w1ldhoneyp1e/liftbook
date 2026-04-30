@@ -41,10 +41,10 @@ export function SetNumberControl({
   }
 
   return (
-    <div className="grid grid-cols-[1.75rem_1fr_1.75rem] items-center rounded-md bg-background">
+    <div className="grid grid-cols-[1.75rem_1fr_1.75rem] items-center rounded-lg border border-border/50 bg-background shadow-sm">
       <button
         aria-label={decreaseLabel}
-        className="h-9 text-sm text-muted-foreground"
+        className="h-10 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
         type="button"
         onClick={() => onIncrement(-step)}
       >
@@ -53,7 +53,7 @@ export function SetNumberControl({
       <div className="relative">
         <Input
           aria-label={ariaLabel}
-          className="h-9 border-0 px-1 pr-8 text-center text-sm font-medium shadow-none focus-visible:ring-0"
+          className="h-10 border-0 px-1 pr-8 text-center text-sm font-semibold shadow-none focus-visible:ring-0"
           inputMode="decimal"
           value={draft}
           onBlur={commitDraft}
@@ -70,7 +70,7 @@ export function SetNumberControl({
       </div>
       <button
         aria-label={increaseLabel}
-        className="h-9 text-sm text-muted-foreground"
+        className="h-10 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
         type="button"
         onClick={() => onIncrement(step)}
       >
