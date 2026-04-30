@@ -90,6 +90,11 @@ Default cleanup policy:
 - sync events older than 90 days are removed by default;
 - retention can be tuned with `LIFTBOOK_SESSION_RETENTION_DAYS` and `LIFTBOOK_SYNC_RETENTION_DAYS`.
 
+For the current MVP 1 status and remaining scope, see:
+
+- [docs/ru/mvp1-gap-review.md](/home/kirill-yashmetov/projects/liftbook/docs/ru/mvp1-gap-review.md)
+- [docs/en/mvp1-gap-review.md](/home/kirill-yashmetov/projects/liftbook/docs/en/mvp1-gap-review.md)
+
 Recommended local flow:
 
 ```bash

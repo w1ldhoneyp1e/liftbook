@@ -4,6 +4,8 @@
 
 Цель: пользователь может провести реальную тренировку в зале с Liftbook на iPhone, полностью офлайн.
 
+Текущий статус и оставшиеся gaps зафиксированы в [docs/ru/mvp1-gap-review.md](/home/kirill-yashmetov/projects/liftbook/docs/ru/mvp1-gap-review.md).
+
 Основные возможности:
 
 - Открытие как app-like mobile experience.

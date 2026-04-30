@@ -4,6 +4,8 @@
 
 Goal: the user can complete a real gym workout using Liftbook on iPhone, fully offline.
 
+The current status and remaining gaps are tracked in [docs/en/mvp1-gap-review.md](/home/kirill-yashmetov/projects/liftbook/docs/en/mvp1-gap-review.md).
+
 Core features:
 
 - Install/open as an app-like mobile experience.
