@@ -261,6 +261,45 @@ Definition of Done:
 
 - Exercise cards are compact.
 - Sets are easy to edit without crowding the main screen.
+
+## 14. Remove the "Exercises" heading
+
+Problem: the `Exercises` heading does not add enough value and takes vertical space away from the main flow.
+
+Solution:
+
+- Remove the section heading from the main content area.
+- Show the exercise list or empty state immediately without an extra intermediate heading.
+
+Files:
+
+- `apps/web/src/features/day/components/exercise-list.tsx`
+
+Definition of Done:
+
+- Main content starts directly with the exercise list or empty state.
+- There is less visual noise at the top of the content area.
+
+## 15. Increase the size of the main content
+
+Problem: the main content area feels slightly too small for fast in-gym interaction.
+
+Solution:
+
+- Increase font size for the key exercise-card and set content.
+- Slightly increase height and inner spacing for tappable elements in the main content.
+- Do not expand the sticky header unless necessary; focus on the working area of the day screen.
+
+Files:
+
+- `apps/web/src/features/day/components/exercise-card.tsx`
+- `apps/web/src/features/day/components/set-number-control.tsx`
+- `apps/web/src/features/day/components/exercise-list.tsx` if needed
+
+Definition of Done:
+
+- Cards and sets are easier to read in hand.
+- Interactive elements in the main content are easier to tap.
 - UI remains mobile-first and does not break weight/reps input.
 
 ## 14. Make delete safer
