@@ -5,9 +5,38 @@ import { Popover as PopoverPrimitive } from "@base-ui/react/popover"
 
 import { cn } from "@/lib/utils"
 
-function Popover({ ...props }: PopoverPrimitive.Root.Props) {
-  return <PopoverPrimitive.Root modal="trap-focus" {...props} />
+type PopoverProps = PopoverPrimitive.Root.Props & {
+  backdropClassName?: string
+  withBackdrop?: boolean
 }
+
+function Popover({
+  backdropClassName,
+  modal = "trap-focus",
+  withBackdrop = true,
+  ...props
+}: PopoverProps) {
+  return (
+    <PopoverBackdropContext.Provider
+      value={{
+        backdropClassName,
+        withBackdrop,
+      }}
+    >
+      <PopoverPrimitive.Root
+        modal={withBackdrop ? modal : false}
+        {...props}
+      />
+    </PopoverBackdropContext.Provider>
+  )
+}
+
+const PopoverBackdropContext = React.createContext<{
+  backdropClassName?: string
+  withBackdrop: boolean
+}>({
+  withBackdrop: true,
+})
 
 function PopoverTrigger({
   ...props
@@ -19,9 +48,20 @@ function PopoverPositioner({
   className,
   ...props
 }: PopoverPrimitive.Positioner.Props & React.RefAttributes<HTMLDivElement>) {
+  const { backdropClassName, withBackdrop } = React.useContext(
+    PopoverBackdropContext
+  )
+
   return (
     <PopoverPrimitive.Portal>
-      <PopoverPrimitive.Backdrop className="fixed inset-0 z-40 bg-background/10 backdrop-blur-[5px]" />
+      {withBackdrop ? (
+        <PopoverPrimitive.Backdrop
+          className={cn(
+            "fixed inset-0 z-40 bg-background/10 backdrop-blur-[5px]",
+            backdropClassName
+          )}
+        />
+      ) : null}
       <PopoverPrimitive.Positioner
         className={cn("z-50 outline-none", className)}
         {...props}

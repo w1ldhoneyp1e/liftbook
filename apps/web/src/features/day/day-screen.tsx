@@ -213,11 +213,7 @@ export function DayScreen() {
 
   return (
     <div className="flex min-h-svh justify-center bg-zinc-100 text-foreground">
-      <main
-        className="relative flex min-h-svh w-full max-w-md flex-col bg-background"
-        onTouchStart={(event) => setTouchStartX(event.changedTouches[0].clientX)}
-        onTouchEnd={(event) => handleTouchEnd(event.changedTouches[0].clientX)}
-      >
+      <main className="relative flex min-h-svh w-full max-w-md flex-col bg-background">
         <div className="sticky top-0 z-40 bg-background shadow-sm">
           <DateHeader
             dateStatusLabel={dateStatusLabel}
@@ -245,21 +241,29 @@ export function DayScreen() {
           />
         </div>
 
-        <ExerciseList
-          dictionary={dictionary}
-          exerciseEntries={exerciseEntries}
-          exercisesById={exercisesById}
-          loading={loading}
-          locale={locale}
-          repsStep={repsStep}
-          settings={settings}
-          unit={unit}
-          onAddSet={handleAddSet}
-          onDeleteExercise={deleteExercise}
-          onDeleteSet={deleteSet}
-          onIncrementNumber={incrementNumber}
-          onUpdateNumber={updateNumber}
-        />
+        <div
+          className="flex-1"
+          onTouchStart={(event) =>
+            setTouchStartX(event.changedTouches[0].clientX)
+          }
+          onTouchEnd={(event) => handleTouchEnd(event.changedTouches[0].clientX)}
+        >
+          <ExerciseList
+            dictionary={dictionary}
+            exerciseEntries={exerciseEntries}
+            exercisesById={exercisesById}
+            loading={loading}
+            locale={locale}
+            repsStep={repsStep}
+            settings={settings}
+            unit={unit}
+            onAddSet={handleAddSet}
+            onDeleteExercise={deleteExercise}
+            onDeleteSet={deleteSet}
+            onIncrementNumber={incrementNumber}
+            onUpdateNumber={updateNumber}
+          />
+        </div>
 
         <Button
           size="icon-lg"

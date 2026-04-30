@@ -108,7 +108,11 @@ export function ExerciseCard({
             <Plus />
           </Button>
 
-          <Popover open={menuOpen} onOpenChange={setMenuOpen}>
+          <Popover
+            open={menuOpen}
+            withBackdrop={false}
+            onOpenChange={setMenuOpen}
+          >
             <PopoverTrigger
               render={
                 <button
