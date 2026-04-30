@@ -6,7 +6,7 @@ import { Popover as PopoverPrimitive } from "@base-ui/react/popover"
 import { cn } from "@/lib/utils"
 
 function Popover({ ...props }: PopoverPrimitive.Root.Props) {
-  return <PopoverPrimitive.Root {...props} />
+  return <PopoverPrimitive.Root modal="trap-focus" {...props} />
 }
 
 function PopoverTrigger({
@@ -21,7 +21,7 @@ function PopoverPositioner({
 }: PopoverPrimitive.Positioner.Props & React.RefAttributes<HTMLDivElement>) {
   return (
     <PopoverPrimitive.Portal>
-      <PopoverPrimitive.Backdrop className="fixed inset-0 bg-background/12 backdrop-blur-[3px]" />
+      <PopoverPrimitive.Backdrop className="fixed inset-0 z-40 bg-background/10 backdrop-blur-[5px]" />
       <PopoverPrimitive.Positioner
         className={cn("z-50 outline-none", className)}
         {...props}
