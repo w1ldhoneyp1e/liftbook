@@ -1,0 +1,13 @@
+.git
+.gitignore
+.pnpm-store
+node_modules
+apps/*/node_modules
+apps/web/.next
+apps/api/.data
+.data
+dist
+build
+coverage
+README.md
+docs

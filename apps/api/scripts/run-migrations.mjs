@@ -1,113 +1,92 @@
 import { readFile, readdir } from "node:fs/promises"
-import { spawnSync } from "node:child_process"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
+import pg from "pg"
 
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const projectRoot = resolve(scriptDir, "../../..")
 const migrationsDir = resolve(projectRoot, "apps/api/db/migrations")
+const { Client } = pg
+const client = new Client({
+  connectionString: getDatabaseUrl(),
+})
 
-const databaseName = process.env.POSTGRES_DB ?? "liftbook"
-const databaseUser = process.env.POSTGRES_USER ?? "liftbook"
-const postgresService = process.env.LIFTBOOK_POSTGRES_SERVICE ?? "postgres"
+await client.connect()
 
-ensureMigrationTable()
+try {
+  await ensureMigrationTable()
 
-const migrationFiles = (await readdir(migrationsDir))
-  .filter((fileName) => fileName.endsWith(".sql"))
-  .sort()
+  const migrationFiles = (await readdir(migrationsDir))
+    .filter((fileName) => fileName.endsWith(".sql"))
+    .sort()
 
-if (migrationFiles.length === 0) {
-  console.log("No SQL migrations found.")
-  process.exit(0)
-}
-
-for (const fileName of migrationFiles) {
-  if (isMigrationApplied(fileName)) {
-    console.log(`Skipping migration ${fileName}`)
-    continue
+  if (migrationFiles.length === 0) {
+    console.log("No SQL migrations found.")
+    process.exit(0)
   }
 
-  const filePath = join(migrationsDir, fileName)
-  const sql = await readFile(filePath, "utf8")
-  const escapedFileName = fileName.replaceAll("'", "''")
+  for (const fileName of migrationFiles) {
+    if (await isMigrationApplied(fileName)) {
+      console.log(`Skipping migration ${fileName}`)
+      continue
+    }
 
-  console.log(`Applying migration ${fileName}`)
+    const filePath = join(migrationsDir, fileName)
+    const sql = await readFile(filePath, "utf8")
 
-  runPsql({
-    input: [
-      "begin;",
-      sql.trim(),
-      `insert into schema_migrations (filename) values ('${escapedFileName}');`,
-      "commit;",
-      "",
-    ].join("\n"),
-  })
+    console.log(`Applying migration ${fileName}`)
+    await applyMigration(fileName, sql)
+  }
+
+  console.log("Migrations applied successfully.")
+} finally {
+  await client.end()
 }
 
-console.log("Migrations applied successfully.")
-
-function ensureMigrationTable() {
-  runPsql({
-    input: `
+async function ensureMigrationTable() {
+  await client.query(`
       create table if not exists schema_migrations (
         filename text primary key,
         applied_at timestamptz not null default now()
       );
-    `,
-  })
+    `)
 }
 
-function isMigrationApplied(fileName) {
-  const result = runPsql({
-    args: [
-      "-t",
-      "-A",
-      "-c",
-      `select 1 from schema_migrations where filename = '${fileName.replaceAll("'", "''")}' limit 1;`,
-    ],
-    stdio: ["inherit", "pipe", "inherit"],
-  })
-
-  return result.stdout.trim() === "1"
-}
-
-function runPsql({
-  args = [],
-  input = "",
-  stdio = ["pipe", "inherit", "inherit"],
-} = {}) {
-  const result = spawnSync(
-    "docker",
-    [
-      "compose",
-      "exec",
-      "-T",
-      postgresService,
-      "psql",
-      "-v",
-      "ON_ERROR_STOP=1",
-      "-U",
-      databaseUser,
-      "-d",
-      databaseName,
-      ...args,
-    ],
-    {
-      cwd: projectRoot,
-      input,
-      stdio,
-      encoding: "utf8",
-    }
+async function isMigrationApplied(fileName) {
+  const result = await client.query(
+    "select 1 from schema_migrations where filename = $1 limit 1",
+    [fileName]
   )
 
-  if (result.error) {
-    throw result.error
+  return result.rowCount === 1
+}
+
+async function applyMigration(fileName, sql) {
+  await client.query("begin")
+
+  try {
+    await client.query(sql)
+    await client.query(
+      "insert into schema_migrations (filename) values ($1)",
+      [fileName]
+    )
+    await client.query("commit")
+  } catch (error) {
+    await client.query("rollback")
+    throw error
+  }
+}
+
+function getDatabaseUrl() {
+  if (process.env.DATABASE_URL) {
+    return process.env.DATABASE_URL
   }
 
-  if (result.status !== 0) {
-    process.exit(result.status ?? 1)
-  }
+  const databaseName = process.env.POSTGRES_DB ?? "liftbook"
+  const databaseUser = process.env.POSTGRES_USER ?? "liftbook"
+  const databasePassword = process.env.POSTGRES_PASSWORD ?? "liftbook"
+  const databaseHost = process.env.POSTGRES_HOST ?? "127.0.0.1"
+  const databasePort = process.env.POSTGRES_PORT ?? "5432"
 
-  return result
+  return `postgresql://${databaseUser}:${databasePassword}@${databaseHost}:${databasePort}/${databaseName}`
 }

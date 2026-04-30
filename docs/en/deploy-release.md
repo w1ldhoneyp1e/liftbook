@@ -208,10 +208,48 @@ The release can be considered live if:
 
 ## What I do not recommend right now
 
-- do not move the first release to a self-managed VPS;
 - do not introduce Kubernetes;
 - do not combine MVP launch with a full auth system;
 - do not migrate backend frameworks right before deploy.
+
+## Alternative path: a single VPS
+
+If simpler costs and more direct control matter more, Liftbook can be deployed on one VPS.
+
+The repository now includes:
+
+- [docker-compose.vps.yml](/home/kirill-yashmetov/projects/liftbook/docker-compose.vps.yml)
+- [Caddyfile](/home/kirill-yashmetov/projects/liftbook/Caddyfile)
+- [apps/web/Dockerfile](/home/kirill-yashmetov/projects/liftbook/apps/web/Dockerfile)
+- [apps/api/Dockerfile](/home/kirill-yashmetov/projects/liftbook/apps/api/Dockerfile)
+- [.env.vps.example](/home/kirill-yashmetov/projects/liftbook/.env.vps.example)
+
+And helper commands:
+
+```bash
+pnpm vps:migrate
+pnpm vps:up
+pnpm vps:down
+```
+
+Topology:
+
+- `web`
+- `api`
+- `postgres`
+- `caddy`
+
+Everything runs on one machine through Docker Compose.
+
+### Why Caddy
+
+For a first VPS release, Caddy is usually more convenient than Nginx in three ways:
+
+- it obtains and renews Let's Encrypt certificates automatically;
+- the config is shorter and easier for a single domain;
+- `reverse_proxy` plus `/api` routing to the backend is very low ceremony.
+
+If more specialized proxy behavior is needed later, moving to Nginx is still easy.
 
 ## Sources
 

@@ -10,6 +10,9 @@
     "db:down": "docker compose down",
     "db:migrate": "node apps/api/scripts/run-migrations.mjs",
     "cleanup:lifecycle": "node apps/api/scripts/cleanup-lifecycle.mjs",
+    "vps:up": "docker compose --env-file .env.vps -f docker-compose.vps.yml up -d --build",
+    "vps:down": "docker compose --env-file .env.vps -f docker-compose.vps.yml down",
+    "vps:migrate": "docker compose --env-file .env.vps -f docker-compose.vps.yml run --rm migrate",
     "build": "pnpm --filter web build && pnpm --filter api build",
     "lint": "pnpm --filter web lint && pnpm --filter api lint"
   }

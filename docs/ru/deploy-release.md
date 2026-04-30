@@ -208,10 +208,48 @@ NEXT_PUBLIC_LIFTBOOK_API_URL=https://<railway-api-domain>
 
 ## Что я рекомендую не делать прямо сейчас
 
-- не пытаться в первый релиз посадить все на один VPS;
 - не вводить Kubernetes;
 - не совмещать сейчас выпуск MVP и полноценную auth-систему;
 - не усложнять backend framework migration перед деплоем.
+
+## Альтернативный путь: один VPS
+
+Если важнее простота расходов и контроль над окружением, Liftbook можно развернуть на одном VPS.
+
+Под это в репозитории уже добавлены:
+
+- [docker-compose.vps.yml](/home/kirill-yashmetov/projects/liftbook/docker-compose.vps.yml)
+- [Caddyfile](/home/kirill-yashmetov/projects/liftbook/Caddyfile)
+- [apps/web/Dockerfile](/home/kirill-yashmetov/projects/liftbook/apps/web/Dockerfile)
+- [apps/api/Dockerfile](/home/kirill-yashmetov/projects/liftbook/apps/api/Dockerfile)
+- [.env.vps.example](/home/kirill-yashmetov/projects/liftbook/.env.vps.example)
+
+И команды:
+
+```bash
+pnpm vps:migrate
+pnpm vps:up
+pnpm vps:down
+```
+
+Схема:
+
+- `web`
+- `api`
+- `postgres`
+- `caddy`
+
+Все живет на одной машине и поднимается через Docker Compose.
+
+### Почему Caddy
+
+Для первого VPS-релиза Caddy удобнее Nginx в трех вещах:
+
+- автоматически получает и обновляет Let's Encrypt сертификаты;
+- конфиг короче и проще для одного домена;
+- `reverse_proxy` и маршрутизация `/api` на backend настраиваются почти без церемонии.
+
+Если позже потребуется более специфичная прокси-конфигурация, на Nginx всегда можно перейти.
 
 ## Источники
 
