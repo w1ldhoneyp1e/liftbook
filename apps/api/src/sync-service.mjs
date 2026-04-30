@@ -6,6 +6,7 @@ const supportedEntityTypes = [
   "exerciseEntry",
   "userSettings",
 ]
+const maxPushBatchSize = 50
 
 export function createSyncService(store, options = {}) {
   const pullPageSize = Math.max(1, Number(options.pullPageSize ?? 100))
@@ -24,6 +25,14 @@ export function createSyncService(store, options = {}) {
         return "changes must be an array"
       }
 
+      if (body.changes.length === 0) {
+        return "changes must not be empty"
+      }
+
+      if (body.changes.length > maxPushBatchSize) {
+        return `changes must not exceed ${maxPushBatchSize} items`
+      }
+
       for (const change of body.changes) {
         if (!change || typeof change !== "object") {
           return "each change must be an object"
@@ -39,6 +48,10 @@ export function createSyncService(store, options = {}) {
 
         if (!["upsert", "delete"].includes(change.operation)) {
           return "change.operation is not supported"
+        }
+
+        if (!isValidIsoTimestamp(change.updatedAt)) {
+          return "change.updatedAt must be a valid ISO timestamp"
         }
       }
 
@@ -162,4 +175,13 @@ function createSyncKey({
       })
     )
     .digest("hex")
+}
+
+function isValidIsoTimestamp(value) {
+  if (typeof value !== "string" || value.length === 0) {
+    return false
+  }
+
+  const parsed = Date.parse(value)
+  return Number.isFinite(parsed)
 }

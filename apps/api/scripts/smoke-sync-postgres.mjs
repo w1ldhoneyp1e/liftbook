@@ -43,6 +43,37 @@ const pushB = await pushSyncChange({
   updatedAt: thirdUpdatedAt,
 })
 
+const emptyBatchResponse = await pushRawSyncChange({
+  accessToken: userA.session.accessToken,
+  clientId: userAClientId,
+  changes: [],
+})
+assert(
+  emptyBatchResponse.status === 400,
+  "empty push batch should be rejected with 400"
+)
+
+const invalidTimestampResponse = await pushRawSyncChange({
+  accessToken: userA.session.accessToken,
+  clientId: userAClientId,
+  changes: [
+    {
+      localId: `invalid_${Date.now()}`,
+      entityType: "workoutDay",
+      operation: "upsert",
+      updatedAt: "not-a-timestamp",
+      payload: {
+        id: `invalid_${Date.now()}`,
+        date: "2026-05-03",
+      },
+    },
+  ],
+})
+assert(
+  invalidTimestampResponse.status === 400,
+  "invalid updatedAt should be rejected with 400"
+)
+
 assert(isSequenceCursor(pushA.nextCursor), "user A push cursor should be sequence-based")
 assert(
   duplicatePushA.nextCursor === pushA.nextCursor,
@@ -173,7 +204,29 @@ async function pushSyncChange({
   date,
   updatedAt,
 }) {
-  const response = await fetch(`${apiBaseUrl}/v1/sync/push`, {
+  const response = await pushRawSyncChange({
+    accessToken,
+    clientId,
+    changes: [
+      {
+        localId,
+        entityType: "workoutDay",
+        operation: "upsert",
+        updatedAt,
+        payload: {
+          id: localId,
+          date,
+        },
+      },
+    ],
+  })
+
+  assert(response.ok, `sync push failed with status ${response.status}`)
+  return response.json()
+}
+
+async function pushRawSyncChange({ accessToken, clientId, changes }) {
+  return fetch(`${apiBaseUrl}/v1/sync/push`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -182,23 +235,9 @@ async function pushSyncChange({
     body: JSON.stringify({
       clientId,
       cursor: null,
-      changes: [
-        {
-          localId,
-          entityType: "workoutDay",
-          operation: "upsert",
-          updatedAt,
-          payload: {
-            id: localId,
-            date,
-          },
-        },
-      ],
+      changes,
     }),
   })
-
-  assert(response.ok, `sync push failed with status ${response.status}`)
-  return response.json()
 }
 
 async function pullSyncChanges({ accessToken, clientId, cursor }) {

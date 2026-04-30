@@ -17,6 +17,8 @@ Authorized API usage also updates `sessions.updated_at`, so session records beha
 
 `push` is idempotent for the same logical change payload. If the client retries the exact same change, the backend reuses the existing sync event instead of creating a duplicate.
 
+`push` batches are capped at 50 changes and each change must carry a valid ISO `updatedAt`. Empty batches are rejected with `400`.
+
 Current-state sync records are now scoped per user internally, so two different users can safely have the same local entity ids without overwriting each other on the backend.
 
 The storage layer already goes through a driver boundary, so a future PostgreSQL adapter can replace the file store without rewriting auth/sync routes.

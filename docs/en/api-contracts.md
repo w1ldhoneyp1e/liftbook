@@ -119,6 +119,8 @@ Supported `operation` values:
 
 The server treats a repeated submission of the same logical change as an idempotent retry. If the client sends the same `entityType + localId + operation + updatedAt + payload` again for the same user and device, the backend reuses the existing sync event instead of creating a duplicate.
 
+`push` is capped at 50 changes per request. Empty batches and invalid ISO `updatedAt` values should return `400`.
+
 Response:
 
 ```json
