@@ -6,6 +6,7 @@ import {
   CalendarDays,
   Settings,
 } from "lucide-react"
+import { useEffect, useRef } from "react"
 
 import { Button } from "@/components/ui/button"
 import type { DateState } from "@/shared/domain/types"
@@ -41,6 +42,15 @@ export function DateHeader({
   onSelectDate,
 }: DateHeaderProps) {
   const dateTone = getDateTone(selectedDateState)
+  const selectedDateRef = useRef<HTMLButtonElement | null>(null)
+
+  useEffect(() => {
+    selectedDateRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+      inline: "center",
+    })
+  }, [selectedDate])
 
   return (
     <header className={`px-4 pb-3 pt-4 ${dateTone.headerClassName}`}>
@@ -85,6 +95,7 @@ export function DateHeader({
         {days.map((item) => (
           <button
             key={item.dateKey}
+            ref={item.selected ? selectedDateRef : null}
             className={`min-w-14 rounded-lg px-2 py-2 text-center text-sm ${getDateButtonClassName(
               item.state,
               item.selected

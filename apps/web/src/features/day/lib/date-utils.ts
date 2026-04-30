@@ -23,10 +23,12 @@ export function createDateStrip(
 ): DateStripItem[] {
   const selected = new Date(`${selectedDate}T12:00:00`)
   const today = toDateKey(new Date())
+  const daysBack = 14
+  const daysForward = 7
 
-  return Array.from({ length: 7 }, (_, index) => {
+  return Array.from({ length: daysBack + daysForward + 1 }, (_, index) => {
     const date = new Date(selected)
-    date.setDate(selected.getDate() + index - 3)
+    date.setDate(selected.getDate() + index - daysBack)
     const dateKey = toDateKey(date)
 
     return {
