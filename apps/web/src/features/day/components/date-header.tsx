@@ -91,20 +91,22 @@ export function DateHeader({
         </div>
       </div>
 
-      <div className="mt-4 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="-mx-1 mt-4 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {days.map((item) => (
           <button
             key={item.dateKey}
             ref={item.selected ? selectedDateRef : null}
-            className={`min-w-14 rounded-lg px-2 py-2 text-center text-sm ${getDateButtonClassName(
+            className={`flex h-16 min-w-14 shrink-0 flex-col items-center justify-center rounded-2xl border px-2 text-center text-sm transition-colors ${getDateButtonClassName(
               item.state,
               item.selected
             )}`}
             type="button"
             onClick={() => onSelectDate(item.dateKey)}
           >
-            <span className="block text-xs">{item.day}</span>
-            <span className="block font-semibold">{item.date}</span>
+            <span className="block text-[11px] leading-none">{item.day}</span>
+            <span className="mt-1 block text-base font-semibold leading-none">
+              {item.date}
+            </span>
           </button>
         ))}
       </div>
