@@ -212,6 +212,37 @@ export async function createFileStoreFromPath(filePath) {
         hasMore: matchingEvents.length > pageSize,
       }
     },
+    async cleanupLifecycle({
+      now,
+      sessionRetentionDays,
+      syncRetentionDays,
+    }) {
+      const sessionCutoff = toCutoff(now, sessionRetentionDays)
+      const syncCutoff = toCutoff(now, syncRetentionDays)
+      const previousSessionCount = state.sessions.length
+      const previousSyncEventCount = state.syncEvents.length
+      const previousDeviceCount = state.devices.length
+
+      state = {
+        ...state,
+        sessions: state.sessions.filter(
+          (session) => new Date(session.expiresAt).getTime() > sessionCutoff
+        ),
+        syncEvents: state.syncEvents.filter((event) => {
+          const eventTime = new Date(event.serverTime).getTime()
+          return Number.isNaN(eventTime) ? true : eventTime >= syncCutoff
+        }),
+      }
+
+      await queuePersist()
+
+      return {
+        storage: "file",
+        removedSessions: previousSessionCount - state.sessions.length,
+        removedSyncEvents: previousSyncEventCount - state.syncEvents.length,
+        removedDevices: previousDeviceCount - state.devices.length,
+      }
+    },
   }
 }
 
@@ -277,6 +308,12 @@ function parseCursor(cursor) {
 function normalizeLimit(limit) {
   const parsed = Number(limit)
   return Number.isInteger(parsed) && parsed > 0 ? parsed : 100
+}
+
+function toCutoff(now, retentionDays) {
+  const parsedDays = Number(retentionDays)
+  const days = Number.isInteger(parsedDays) && parsedDays > 0 ? parsedDays : 30
+  return new Date(now).getTime() - days * 24 * 60 * 60 * 1000
 }
 
 function getStorageKey(record) {

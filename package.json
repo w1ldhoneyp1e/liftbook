@@ -9,6 +9,7 @@
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
     "db:migrate": "node apps/api/scripts/run-migrations.mjs",
+    "cleanup:lifecycle": "node apps/api/scripts/cleanup-lifecycle.mjs",
     "build": "pnpm --filter web build && pnpm --filter api build",
     "lint": "pnpm --filter web lint && pnpm --filter api lint"
   }

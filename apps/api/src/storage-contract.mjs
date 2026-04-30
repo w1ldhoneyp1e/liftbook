@@ -6,6 +6,7 @@ const requiredStorageMethods = [
   "touchDevice",
   "acceptSyncChanges",
   "listSyncEvents",
+  "cleanupLifecycle",
 ]
 
 export function ensureStorageContract(storage) {

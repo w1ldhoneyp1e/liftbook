@@ -76,6 +76,18 @@ Today:
 
 The migration runner now keeps a `schema_migrations` table and skips files that were already applied.
 
+Lifecycle cleanup is available as a separate script:
+
+```bash
+pnpm cleanup:lifecycle
+```
+
+Default cleanup policy:
+
+- expired sessions are removed when `expires_at` is in the past;
+- sync events older than 90 days are removed by default;
+- retention can be tuned with `LIFTBOOK_SESSION_RETENTION_DAYS` and `LIFTBOOK_SYNC_RETENTION_DAYS`.
+
 Recommended local flow:
 
 ```bash

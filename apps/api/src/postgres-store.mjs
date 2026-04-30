@@ -302,6 +302,28 @@ export async function createPostgresStore(options) {
         hasMore,
       }
     },
+    async cleanupLifecycle({ now, sessionRetentionDays, syncRetentionDays }) {
+      const sessionCutoff = toCutoff(now, sessionRetentionDays)
+      const syncCutoff = toCutoff(now, syncRetentionDays)
+
+      const removedSessions = await pool.query(
+        `delete from sessions
+         where expires_at <= $1`,
+        [sessionCutoff]
+      )
+      const removedSyncEvents = await pool.query(
+        `delete from sync_events
+         where server_time < $1`,
+        [syncCutoff]
+      )
+
+      return {
+        storage: "postgres",
+        removedSessions: removedSessions.rowCount ?? 0,
+        removedSyncEvents: removedSyncEvents.rowCount ?? 0,
+        removedDevices: 0,
+      }
+    },
   }
 }
 
@@ -383,4 +405,10 @@ function normalizeSequence(value) {
 function normalizeLimit(limit) {
   const parsed = Number(limit)
   return Number.isInteger(parsed) && parsed > 0 ? parsed : 100
+}
+
+function toCutoff(now, retentionDays) {
+  const parsedDays = Number(retentionDays)
+  const days = Number.isInteger(parsedDays) && parsedDays > 0 ? parsedDays : 30
+  return new Date(new Date(now).getTime() - days * 24 * 60 * 60 * 1000)
 }
