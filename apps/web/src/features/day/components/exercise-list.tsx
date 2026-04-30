@@ -53,23 +53,19 @@ export function ExerciseList({
   onUpdateNumber,
 }: ExerciseListProps) {
   return (
-    <section className="flex flex-1 flex-col gap-3 px-4 py-4">
-      <h2 className="text-base font-semibold">
-        {dictionary.labels.exercises}
-      </h2>
-
+    <section className="flex flex-1 flex-col gap-4 px-4 py-4">
       {loading ? (
-        <div className="rounded-lg bg-muted/40 p-4 text-sm text-muted-foreground">
+        <div className="rounded-xl bg-muted/40 p-4 text-base text-muted-foreground">
           {dictionary.labels.loading}
         </div>
       ) : null}
 
       {!loading && exerciseEntries.length === 0 ? (
-        <div className="flex min-h-40 flex-col items-center justify-center gap-3 rounded-2xl bg-muted/20 px-5 py-8 text-center">
-          <p className="text-base font-medium text-foreground">
+        <div className="flex min-h-44 flex-col items-center justify-center gap-3 rounded-2xl bg-muted/20 px-5 py-8 text-center">
+          <p className="text-lg font-medium text-foreground">
             Add your first exercise today
           </p>
-          <p className="max-w-[18rem] text-sm text-muted-foreground">
+          <p className="max-w-[18rem] text-base text-muted-foreground">
             {dictionary.actions.addExercise}
           </p>
         </div>
