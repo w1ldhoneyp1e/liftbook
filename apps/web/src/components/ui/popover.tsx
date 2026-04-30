@@ -21,6 +21,7 @@ function PopoverPositioner({
 }: PopoverPrimitive.Positioner.Props & React.RefAttributes<HTMLDivElement>) {
   return (
     <PopoverPrimitive.Portal>
+      <PopoverPrimitive.Backdrop className="fixed inset-0 bg-background/12 backdrop-blur-[3px]" />
       <PopoverPrimitive.Positioner
         className={cn("z-50 outline-none", className)}
         {...props}
@@ -36,7 +37,7 @@ function PopoverPopup({
   return (
     <PopoverPrimitive.Popup
       className={cn(
-        "max-h-[var(--available-height)] overflow-auto rounded-2xl border border-border/60 bg-background p-3 shadow-lg outline-none",
+        "max-h-[var(--available-height)] overflow-auto rounded-2xl border border-border/50 bg-background/96 p-3 shadow-lg outline-none",
         className
       )}
       {...props}

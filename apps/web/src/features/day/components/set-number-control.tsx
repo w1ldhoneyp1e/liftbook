@@ -28,36 +28,46 @@ export function SetNumberControl({
   onIncrement,
 }: SetNumberControlProps) {
   const [draft, setDraft] = useState(formatNumber(value))
+  const [editing, setEditing] = useState(false)
 
   function commitDraft() {
     const parsed = Number(draft.replace(",", "."))
 
     if (Number.isFinite(parsed)) {
       onCommit(parsed)
+      setEditing(false)
       return
     }
 
     setDraft(formatNumber(value))
+    setEditing(false)
   }
 
   return (
     <div className="grid grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-center gap-2">
       <button
         aria-label={decreaseLabel}
-        className="flex h-12 items-center justify-center rounded-xl border border-border/50 bg-background text-lg font-medium text-muted-foreground shadow-sm transition-colors hover:text-foreground"
+        className="flex h-12 items-center justify-center rounded-xl bg-muted/45 text-lg font-medium text-muted-foreground ring-1 ring-border/35 transition-colors hover:bg-muted/65 hover:text-foreground"
         type="button"
         onClick={() => onIncrement(-step)}
       >
         -
       </button>
-      <div className="relative rounded-xl border border-border/50 bg-background shadow-sm">
+      <div className="relative rounded-xl bg-muted/28 ring-1 ring-border/35">
         <Input
           aria-label={ariaLabel}
-          className="h-12 border-0 px-3 pr-10 text-center text-lg font-semibold shadow-none focus-visible:ring-0"
+          className="h-12 border-0 bg-transparent px-3 pr-10 text-center text-lg font-semibold shadow-none focus-visible:ring-0"
           inputMode="decimal"
-          value={draft}
+          value={editing ? draft : formatNumber(value)}
           onBlur={commitDraft}
-          onChange={(event) => setDraft(event.target.value)}
+          onChange={(event) => {
+            setEditing(true)
+            setDraft(event.target.value)
+          }}
+          onFocus={() => {
+            setEditing(true)
+            setDraft(formatNumber(value))
+          }}
           onKeyDown={(event) => {
             if (event.key === "Enter") {
               event.currentTarget.blur()
@@ -70,7 +80,7 @@ export function SetNumberControl({
       </div>
       <button
         aria-label={increaseLabel}
-        className="flex h-12 items-center justify-center rounded-xl border border-border/50 bg-background text-lg font-medium text-muted-foreground shadow-sm transition-colors hover:text-foreground"
+        className="flex h-12 items-center justify-center rounded-xl bg-muted/45 text-lg font-medium text-muted-foreground ring-1 ring-border/35 transition-colors hover:bg-muted/65 hover:text-foreground"
         type="button"
         onClick={() => onIncrement(step)}
       >
