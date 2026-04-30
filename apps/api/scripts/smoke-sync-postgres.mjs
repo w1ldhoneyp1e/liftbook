@@ -6,6 +6,9 @@ const pullClientA = `${userAClientId}-reader`
 const pullClientB = `${userBClientId}-reader`
 const sharedLocalId = `shared_local_${Date.now()}`
 const secondLocalId = `second_local_${Date.now()}`
+const firstUpdatedAt = new Date().toISOString()
+const secondUpdatedAt = new Date(Date.now() + 1000).toISOString()
+const thirdUpdatedAt = new Date(Date.now() + 2000).toISOString()
 
 const userA = await createGuestAccount(userAClientId, "en")
 const userB = await createGuestAccount(userBClientId, "ru")
@@ -15,12 +18,21 @@ const pushA = await pushSyncChange({
   clientId: userAClientId,
   localId: sharedLocalId,
   date: "2026-04-30",
+  updatedAt: firstUpdatedAt,
+})
+const duplicatePushA = await pushSyncChange({
+  accessToken: userA.session.accessToken,
+  clientId: userAClientId,
+  localId: sharedLocalId,
+  date: "2026-04-30",
+  updatedAt: firstUpdatedAt,
 })
 const pushASecond = await pushSyncChange({
   accessToken: userA.session.accessToken,
   clientId: userAClientId,
   localId: secondLocalId,
   date: "2026-05-02",
+  updatedAt: secondUpdatedAt,
 })
 
 const pushB = await pushSyncChange({
@@ -28,9 +40,14 @@ const pushB = await pushSyncChange({
   clientId: userBClientId,
   localId: sharedLocalId,
   date: "2026-05-01",
+  updatedAt: thirdUpdatedAt,
 })
 
 assert(isSequenceCursor(pushA.nextCursor), "user A push cursor should be sequence-based")
+assert(
+  duplicatePushA.nextCursor === pushA.nextCursor,
+  "duplicate user A push should reuse the original cursor"
+)
 assert(
   isSequenceCursor(pushASecond.nextCursor),
   "user A second push cursor should be sequence-based"
@@ -149,7 +166,13 @@ async function createGuestAccount(clientId, locale) {
   return response.json()
 }
 
-async function pushSyncChange({ accessToken, clientId, localId, date }) {
+async function pushSyncChange({
+  accessToken,
+  clientId,
+  localId,
+  date,
+  updatedAt,
+}) {
   const response = await fetch(`${apiBaseUrl}/v1/sync/push`, {
     method: "POST",
     headers: {
@@ -164,7 +187,7 @@ async function pushSyncChange({ accessToken, clientId, localId, date }) {
           localId,
           entityType: "workoutDay",
           operation: "upsert",
-          updatedAt: new Date().toISOString(),
+          updatedAt,
           payload: {
             id: localId,
             date,

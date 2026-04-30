@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process"
+import { createServer } from "node:net"
 import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
@@ -7,7 +8,7 @@ const apiRoot = resolve(scriptDir, "..")
 const serverEntry = resolve(apiRoot, "src/server.mjs")
 const smokeScript = resolve(apiRoot, "scripts/smoke-sync-postgres.mjs")
 
-const port = process.env.LIFTBOOK_SMOKE_PORT ?? "4021"
+const port = await resolveSmokePort()
 const databaseUrl =
   process.env.DATABASE_URL ??
   "postgresql://liftbook:liftbook@localhost:5432/liftbook"
@@ -78,6 +79,42 @@ async function waitForHealth(url, timeoutMs) {
   }
 
   throw new Error(`API health check timed out for ${url}`)
+}
+
+async function resolveSmokePort() {
+  if (process.env.LIFTBOOK_SMOKE_PORT) {
+    return process.env.LIFTBOOK_SMOKE_PORT
+  }
+
+  return String(await findFreePort())
+}
+
+async function findFreePort() {
+  return new Promise((resolvePromise, rejectPromise) => {
+    const probeServer = createServer()
+
+    probeServer.once("error", rejectPromise)
+    probeServer.listen(0, "127.0.0.1", () => {
+      const address = probeServer.address()
+
+      if (!address || typeof address === "string") {
+        probeServer.close(() => {
+          rejectPromise(new Error("Unable to resolve free smoke port"))
+        })
+        return
+      }
+
+      const freePort = address.port
+      probeServer.close((closeError) => {
+        if (closeError) {
+          rejectPromise(closeError)
+          return
+        }
+
+        resolvePromise(freePort)
+      })
+    })
+  })
 }
 
 async function runNodeScript(scriptPath, env) {

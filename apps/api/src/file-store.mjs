@@ -126,13 +126,38 @@ export async function createFileStoreFromPath(filePath) {
       serverTime,
       buildAcceptedChange,
     }) {
-      const accepted = changes.map((change) =>
-        buildAcceptedChange({ userId, clientId, change, serverTime })
-      ).map((event, index) => ({
-        ...event,
-        sequence: state.nextSequence + index,
-        cursor: String(state.nextSequence + index),
-      }))
+      const existingEventsBySyncKey = new Map(
+        state.syncEvents
+          .filter((event) => typeof event.syncKey === "string")
+          .map((event) => [event.syncKey, event])
+      )
+      const accepted = []
+      let nextSequence = state.nextSequence
+
+      for (const change of changes) {
+        const builtEvent = buildAcceptedChange({
+          userId,
+          clientId,
+          change,
+          serverTime,
+        })
+        const existingEvent = existingEventsBySyncKey.get(builtEvent.syncKey)
+
+        if (existingEvent) {
+          accepted.push(existingEvent)
+          continue
+        }
+
+        const persistedEvent = {
+          ...builtEvent,
+          sequence: nextSequence,
+          cursor: String(nextSequence),
+        }
+
+        accepted.push(persistedEvent)
+        existingEventsBySyncKey.set(persistedEvent.syncKey, persistedEvent)
+        nextSequence += 1
+      }
 
       const nextRecords = new Map(
         state.syncRecords.map((record) => [
@@ -162,8 +187,8 @@ export async function createFileStoreFromPath(filePath) {
               updatedAt: serverTime,
             })
           : state.devices,
-        nextSequence: state.nextSequence + accepted.length,
-        syncEvents: [...state.syncEvents, ...accepted],
+        nextSequence,
+        syncEvents: mergeSyncEvents(state.syncEvents, accepted),
         syncRecords: Array.from(nextRecords.values()),
       }
 
@@ -263,4 +288,10 @@ function withStorageKey(record) {
     ...record,
     storageKey: getStorageKey(record),
   }
+}
+
+function mergeSyncEvents(existingEvents, acceptedEvents) {
+  const knownIds = new Set(existingEvents.map((event) => event.id))
+  const newEvents = acceptedEvents.filter((event) => !knownIds.has(event.id))
+  return [...existingEvents, ...newEvents]
 }

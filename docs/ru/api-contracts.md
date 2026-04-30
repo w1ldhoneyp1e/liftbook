@@ -117,6 +117,8 @@ Authorization: Bearer dev_token
 - `upsert`
 - `delete`
 
+Сервер трактует повторную отправку того же логического изменения как идемпотентный retry. Если клиент повторно отправил тот же `entityType + localId + operation + updatedAt + payload` от того же пользователя и устройства, новый sync event не создается.
+
 Ответ:
 
 ```json

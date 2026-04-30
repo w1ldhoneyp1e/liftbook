@@ -162,6 +162,7 @@ export async function createPostgresStore(options) {
             `insert into sync_events (
                id,
                sequence,
+               sync_key,
                record_key,
                user_id,
                client_id,
@@ -173,11 +174,14 @@ export async function createPostgresStore(options) {
                server_version,
                updated_at
              ) values (
-               $1, default, $2, $3, $4, $5, $6, $7, $8::jsonb, $9, $10, $11
+               $1, default, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, $11, $12
              )
-             returning sequence`,
+             on conflict (sync_key)
+             do update set sync_key = excluded.sync_key
+             returning id, sequence, sync_key, record_key, user_id, client_id, entity_type, local_id, operation, payload, server_time, server_version, updated_at`,
             [
               event.id,
+              event.syncKey,
               event.recordKey,
               event.userId,
               event.clientId,
@@ -190,20 +194,10 @@ export async function createPostgresStore(options) {
               event.updatedAt,
             ]
           )
-          const persistedSequence = normalizeSequence(
-            insertEventResult.rows[0]?.sequence
-          )
-          const persistedEventWithCursor = {
-            ...event,
-            sequence: persistedSequence,
-            cursor:
-              persistedSequence !== null
-                ? String(persistedSequence)
-                : event.serverTime,
-          }
+          const persistedEventWithCursor = mapSyncEventRow(insertEventResult.rows[0])
           persistedEvents.push(persistedEventWithCursor)
 
-          if (event.operation === "delete") {
+          if (persistedEventWithCursor.operation === "delete") {
             await client.query(
               `delete from sync_records
                where record_key = $1 and user_id = $2`,
@@ -349,11 +343,13 @@ function mapSyncEventRow(row) {
 
   return {
     id: row.id,
+    syncKey: row.sync_key,
     cursor:
       normalizedSequence !== null
         ? String(normalizedSequence)
         : row.server_time.toISOString(),
     recordKey: row.record_key,
+    storageKey: `${row.user_id}:${row.record_key}`,
     userId: row.user_id,
     clientId: row.client_id,
     entityType: row.entity_type,

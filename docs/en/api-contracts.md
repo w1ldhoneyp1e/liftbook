@@ -117,6 +117,8 @@ Supported `operation` values:
 - `upsert`
 - `delete`
 
+The server treats a repeated submission of the same logical change as an idempotent retry. If the client sends the same `entityType + localId + operation + updatedAt + payload` again for the same user and device, the backend reuses the existing sync event instead of creating a duplicate.
+
 Response:
 
 ```json

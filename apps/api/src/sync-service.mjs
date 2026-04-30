@@ -102,21 +102,33 @@ export function createSyncService(store, options = {}) {
 }
 
 function acceptSyncChange({ userId, clientId, change, serverTime }) {
+  const updatedAt = change.updatedAt ?? serverTime
+  const payload = change.payload ?? null
+
   const serverVersion = createServerVersion(change, serverTime)
 
   return {
     id: `sync_${randomUUID()}`,
     recordKey: `${change.entityType}:${change.localId}`,
     storageKey: `${userId}:${change.entityType}:${change.localId}`,
+    syncKey: createSyncKey({
+      userId,
+      clientId,
+      entityType: change.entityType,
+      localId: change.localId,
+      operation: change.operation,
+      updatedAt,
+      payload,
+    }),
     userId,
     clientId,
     entityType: change.entityType,
     localId: change.localId,
     operation: change.operation,
-    payload: change.payload ?? null,
+    payload,
     serverTime,
     serverVersion,
-    updatedAt: change.updatedAt ?? serverTime,
+    updatedAt,
   }
 }
 
@@ -124,6 +136,30 @@ function createServerVersion(change, serverTime) {
   return createHash("sha1")
     .update(
       `${change.localId}:${change.entityType}:${change.operation}:${serverTime}`
+    )
+    .digest("hex")
+}
+
+function createSyncKey({
+  userId,
+  clientId,
+  entityType,
+  localId,
+  operation,
+  updatedAt,
+  payload,
+}) {
+  return createHash("sha1")
+    .update(
+      JSON.stringify({
+        userId,
+        clientId,
+        entityType,
+        localId,
+        operation,
+        updatedAt,
+        payload,
+      })
     )
     .digest("hex")
 }
