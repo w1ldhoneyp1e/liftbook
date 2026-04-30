@@ -282,26 +282,12 @@ export function useDayScreenData(date: string) {
             updatedAt: now,
           })) ?? []
 
-      const initialSetEntries =
-        setEntries.length > 0
-          ? setEntries
-          : [
-              {
-                id: createLocalId("set"),
-                weight: 0,
-                weightUnit: settings?.weightUnit ?? "kg",
-                reps: 0,
-                createdAt: now,
-                updatedAt: now,
-              },
-            ]
-
       const exerciseEntry: ExerciseEntry = {
         id: createLocalId("entry"),
         exerciseId,
         workoutDate: date,
         position: entriesForDate.length,
-        setEntries: initialSetEntries,
+        setEntries,
         previousResultSourceId: previousResult?.id,
         createdAt: now,
         syncStatus: "pending",

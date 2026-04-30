@@ -247,18 +247,6 @@ export function ExerciseCard({
             </Popover>
           )
         })}
-
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          className="rounded-lg bg-muted/40"
-          aria-label={dictionary.actions.addSet}
-          onClick={() => {
-            void handleAddSet()
-          }}
-        >
-          <Plus />
-        </Button>
       </div>
     </article>
   )
