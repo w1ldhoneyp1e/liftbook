@@ -55,6 +55,8 @@ Current root docs:
 - [MVP UX flow](docs/ux-flow.md)
 - [Day screen MVP spec](docs/day-screen-spec.md)
 - [MVP roadmap](docs/mvp-roadmap.md)
+- [MVP 2 plan](docs/ru/mvp2-plan.md)
+- [Hardening next steps](docs/ru/hardening-next-steps.md)
 - [API contracts](docs/api-contracts.md)
 - [Deploy and release](docs/ru/deploy-release.md)
 - [Refactor backlog](docs/refactor-backlog.md)

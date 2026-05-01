@@ -49,6 +49,8 @@ Out of scope:
 
 Goal: reduce repeated input and make common routines faster.
 
+The detailed working plan is tracked in [docs/en/mvp2-plan.md](/home/kirill-yashmetov/projects/liftbook/docs/en/mvp2-plan.md).
+
 Possible features:
 
 - Workout templates.
