@@ -5,6 +5,7 @@ import { ru } from "./locales/ru"
 
 export type Dictionary = {
   actions: {
+    add: string
     addExercise: string
     addSet: string
     calendar: string
@@ -39,6 +40,7 @@ export type Dictionary = {
     allMuscleGroups: string
     autoRestTimer: string
     connectionError: string
+    emptyDayMessage: string
     emptyDayOnDate: string
     emptyDayToday: string
     exercises: string

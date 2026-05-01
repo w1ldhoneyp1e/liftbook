@@ -2,6 +2,7 @@ import type { Dictionary } from "../dictionaries"
 
 export const ru: Dictionary = {
   actions: {
+    add: "Добавить",
     addExercise: "Добавить упражнение",
     addSet: "Добавить подход",
     calendar: "Календарь",
@@ -36,6 +37,7 @@ export const ru: Dictionary = {
     allMuscleGroups: "Все",
     autoRestTimer: "Автотаймер отдыха",
     connectionError: "Не удалось подключиться",
+    emptyDayMessage: "Вы еще не добавили упражнение",
     emptyDayOnDate: "Добавьте первое упражнение на {date}",
     emptyDayToday: "Добавьте первое упражнение на сегодня",
     exercises: "Упражнения",

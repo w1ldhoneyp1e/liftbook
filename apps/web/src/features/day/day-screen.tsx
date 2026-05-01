@@ -266,10 +266,9 @@ export function DayScreen() {
             exercisesById={exercisesById}
             loading={loading}
             locale={locale}
+            onOpenExercisePicker={() => setExercisePickerOpen(true)}
             repsStep={repsStep}
-            selectedDate={selectedDate}
             settings={settings}
-            today={today}
             unit={unit}
             onAddSet={handleAddSet}
             onDeleteExercise={deleteExercise}

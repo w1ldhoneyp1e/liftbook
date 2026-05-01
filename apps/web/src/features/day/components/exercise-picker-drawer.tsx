@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import {
   Drawer,
   DrawerContent,
-  DrawerDescription,
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer"
@@ -98,23 +97,32 @@ export function ExercisePickerDrawer({
       <DrawerContent className="mx-auto max-h-[92svh] max-w-md overflow-hidden rounded-t-xl bg-background">
         <DrawerHeader className="text-left">
           <DrawerTitle>{dictionary.actions.chooseExercise}</DrawerTitle>
-          <DrawerDescription>{dictionary.labels.searchExercise}</DrawerDescription>
         </DrawerHeader>
 
         <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-4 pb-4">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              className="h-10 border-border/60 pl-9 focus-visible:ring-2 focus-visible:ring-ring/30"
+              className="h-10 border-border/60 pl-9 pr-9 focus-visible:ring-2 focus-visible:ring-ring/30"
               placeholder={dictionary.labels.searchExercise}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
+            {query.length > 0 ? (
+              <button
+                className="absolute right-3 top-1/2 inline-flex size-5 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
+                type="button"
+                aria-label={dictionary.actions.cancel}
+                onClick={() => setQuery("")}
+              >
+                <X className="size-4" />
+              </button>
+            ) : null}
           </div>
 
-          <div className="flex flex-wrap gap-2 pb-1">
+          <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <button
-              className={`h-8 rounded-lg px-3 text-sm ${
+              className={`h-8 shrink-0 rounded-lg px-3 text-sm ${
                 selectedMuscleGroup === null
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted text-foreground"
@@ -127,7 +135,7 @@ export function ExercisePickerDrawer({
             {muscleGroups.map((muscleGroup) => (
               <button
                 key={muscleGroup}
-                className={`h-8 rounded-lg px-3 text-sm ${
+                className={`h-8 shrink-0 rounded-lg px-3 text-sm ${
                   selectedMuscleGroup === muscleGroup
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted text-foreground"

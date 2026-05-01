@@ -4,7 +4,7 @@ Date: 2026-05-01
 
 This document breaks [docs/en/mvp2-found-issues.md](/home/kirill-yashmetov/projects/liftbook/docs/en/mvp2-found-issues.md) into implementation iterations. The grouping principle is to cluster tasks that touch the same screens, components, and UX flows.
 
-## Iteration 1. Add-exercise drawer and empty state
+## Iteration 1. Add-exercise drawer and empty state without the asset
 
 Goal: quickly improve the first “empty day -> add exercise” flow.
 
@@ -15,9 +15,8 @@ What is included:
 - bring back horizontal category scrolling without a visible scrollbar;
 - replace the empty-state text with `You haven’t added an exercise yet`;
 - replace the CTA `Add exercise` with an `Add` button;
-- add an image to the empty state.
 
-Dependencies:
+After that, separately:
 
 - before implementing the image, ask the user to upload the file to:
   - `apps/web/public/images/empty-day.png`
@@ -28,7 +27,7 @@ Candidate files:
 - `apps/web/src/features/day/components/exercise-list.tsx`
 - `apps/web/src/shared/i18n/**`
 
-## Iteration 2. Set popover and timer
+## Iteration 2. Set popover
 
 Goal: make two frequently touched controls more understandable and configurable.
 
@@ -38,27 +37,41 @@ What is included:
   - close icon closes the popover;
   - `Delete` replaces `Cancel`;
   - explicit `Save` button;
-- timer rework:
-  - countdown mode;
-  - stopwatch mode;
-  - configurable duration;
-  - settings behind a sliders icon;
-  - sound and vibration;
-  - ability to disable sound and vibration.
 
 Why these belong together:
 
-- both involve compact popover/inline-control patterns;
-- they may reuse similar UI decisions.
+- this is a local fix for one of the most frequently used controls;
+- it is cleaner to close it separately, without mixing timer work into it.
 
 Candidate files:
 
 - `apps/web/src/features/day/components/exercise-card.tsx`
-- `apps/web/src/features/day/components/rest-timer-row.tsx`
 - `apps/web/src/features/day/**`
 - `apps/web/src/shared/domain/**`
 
-## Iteration 3. Theme, language, and settings
+## Iteration 3. Weight units and display model
+
+Goal: fix `kg/lb` properly at the model level.
+
+What is included:
+
+- formalize the rule that stored weight is always in kg;
+- add a shared helper for weight display;
+- switching `kg/lb` must update display across the app without mutating stored data.
+
+Why this is separate:
+
+- this is not just UI polish, but a cross-cutting data and display model change;
+- it should be closed earlier, before more screens and representations of weight accumulate.
+
+Candidate files:
+
+- `apps/web/src/shared/domain/**`
+- `apps/web/src/features/day/**`
+- `apps/web/src/shared/i18n/**`
+- possibly `apps/api/**` only if any assumptions about storage units are encoded there
+
+## Iteration 4. Theme and settings
 
 Goal: bring the app to a more mature state at the global settings layer.
 
@@ -68,7 +81,6 @@ What is included:
   - light;
   - dark;
   - system;
-- first-visit language detection from client data;
 - descriptive helper text for toggles;
 - reworked sync block in settings.
 
@@ -84,7 +96,26 @@ Candidate files:
 - `apps/web/src/shared/i18n/**`
 - `apps/web/src/shared/db/**`
 
-## Iteration 4. Visual consistency and day-screen behavior
+## Iteration 5. Language and app bootstrap
+
+Goal: adjust startup behavior cleanly without mixing it into theming.
+
+What is included:
+
+- first-visit language detection from client data.
+
+Why this is separate:
+
+- it is small in UI surface, but important in bootstrap behavior;
+- it is easier to debug independently from theming and settings.
+
+Candidate files:
+
+- `apps/web/src/app/**`
+- `apps/web/src/shared/i18n/**`
+- `apps/web/src/shared/db/**`
+
+## Iteration 6. Visual consistency and day-screen behavior
 
 Goal: remove visual artifacts and make the day screen feel more alive.
 
@@ -109,39 +140,14 @@ Candidate files:
 - `apps/web/src/features/day/components/exercise-card.tsx`
 - `apps/web/src/features/day/lib/**`
 
-## Iteration 5. Weight units and display model
-
-Goal: fix `kg/lb` properly at the model level.
-
-What is included:
-
-- formalize the rule that stored weight is always in kg;
-- add a shared helper for weight display;
-- switching `kg/lb` must update display across the app without mutating stored data.
-
-Why this is separate:
-
-- this is no longer just UI polish, but a cross-cutting data and display model change;
-- it is safer not to mix it with the other UI passes.
-
-Candidate files:
-
-- `apps/web/src/shared/domain/**`
-- `apps/web/src/features/day/**`
-- `apps/web/src/shared/i18n/**`
-- possibly `apps/api/**` only if any assumptions about storage units are encoded there
-
 ## Recommended order
 
 1. **Iteration 1** — immediate user-facing improvement in the add flow
-2. **Iteration 2** — improve frequently used controls
-3. **Iteration 3** — settings, theme, language
-4. **Iteration 4** — visual coherence and animations
-5. **Iteration 5** — systemic `kg/lb` fix
-
-## Why `kg/lb` is not first
-
-Even though it is important, it is more systemic and touches data/display rules across the app. It is more reasonable to do it after the more local UX issues are closed and while fewer adjacent layers are changing at the same time.
+2. **Iteration 2** — improve the set popover
+3. **Iteration 3** — systemic `kg/lb` fix
+4. **Iteration 4** — theme and settings
+5. **Iteration 5** — startup language
+6. **Iteration 6** — visual coherence and animations
 
 ## What to start with now
 
