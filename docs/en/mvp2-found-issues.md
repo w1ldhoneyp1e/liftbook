@@ -8,6 +8,8 @@ This document tracks issues that should be resolved **before** active MVP 2 feat
 
 Until the items in this document are closed, they take priority over new feature work from [docs/en/mvp2-plan.md](/home/kirill-yashmetov/projects/liftbook/docs/en/mvp2-plan.md).
 
+The iteration breakdown for these items is tracked in [docs/en/mvp2-found-issues-iterations.md](/home/kirill-yashmetov/projects/liftbook/docs/en/mvp2-found-issues-iterations.md).
+
 ## 1. Remove the `Search exercise` text above the search field
 
 Problem:

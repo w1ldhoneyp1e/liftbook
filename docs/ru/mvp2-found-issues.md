@@ -8,6 +8,8 @@
 
 Пока пункты из этого документа не закрыты, они имеют больший приоритет, чем новые фичи из [docs/ru/mvp2-plan.md](/home/kirill-yashmetov/projects/liftbook/docs/ru/mvp2-plan.md).
 
+Итерационное разбиение этих пунктов вынесено в [docs/ru/mvp2-found-issues-iterations.md](/home/kirill-yashmetov/projects/liftbook/docs/ru/mvp2-found-issues-iterations.md).
+
 ## 1. Убрать текст `Найти упражнение` над полем поиска
 
 Проблема:
