@@ -50,6 +50,7 @@
 Цель: уменьшить повторный ввод и ускорить частые сценарии.
 
 Детальный рабочий план вынесен в [docs/ru/mvp2-plan.md](/home/kirill-yashmetov/projects/liftbook/docs/ru/mvp2-plan.md).
+Найденные проблемы, которые нужно закрыть до новых фич, вынесены в [docs/ru/mvp2-found-issues.md](/home/kirill-yashmetov/projects/liftbook/docs/ru/mvp2-found-issues.md).
 
 Возможные функции:
 

@@ -4,6 +4,8 @@ Date: 2026-05-01
 
 MVP 2 goal: make repeated training workflows faster and noticeably improve day-to-day usability without turning Liftbook into a much larger platform too early.
 
+Before active work on new features, the known issues from [docs/en/mvp2-found-issues.md](/home/kirill-yashmetov/projects/liftbook/docs/en/mvp2-found-issues.md) should be closed first.
+
 ## Product focus
 
 After MVP 1, we already have:
@@ -144,6 +146,12 @@ These product features will need a few technical foundations:
 4. avoid slowing down the mobile-first flow in exchange for richer entities.
 
 ## Recommended implementation order
+
+### Phase 0. Close known issues
+
+Items from `mvp2-found-issues.md` come first.
+
+Only after that should the new product workflows below be taken on.
 
 If MVP 2 is built iteratively, I would do it in this order:
 

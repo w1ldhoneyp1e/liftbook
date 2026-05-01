@@ -50,6 +50,7 @@ Out of scope:
 Goal: reduce repeated input and make common routines faster.
 
 The detailed working plan is tracked in [docs/en/mvp2-plan.md](/home/kirill-yashmetov/projects/liftbook/docs/en/mvp2-plan.md).
+Known issues that must be closed before new feature work are tracked in [docs/en/mvp2-found-issues.md](/home/kirill-yashmetov/projects/liftbook/docs/en/mvp2-found-issues.md).
 
 Possible features:
 

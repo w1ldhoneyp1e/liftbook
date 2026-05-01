@@ -56,6 +56,7 @@ Current root docs:
 - [Day screen MVP spec](docs/day-screen-spec.md)
 - [MVP roadmap](docs/mvp-roadmap.md)
 - [MVP 2 plan](docs/ru/mvp2-plan.md)
+- [MVP 2 found issues](docs/ru/mvp2-found-issues.md)
 - [Hardening next steps](docs/ru/hardening-next-steps.md)
 - [API contracts](docs/api-contracts.md)
 - [Deploy and release](docs/ru/deploy-release.md)
