@@ -230,6 +230,7 @@ And helper commands:
 pnpm vps:migrate
 pnpm vps:up
 pnpm vps:down
+pnpm vps:release
 ```
 
 Topology:
@@ -240,6 +241,76 @@ Topology:
 - `caddy`
 
 Everything runs on one machine through Docker Compose.
+
+### First VPS launch
+
+1. Copy the project to the server.
+2. Create `.env.vps` from `.env.vps.example`.
+3. Run:
+
+```bash
+docker compose --env-file .env.vps -f docker-compose.vps.yml up -d postgres
+docker compose --env-file .env.vps -f docker-compose.vps.yml run --rm migrate
+docker compose --env-file .env.vps -f docker-compose.vps.yml up -d --build
+```
+
+### Repeat release on VPS
+
+For the normal next release, use:
+
+```bash
+pnpm vps:release
+```
+
+Or directly:
+
+```bash
+./scripts/release-vps.sh
+```
+
+### What `release-vps.sh` does
+
+The script performs the release in this order:
+
+1. checks that required commands and files exist;
+2. loads `.env.vps`;
+3. verifies a clean git worktree;
+4. runs `git fetch` and `git pull --ff-only`;
+5. validates the Docker Compose config;
+6. starts PostgreSQL;
+7. waits for database readiness;
+8. creates a database backup in `/var/backups/liftbook`;
+9. builds fresh `api` and `web` images;
+10. runs migrations;
+11. starts `web`, `api`, `caddy`;
+12. checks `http://127.0.0.1/api/health` with the domain host header;
+13. prints `docker compose ps` and recent logs if something fails.
+
+### Why the script does not auto-rollback the database
+
+Automatic rollback after migrations can be more dangerous than helpful:
+
+- migrations may not be symmetrical;
+- the schema may already have changed;
+- rolling back code without a deliberate DB rollback is unsafe.
+
+So the script creates a **backup before migrations**, but does not try to automatically guess the correct rollback path.
+
+That is an intentional choice in favor of predictability.
+
+### Script behavior variables
+
+You can override:
+
+- `REMOTE` — git remote, default `origin`
+- `BRANCH` — branch, default `main`
+- `ENV_FILE` — path to the env file
+- `COMPOSE_FILE` — path to the compose file
+- `BACKUP_DIR` — backup destination, default `/var/backups/liftbook`
+- `KEEP_BACKUPS` — how many backups to keep, default `10`
+- `SKIP_GIT_PULL=1` — if you want to release an already-prepared checkout
+- `SKIP_BACKUP=1` — if backup must temporarily be skipped
+- `ALLOW_DIRTY=1` — if a dirty worktree is intentionally allowed
 
 ### Why Caddy
 

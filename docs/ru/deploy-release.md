@@ -230,6 +230,7 @@ NEXT_PUBLIC_LIFTBOOK_API_URL=https://<railway-api-domain>
 pnpm vps:migrate
 pnpm vps:up
 pnpm vps:down
+pnpm vps:release
 ```
 
 Схема:
@@ -240,6 +241,76 @@ pnpm vps:down
 - `caddy`
 
 Все живет на одной машине и поднимается через Docker Compose.
+
+### Первый запуск на VPS
+
+1. Скопировать проект на сервер.
+2. Создать `.env.vps` из `.env.vps.example`.
+3. Запустить:
+
+```bash
+docker compose --env-file .env.vps -f docker-compose.vps.yml up -d postgres
+docker compose --env-file .env.vps -f docker-compose.vps.yml run --rm migrate
+docker compose --env-file .env.vps -f docker-compose.vps.yml up -d --build
+```
+
+### Повторный релиз на VPS
+
+Для обычного следующего релиза использовать:
+
+```bash
+pnpm vps:release
+```
+
+Или напрямую:
+
+```bash
+./scripts/release-vps.sh
+```
+
+### Что делает `release-vps.sh`
+
+Скрипт делает релиз в таком порядке:
+
+1. проверяет наличие нужных команд и файлов;
+2. загружает `.env.vps`;
+3. проверяет чистоту git working tree;
+4. делает `git fetch` и `git pull --ff-only`;
+5. валидирует `docker compose` конфиг;
+6. поднимает PostgreSQL;
+7. ждет readiness базы;
+8. делает backup базы в `/var/backups/liftbook`;
+9. собирает свежие `api` и `web` образы;
+10. запускает миграции;
+11. поднимает `web`, `api`, `caddy`;
+12. проверяет `http://127.0.0.1/api/health` с заголовком домена;
+13. при ошибке печатает `docker compose ps` и последние логи.
+
+### Почему скрипт не делает авто-rollback базы
+
+Автоматический rollback после миграций может сделать хуже, чем лучше:
+
+- миграции могут быть несимметричными;
+- schema может уже измениться;
+- откат кода без осознанного отката БД небезопасен.
+
+Поэтому скрипт делает **backup перед миграциями**, но не пытается автоматически “угадать” корректный rollback.
+
+Это осознанное решение в пользу предсказуемости.
+
+### Переменные поведения скрипта
+
+При необходимости можно переопределить:
+
+- `REMOTE` — git remote, по умолчанию `origin`
+- `BRANCH` — ветка, по умолчанию `main`
+- `ENV_FILE` — путь к env файлу
+- `COMPOSE_FILE` — путь к compose-файлу
+- `BACKUP_DIR` — куда складывать backup, по умолчанию `/var/backups/liftbook`
+- `KEEP_BACKUPS` — сколько backup хранить, по умолчанию `10`
+- `SKIP_GIT_PULL=1` — если нужно релизить уже локально подготовленный checkout
+- `SKIP_BACKUP=1` — если backup временно нужно пропустить
+- `ALLOW_DIRTY=1` — если осознанно допускается dirty worktree
 
 ### Почему Caddy
 

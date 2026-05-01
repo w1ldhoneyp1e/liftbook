@@ -56,6 +56,7 @@ Current root docs:
 - [Day screen MVP spec](docs/day-screen-spec.md)
 - [MVP roadmap](docs/mvp-roadmap.md)
 - [API contracts](docs/api-contracts.md)
+- [Deploy and release](docs/ru/deploy-release.md)
 - [Refactor backlog](docs/refactor-backlog.md)
 - [ADR 0001: initial technical direction](docs/adr/0001-initial-technical-direction.md)
 - [ADR 0002: stack and monorepo](docs/adr/0002-stack-and-monorepo.md)
