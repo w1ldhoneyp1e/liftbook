@@ -26,6 +26,7 @@ import { useDayScreenData } from "./use-day-screen-data"
 
 export function DayScreen() {
   const autoSyncSignatureRef = useRef<string | null>(null)
+  const initialDateRef = useRef<string | null>(null)
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator === "undefined" ? true : navigator.onLine
   )
@@ -35,6 +36,9 @@ export function DayScreen() {
   const [exercisePickerOpen, setExercisePickerOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [touchStartX, setTouchStartX] = useState<number | null>(null)
+  const [contentMotion, setContentMotion] = useState<"left" | "right" | null>(
+    null
+  )
   const [restSeconds, setRestSeconds] = useState(0)
   const [restTimerRunning, setRestTimerRunning] = useState(false)
   const timerAlertPlayedRef = useRef(false)
@@ -81,6 +85,28 @@ export function DayScreen() {
     dictionary,
     selectedDate
   )
+
+  useEffect(() => {
+    if (initialDateRef.current === null) {
+      initialDateRef.current = selectedDate
+      return
+    }
+
+    const previousDate = initialDateRef.current
+    if (previousDate === selectedDate) {
+      return
+    }
+
+    setContentMotion(selectedDate > previousDate ? "left" : "right")
+    initialDateRef.current = selectedDate
+
+    const timeoutId = window.setTimeout(() => {
+      setContentMotion(null)
+    }, 220)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [selectedDate])
+
   useEffect(() => {
     if (!restTimerRunning) {
       return
@@ -330,7 +356,13 @@ export function DayScreen() {
         </div>
 
         <div
-          className="flex-1"
+          className={`flex-1 ${
+            contentMotion === "left"
+              ? "animate-[day-slide-left_220ms_ease-out]"
+              : contentMotion === "right"
+                ? "animate-[day-slide-right_220ms_ease-out]"
+                : ""
+          }`}
           onTouchStart={(event) =>
             setTouchStartX(event.changedTouches[0].clientX)
           }
