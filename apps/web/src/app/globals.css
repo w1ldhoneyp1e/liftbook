@@ -21,6 +21,23 @@
   --ring: #a1a1aa;
 }
 
+:root[data-theme="light"] {
+  --background: #ffffff;
+  --foreground: #171717;
+  --card: #ffffff;
+  --card-foreground: #171717;
+  --primary: #18181b;
+  --primary-foreground: #fafafa;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #18181b;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  --destructive: #dc2626;
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: #a1a1aa;
+}
+
 @theme inline {
   --radius-md: var(--radius-md);
   --color-background: var(--background);
@@ -41,6 +58,7 @@
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
 
+:root[data-theme="dark"],
 .dark {
   --background: #0a0a0a;
   --foreground: #ededed;
