@@ -111,18 +111,19 @@ export function SettingsDrawer({
                 </p>
               ) : null}
               {accountSession ? (
-                <div className="mt-3 px-0 py-1">
-                  <div className="flex items-center justify-between gap-3">
+                <div className="mt-4 border-t border-border/60 pt-4">
+                  <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="text-sm font-medium">
                         {dictionary.labels.syncStatus}
                       </div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="mt-1 text-xs leading-relaxed text-muted-foreground">
                         {syncStatusText}
                       </div>
                     </div>
                     <Button
                       size="sm"
+                      className="shrink-0"
                       disabled={!isOnline || (syncing && syncMode === "manual")}
                       onClick={onSyncNow}
                     >
@@ -224,9 +225,13 @@ function SyncBadge({ label, tone, value }: SyncBadgeProps) {
         : "bg-muted text-foreground"
 
   return (
-    <div className={`rounded-md px-2 py-2 text-center ${toneClassName}`}>
+    <div
+      className={`flex min-h-[4.5rem] flex-col items-center justify-center rounded-md px-2 py-2 text-center ${toneClassName}`}
+    >
       <div className="text-sm font-semibold">{value}</div>
-      <div className="mt-0.5 text-[10px] leading-tight">{label}</div>
+      <div className="mt-1 text-[10px] leading-tight text-balance break-words">
+        {label}
+      </div>
     </div>
   )
 }
