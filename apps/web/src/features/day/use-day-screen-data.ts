@@ -126,7 +126,6 @@ export function useDayScreenData(date: string) {
   const addSet = useCallback(
     async (exerciseEntryId: string) => {
       const entry = await db.exerciseEntries.get(exerciseEntryId)
-      const settings = await db.userSettings.get("local")
 
       if (!entry) {
         return null
@@ -139,7 +138,7 @@ export function useDayScreenData(date: string) {
       const newSet: SetEntry = {
         id: createLocalId("set"),
         weight: previousSet?.weight ?? 0,
-        weightUnit: previousSet?.weightUnit ?? settings?.weightUnit ?? "kg",
+        weightUnit: "kg",
         reps: previousSet?.reps ?? 0,
         createdAt: now,
         updatedAt: now,

@@ -19,7 +19,12 @@ import type {
 } from "@/shared/domain/types"
 import type { Dictionary } from "@/shared/i18n/dictionaries"
 
-import { formatNumber } from "../lib/format"
+import {
+  convertDisplayedWeightToKg,
+  formatNumber,
+  formatWeightValue,
+  getWeightUnitLabel,
+} from "../lib/format"
 import { SetNumberControl } from "./set-number-control"
 
 type ExerciseCardProps = {
@@ -90,9 +95,9 @@ export function ExerciseCard({
     setEditorSetId((current) => (current === setEntryId ? null : current))
   }
 
-  const editorUnit = editorSet?.weightUnit ?? unit
+  const displayUnit = unit
   const editorWeightStep =
-    editorUnit === "kg" ? (settings?.kgStep ?? 1) : (settings?.lbStep ?? 2.5)
+    displayUnit === "kg" ? (settings?.kgStep ?? 1) : (settings?.lbStep ?? 2.5)
 
   function openEditor(setId: string) {
     const nextSet = activeSets.find((setEntry) => setEntry.id === setId)
@@ -101,7 +106,7 @@ export function ExerciseCard({
       return
     }
 
-    setDraftWeight(formatNumber(nextSet.weight ?? 0))
+    setDraftWeight(formatWeightValue(nextSet.weight ?? 0, displayUnit))
     setDraftReps(formatNumber(nextSet.reps ?? 0))
     setEditorSetId(setId)
   }
@@ -147,10 +152,18 @@ export function ExerciseCard({
       return
     }
 
-    const nextWeight = parseDraftValue(draftWeight, currentSet.weight ?? 0)
+    const currentDisplayedWeight = Number(
+      formatWeightValue(currentSet.weight ?? 0, displayUnit).replace(",", ".")
+    )
+    const nextWeight = parseDraftValue(draftWeight, currentDisplayedWeight)
     const nextReps = parseDraftValue(draftReps, currentSet.reps ?? 0)
 
-    onUpdateNumber(entry.id, setId, "weight", nextWeight)
+    onUpdateNumber(
+      entry.id,
+      setId,
+      "weight",
+      convertDisplayedWeightToKg(nextWeight, displayUnit)
+    )
     onUpdateNumber(entry.id, setId, "reps", nextReps)
 
     if (creatingSetId === setId) {
@@ -227,7 +240,6 @@ export function ExerciseCard({
 
       <div className="mt-3 flex flex-wrap items-center gap-2.5">
         {activeSets.map((set, index) => {
-          const setUnit = set.weightUnit ?? unit
           const setWeight = set.weight ?? 0
           const setReps = set.reps ?? 0
           const isCreatingSet = creatingSetId === set.id
@@ -256,9 +268,9 @@ export function ExerciseCard({
                     onClick={() => openEditor(set.id)}
                   >
                     <div className="flex items-center gap-1 text-xs font-semibold text-foreground">
-                      <span>{setWeight ? setWeight : "0"}</span>
+                      <span>{formatWeightValue(setWeight, displayUnit)}</span>
                       <span className="text-[11px] text-muted-foreground">
-                        {dictionary.units[setUnit]}
+                        {getWeightUnitLabel(dictionary, displayUnit)}
                       </span>
                     </div>
                     <div className="mt-0.5 text-xs text-muted-foreground">
@@ -288,13 +300,14 @@ export function ExerciseCard({
 
                   <div className="space-y-2">
                     <SetNumberControl
-                      ariaLabel={`${exerciseName} set ${index + 1} ${
-                        dictionary.units[setUnit]
-                      }`}
+                      ariaLabel={`${exerciseName} set ${index + 1} ${getWeightUnitLabel(
+                        dictionary,
+                        displayUnit
+                      )}`}
                       decreaseLabel={dictionary.actions.decrease}
                       increaseLabel={dictionary.actions.increase}
                       step={editorWeightStep}
-                      suffix={dictionary.units[setUnit]}
+                      suffix={getWeightUnitLabel(dictionary, displayUnit)}
                       value={draftWeight}
                       onChange={setDraftWeight}
                       onIncrement={(delta) =>
