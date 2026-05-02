@@ -50,7 +50,6 @@ export function DayScreen() {
     dictionary,
     exerciseEntries,
     exercisesById,
-    incrementNumber,
     locale,
     loading,
     renameCustomExercise,
@@ -273,7 +272,6 @@ export function DayScreen() {
             onAddSet={handleAddSet}
             onDeleteExercise={deleteExercise}
             onDeleteSet={deleteSet}
-            onIncrementNumber={incrementNumber}
             onUpdateNumber={updateNumber}
           />
         </div>

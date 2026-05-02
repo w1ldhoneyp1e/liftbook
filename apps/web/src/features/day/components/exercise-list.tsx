@@ -30,12 +30,6 @@ type ExerciseListProps = {
     exerciseEntryId: string,
     setEntryId: string
   ) => Promise<void> | void
-  onIncrementNumber: (
-    exerciseEntryId: string,
-    setEntryId: string,
-    field: "reps" | "weight",
-    delta: number
-  ) => void
   onUpdateNumber: (
     exerciseEntryId: string,
     setEntryId: string,
@@ -57,7 +51,6 @@ export function ExerciseList({
   onAddSet,
   onDeleteExercise,
   onDeleteSet,
-  onIncrementNumber,
   onUpdateNumber,
 }: ExerciseListProps) {
   return (
@@ -107,7 +100,6 @@ export function ExerciseList({
           onAddSet={onAddSet}
           onDeleteExercise={onDeleteExercise}
           onDeleteSet={onDeleteSet}
-          onIncrementNumber={onIncrementNumber}
           onUpdateNumber={onUpdateNumber}
         />
       ))}

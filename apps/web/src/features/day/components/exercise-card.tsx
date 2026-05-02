@@ -19,6 +19,7 @@ import type {
 } from "@/shared/domain/types"
 import type { Dictionary } from "@/shared/i18n/dictionaries"
 
+import { formatNumber } from "../lib/format"
 import { SetNumberControl } from "./set-number-control"
 
 type ExerciseCardProps = {
@@ -35,12 +36,6 @@ type ExerciseCardProps = {
     exerciseEntryId: string,
     setEntryId: string
   ) => Promise<void> | void
-  onIncrementNumber: (
-    exerciseEntryId: string,
-    setEntryId: string,
-    field: "reps" | "weight",
-    delta: number
-  ) => void
   onUpdateNumber: (
     exerciseEntryId: string,
     setEntryId: string,
@@ -60,7 +55,6 @@ export function ExerciseCard({
   onAddSet,
   onDeleteExercise,
   onDeleteSet,
-  onIncrementNumber,
   onUpdateNumber,
 }: ExerciseCardProps) {
   const primaryMuscleGroup = exercise?.muscleGroupIds[0]
@@ -72,6 +66,8 @@ export function ExerciseCard({
   const [editorSetId, setEditorSetId] = useState<string | null>(null)
   const [creatingSetId, setCreatingSetId] = useState<string | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [draftWeight, setDraftWeight] = useState("")
+  const [draftReps, setDraftReps] = useState("")
 
   const editorSet = activeSets.find((setEntry) => setEntry.id === editorSetId)
 
@@ -97,6 +93,75 @@ export function ExerciseCard({
   const editorUnit = editorSet?.weightUnit ?? unit
   const editorWeightStep =
     editorUnit === "kg" ? (settings?.kgStep ?? 1) : (settings?.lbStep ?? 2.5)
+
+  function openEditor(setId: string) {
+    const nextSet = activeSets.find((setEntry) => setEntry.id === setId)
+
+    if (!nextSet) {
+      return
+    }
+
+    setDraftWeight(formatNumber(nextSet.weight ?? 0))
+    setDraftReps(formatNumber(nextSet.reps ?? 0))
+    setEditorSetId(setId)
+  }
+
+  function closeEditor() {
+    if (creatingSetId && editorSetId === creatingSetId) {
+      void handleCancelNewSet(creatingSetId)
+      return
+    }
+
+    setEditorSetId(null)
+    setDraftWeight("")
+    setDraftReps("")
+  }
+
+  function incrementDraft(
+    field: "weight" | "reps",
+    step: number,
+    currentValue: string
+  ) {
+    const parsed = Number(currentValue.replace(",", "."))
+    const baseValue = Number.isFinite(parsed) ? parsed : 0
+    const nextValue = Math.max(0, baseValue + step)
+    const formattedValue = formatNumber(nextValue)
+
+    if (field === "weight") {
+      setDraftWeight(formattedValue)
+      return
+    }
+
+    setDraftReps(formattedValue)
+  }
+
+  function parseDraftValue(value: string, fallback: number) {
+    const parsed = Number(value.replace(",", "."))
+    return Number.isFinite(parsed) ? Math.max(0, parsed) : fallback
+  }
+
+  function handleSaveSet(setId: string) {
+    const currentSet = activeSets.find((setEntry) => setEntry.id === setId)
+
+    if (!currentSet) {
+      return
+    }
+
+    const nextWeight = parseDraftValue(draftWeight, currentSet.weight ?? 0)
+    const nextReps = parseDraftValue(draftReps, currentSet.reps ?? 0)
+
+    onUpdateNumber(entry.id, setId, "weight", nextWeight)
+    onUpdateNumber(entry.id, setId, "reps", nextReps)
+
+    if (creatingSetId === setId) {
+      handleSaveNewSet(setId)
+      return
+    }
+
+    setEditorSetId(null)
+    setDraftWeight("")
+    setDraftReps("")
+  }
 
   return (
     <article className="rounded-2xl bg-card px-4 py-4">
@@ -176,9 +241,9 @@ export function ExerciseCard({
                   if (isCreatingSet) {
                     return
                   }
-                  setEditorSetId((current) => (current === set.id ? null : current))
+                  closeEditor()
                 } else {
-                  setEditorSetId(set.id)
+                  openEditor(set.id)
                 }
               }}
             >
@@ -188,7 +253,7 @@ export function ExerciseCard({
                     className="inline-flex min-w-[4.5rem] flex-col items-center justify-center rounded-xl bg-muted/50 px-2.5 py-2.5 text-center transition-colors hover:bg-muted"
                     type="button"
                     aria-label={`${exerciseName} set ${index + 1}`}
-                    onClick={() => setEditorSetId(set.id)}
+                    onClick={() => openEditor(set.id)}
                   >
                     <div className="flex items-center gap-1 text-xs font-semibold text-foreground">
                       <span>{setWeight ? setWeight : "0"}</span>
@@ -210,17 +275,15 @@ export function ExerciseCard({
                         {exerciseName} · {index + 1}
                       </p>
                     </div>
-                    {!isCreatingSet ? (
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={dictionary.actions.deleteSet}
-                        className="text-muted-foreground hover:text-destructive"
-                        onClick={() => onDeleteSet(entry.id, set.id)}
-                      >
-                        <X />
-                      </Button>
-                    ) : null}
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={dictionary.actions.cancel}
+                      className="text-muted-foreground"
+                      onClick={() => closeEditor()}
+                    >
+                      <X />
+                    </Button>
                   </div>
 
                   <div className="space-y-2">
@@ -232,12 +295,10 @@ export function ExerciseCard({
                       increaseLabel={dictionary.actions.increase}
                       step={editorWeightStep}
                       suffix={dictionary.units[setUnit]}
-                      value={setWeight}
-                      onCommit={(value) =>
-                        onUpdateNumber(entry.id, set.id, "weight", value)
-                      }
+                      value={draftWeight}
+                      onChange={setDraftWeight}
                       onIncrement={(delta) =>
-                        onIncrementNumber(entry.id, set.id, "weight", delta)
+                        incrementDraft("weight", delta, draftWeight)
                       }
                     />
                     <SetNumberControl
@@ -248,12 +309,10 @@ export function ExerciseCard({
                       increaseLabel={dictionary.actions.increase}
                       step={repsStep}
                       suffix={dictionary.units.reps}
-                      value={setReps}
-                      onCommit={(value) =>
-                        onUpdateNumber(entry.id, set.id, "reps", value)
-                      }
+                      value={draftReps}
+                      onChange={setDraftReps}
                       onIncrement={(delta) =>
-                        onIncrementNumber(entry.id, set.id, "reps", delta)
+                        incrementDraft("reps", delta, draftReps)
                       }
                     />
                   </div>
@@ -273,19 +332,34 @@ export function ExerciseCard({
                         <Button
                           variant="default"
                           size="default"
-                          onClick={() => handleSaveNewSet(set.id)}
+                          onClick={() => handleSaveSet(set.id)}
                         >
                           {dictionary.actions.save}
                         </Button>
                       </div>
                     ) : (
-                      <Button
-                        variant="ghost"
-                        size="default"
-                        onClick={() => setEditorSetId(null)}
-                      >
-                        {dictionary.actions.cancel}
-                      </Button>
+                      <div className="flex w-full justify-between gap-2">
+                        <Button
+                          variant="ghost"
+                          size="default"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => {
+                            void Promise.resolve(onDeleteSet(entry.id, set.id))
+                            setEditorSetId(null)
+                            setDraftWeight("")
+                            setDraftReps("")
+                          }}
+                        >
+                          {dictionary.actions.deleteSet}
+                        </Button>
+                        <Button
+                          variant="default"
+                          size="default"
+                          onClick={() => handleSaveSet(set.id)}
+                        >
+                          {dictionary.actions.save}
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </PopoverPopup>
