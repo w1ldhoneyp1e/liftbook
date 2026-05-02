@@ -18,6 +18,10 @@ import type {
   WeightUnit,
 } from "@/shared/domain/types"
 import type { Dictionary } from "@/shared/i18n/dictionaries"
+import {
+  applyThemeMode,
+  persistThemeMode,
+} from "@/shared/theme/theme-mode"
 
 type SettingsDrawerProps = {
   accountConnecting: boolean
@@ -165,7 +169,11 @@ export function SettingsDrawer({
               { label: dictionary.labels.themeDark, value: "dark" },
             ]}
             value={settings.themeMode}
-            onChange={(themeMode) => onUpdateSettings({ themeMode })}
+            onChange={(themeMode) => {
+              persistThemeMode(themeMode)
+              applyThemeMode(themeMode)
+              onUpdateSettings({ themeMode })
+            }}
           />
 
           <SettingsSegment<WeightUnit>

@@ -23,9 +23,17 @@ export function applyThemeMode(mode: ThemeMode) {
 
   const resolvedTheme = resolveThemeMode(mode)
   const root = document.documentElement
+  const body = document.body
 
   root.classList.toggle("dark", resolvedTheme === "dark")
+  root.dataset.theme = resolvedTheme
   root.style.colorScheme = resolvedTheme
+
+  if (body) {
+    body.classList.toggle("dark", resolvedTheme === "dark")
+    body.dataset.theme = resolvedTheme
+    body.style.colorScheme = resolvedTheme
+  }
 }
 
 export function getStoredThemeMode(): ThemeMode {
