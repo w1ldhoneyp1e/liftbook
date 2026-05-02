@@ -68,10 +68,23 @@ export function useDayScreenData(date: string) {
       db.exercises.toArray(),
     ])
     const syncSummary = await getSyncSummary()
+    const normalizedSettings =
+      settings && !settings.themeMode
+        ? {
+            ...settings,
+            themeMode: "system" as const,
+            syncStatus: "pending" as const,
+            updatedAt: new Date().toISOString(),
+          }
+        : settings
+
+    if (normalizedSettings && normalizedSettings !== settings) {
+      await db.userSettings.put(normalizedSettings)
+    }
 
     setState({
       accountSession: accountSession ?? null,
-      settings: settings ?? null,
+      settings: normalizedSettings ?? null,
       workoutDay: workoutDay && !workoutDay.deletedAt ? workoutDay : null,
       exerciseEntries: exerciseEntries
         .filter((entry) => !entry.deletedAt)
@@ -925,6 +938,9 @@ function isUserSettingsPayload(payload: unknown): payload is UserSettings {
   return (
     payload.id === "local" &&
     (payload.locale === "en" || payload.locale === "ru") &&
+    (payload.themeMode === "system" ||
+      payload.themeMode === "light" ||
+      payload.themeMode === "dark") &&
     (payload.weightUnit === "kg" || payload.weightUnit === "lb") &&
     typeof payload.kgStep === "number" &&
     typeof payload.lbStep === "number" &&

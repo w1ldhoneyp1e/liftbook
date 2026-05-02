@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next"
 import "./globals.css"
 import { PwaRegistrar } from "./pwa-registrar"
+import { ThemeController } from "./theme-controller"
 
 export const metadata: Metadata = {
   applicationName: "Liftbook",
@@ -32,6 +33,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full antialiased">
       <body className="flex min-h-full flex-col">
+        <ThemeController />
         {children}
         <PwaRegistrar />
       </body>

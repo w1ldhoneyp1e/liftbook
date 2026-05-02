@@ -1,6 +1,7 @@
 export type Locale = "en" | "ru"
 
 export type WeightUnit = "kg" | "lb"
+export type ThemeMode = "system" | "light" | "dark"
 
 export type DateState = "past" | "today" | "future"
 
@@ -93,6 +94,7 @@ export type AccountSession = {
 export type UserSettings = {
   id: "local"
   locale: Locale
+  themeMode: ThemeMode
   weightUnit: WeightUnit
   kgStep: number
   lbStep: number

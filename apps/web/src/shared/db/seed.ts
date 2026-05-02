@@ -11,6 +11,7 @@ const now = new Date("2026-04-26T08:00:00.000Z").toISOString()
 const defaultSettings: UserSettings = {
   id: "local",
   locale: "en",
+  themeMode: "system",
   weightUnit: "kg",
   kgStep: 1,
   lbStep: 2.5,

@@ -39,6 +39,7 @@ export type Dictionary = {
     accountLocalOnly: string
     allMuscleGroups: string
     autoRestTimer: string
+    autoRestTimerHelp: string
     connectionError: string
     emptyDayMessage: string
     emptyDayOnDate: string
@@ -50,6 +51,7 @@ export type Dictionary = {
     futureDate: string
     pastDate: string
     previousResultDefaults: string
+    previousResultDefaultsHelp: string
     restTimer: string
     searchExercise: string
     syncFailed: string
@@ -67,6 +69,10 @@ export type Dictionary = {
     syncSuccess: string
     syncTrainingDay: string
     syncTrainingEntry: string
+    theme: string
+    themeDark: string
+    themeLight: string
+    themeSystem: string
     today: string
     weightUnit: string
   }

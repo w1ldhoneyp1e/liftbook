@@ -5,6 +5,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import type { MuscleGroupId } from "@/shared/domain/types"
+import {
+  applyThemeMode,
+  persistThemeMode,
+} from "@/shared/theme/theme-mode"
 
 import { CalendarDrawer } from "./components/calendar-drawer"
 import { DateHeader } from "./components/date-header"
@@ -97,6 +101,13 @@ export function DayScreen() {
       window.removeEventListener("offline", handleOnlineStatusChange)
     }
   }, [])
+
+  useEffect(() => {
+    const themeMode = settings?.themeMode ?? "system"
+
+    persistThemeMode(themeMode)
+    applyThemeMode(themeMode)
+  }, [settings?.themeMode])
 
   async function handleAddExercise(exerciseId: string) {
     await addExercise(exerciseId)
@@ -223,7 +234,7 @@ export function DayScreen() {
   }
 
   return (
-    <div className="flex min-h-svh justify-center bg-zinc-100 text-foreground">
+    <div className="flex min-h-svh justify-center bg-muted/40 text-foreground">
       <main className="relative flex min-h-svh w-full max-w-md flex-col bg-background">
         <div className="sticky top-0 z-40 bg-background shadow-sm">
           <DateHeader

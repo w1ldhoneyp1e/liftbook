@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch"
 import type {
   AccountSession,
   Locale,
+  ThemeMode,
   UserSettings,
   WeightUnit,
 } from "@/shared/domain/types"
@@ -106,7 +107,7 @@ export function SettingsDrawer({
                 </p>
               ) : null}
               {accountSession ? (
-                <div className="mt-3 rounded-md bg-background px-3 py-3">
+                <div className="mt-3 px-0 py-1">
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <div className="text-sm font-medium">
@@ -118,10 +119,7 @@ export function SettingsDrawer({
                     </div>
                     <Button
                       size="sm"
-                      disabled={
-                        !isOnline ||
-                        (syncing && syncMode === "manual")
-                      }
+                      disabled={!isOnline || (syncing && syncMode === "manual")}
                       onClick={onSyncNow}
                     >
                       {dictionary.actions.syncNow}
@@ -159,6 +157,17 @@ export function SettingsDrawer({
             onChange={(locale) => onUpdateSettings({ locale })}
           />
 
+          <SettingsSegment<ThemeMode>
+            label={dictionary.labels.theme}
+            options={[
+              { label: dictionary.labels.themeSystem, value: "system" },
+              { label: dictionary.labels.themeLight, value: "light" },
+              { label: dictionary.labels.themeDark, value: "dark" },
+            ]}
+            value={settings.themeMode}
+            onChange={(themeMode) => onUpdateSettings({ themeMode })}
+          />
+
           <SettingsSegment<WeightUnit>
             label={dictionary.labels.weightUnit}
             options={[
@@ -171,6 +180,7 @@ export function SettingsDrawer({
 
           <SettingsSwitchRow
             checked={settings.previousResultDefaults}
+            description={dictionary.labels.previousResultDefaultsHelp}
             label={dictionary.labels.previousResultDefaults}
             onCheckedChange={(previousResultDefaults) =>
               onUpdateSettings({ previousResultDefaults })
@@ -179,6 +189,7 @@ export function SettingsDrawer({
 
           <SettingsSwitchRow
             checked={settings.autoRestTimer}
+            description={dictionary.labels.autoRestTimerHelp}
             label={dictionary.labels.autoRestTimer}
             onCheckedChange={(autoRestTimer) =>
               onUpdateSettings({ autoRestTimer })
@@ -199,10 +210,10 @@ type SyncBadgeProps = {
 function SyncBadge({ label, tone, value }: SyncBadgeProps) {
   const toneClassName =
     tone === "success"
-      ? "bg-emerald-50 text-emerald-700"
+      ? "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300"
       : tone === "warning"
-        ? "bg-amber-50 text-amber-700"
-        : "bg-zinc-100 text-zinc-700"
+        ? "bg-amber-500/12 text-amber-700 dark:text-amber-300"
+        : "bg-muted text-foreground"
 
   return (
     <div className={`rounded-md px-2 py-2 text-center ${toneClassName}`}>
@@ -228,7 +239,11 @@ function SettingsSegment<TValue extends string>({
   return (
     <div className="space-y-2">
       <Label className="text-sm font-medium">{label}</Label>
-      <div className="grid grid-cols-2 gap-2">
+      <div
+        className={`grid gap-2 ${
+          options.length === 3 ? "grid-cols-3" : "grid-cols-2"
+        }`}
+      >
         {options.map((option) => (
           <button
             key={option.value}
@@ -250,18 +265,27 @@ function SettingsSegment<TValue extends string>({
 
 type SettingsSwitchRowProps = {
   checked: boolean
+  description?: string
   label: string
   onCheckedChange: (checked: boolean) => void
 }
 
 function SettingsSwitchRow({
   checked,
+  description,
   label,
   onCheckedChange,
 }: SettingsSwitchRowProps) {
   return (
     <div className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-3">
-      <Label className="text-sm font-medium">{label}</Label>
+      <div className="min-w-0 flex-1">
+        <Label className="text-sm font-medium">{label}</Label>
+        {description ? (
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            {description}
+          </p>
+        ) : null}
+      </div>
       <Switch checked={checked} onCheckedChange={onCheckedChange} />
     </div>
   )
