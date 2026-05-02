@@ -37,6 +37,7 @@ export function DayScreen() {
   const [touchStartX, setTouchStartX] = useState<number | null>(null)
   const [restSeconds, setRestSeconds] = useState(0)
   const [restTimerRunning, setRestTimerRunning] = useState(false)
+  const timerAlertPlayedRef = useRef(false)
   const [accountError, setAccountError] = useState(false)
   const [accountConnecting, setAccountConnecting] = useState(false)
   const [syncError, setSyncError] = useState(false)
@@ -66,6 +67,10 @@ export function DayScreen() {
 
   const unit = settings?.weightUnit ?? "kg"
   const repsStep = settings?.repsStep ?? 1
+  const restTimerMode = settings?.restTimerMode ?? "stopwatch"
+  const restTimerDurationSeconds = settings?.restTimerDurationSeconds ?? 90
+  const restTimerSoundEnabled = settings?.restTimerSoundEnabled ?? true
+  const restTimerVibrationEnabled = settings?.restTimerVibrationEnabled ?? true
   const days = useMemo(
     () => createDateStrip(selectedDate, locale),
     [locale, selectedDate]
@@ -87,6 +92,53 @@ export function DayScreen() {
 
     return () => window.clearInterval(intervalId)
   }, [restTimerRunning])
+
+  useEffect(() => {
+    if (
+      restTimerMode !== "timer" ||
+      !restTimerRunning ||
+      restSeconds < restTimerDurationSeconds
+    ) {
+      timerAlertPlayedRef.current = false
+      return
+    }
+
+    if (timerAlertPlayedRef.current) {
+      return
+    }
+
+    timerAlertPlayedRef.current = true
+    setRestTimerRunning(false)
+
+    if (restTimerVibrationEnabled && typeof navigator !== "undefined" && "vibrate" in navigator) {
+      navigator.vibrate([180, 80, 180])
+    }
+
+    if (restTimerSoundEnabled && typeof window !== "undefined") {
+      const audioContext = new window.AudioContext()
+      const oscillator = audioContext.createOscillator()
+      const gainNode = audioContext.createGain()
+
+      oscillator.type = "sine"
+      oscillator.frequency.value = 880
+      gainNode.gain.value = 0.04
+
+      oscillator.connect(gainNode)
+      gainNode.connect(audioContext.destination)
+      oscillator.start()
+      oscillator.stop(audioContext.currentTime + 0.2)
+      oscillator.onended = () => {
+        void audioContext.close()
+      }
+    }
+  }, [
+    restSeconds,
+    restTimerDurationSeconds,
+    restTimerMode,
+    restTimerRunning,
+    restTimerSoundEnabled,
+    restTimerVibrationEnabled,
+  ])
 
   useEffect(() => {
     function handleOnlineStatusChange() {
@@ -251,14 +303,28 @@ export function DayScreen() {
 
           <RestTimerRow
             dictionary={dictionary}
+            durationSeconds={restTimerDurationSeconds}
+            mode={restTimerMode}
             running={restTimerRunning}
             seconds={restSeconds}
+            soundEnabled={restTimerSoundEnabled}
+            vibrationEnabled={restTimerVibrationEnabled}
             onReset={() => {
               setRestTimerRunning(false)
               setRestSeconds(0)
             }}
             onToggleRunning={() =>
               setRestTimerRunning((running) => !running)
+            }
+            onUpdateDuration={(seconds) =>
+              updateSettings({ restTimerDurationSeconds: seconds })
+            }
+            onUpdateMode={(mode) => updateSettings({ restTimerMode: mode })}
+            onUpdateSoundEnabled={(enabled) =>
+              updateSettings({ restTimerSoundEnabled: enabled })
+            }
+            onUpdateVibrationEnabled={(enabled) =>
+              updateSettings({ restTimerVibrationEnabled: enabled })
             }
           />
         </div>

@@ -2,6 +2,7 @@ export type Locale = "en" | "ru"
 
 export type WeightUnit = "kg" | "lb"
 export type ThemeMode = "system" | "light" | "dark"
+export type RestTimerMode = "stopwatch" | "timer"
 
 export type DateState = "past" | "today" | "future"
 
@@ -101,5 +102,9 @@ export type UserSettings = {
   repsStep: number
   autoRestTimer: boolean
   previousResultDefaults: boolean
+  restTimerMode: RestTimerMode
+  restTimerDurationSeconds: number
+  restTimerSoundEnabled: boolean
+  restTimerVibrationEnabled: boolean
   updatedAt: string
 } & Partial<SyncMetadata>

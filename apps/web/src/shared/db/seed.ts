@@ -33,6 +33,10 @@ function createDefaultSettings(): UserSettings {
     repsStep: 1,
     autoRestTimer: false,
     previousResultDefaults: true,
+    restTimerMode: "stopwatch",
+    restTimerDurationSeconds: 90,
+    restTimerSoundEnabled: true,
+    restTimerVibrationEnabled: true,
     syncStatus: "pending",
     updatedAt: now,
   }

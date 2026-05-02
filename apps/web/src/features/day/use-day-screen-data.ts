@@ -69,10 +69,20 @@ export function useDayScreenData(date: string) {
     ])
     const syncSummary = await getSyncSummary()
     const normalizedSettings =
-      settings && !settings.themeMode
+      settings &&
+      (!settings.themeMode ||
+        !settings.restTimerMode ||
+        typeof settings.restTimerDurationSeconds !== "number" ||
+        typeof settings.restTimerSoundEnabled !== "boolean" ||
+        typeof settings.restTimerVibrationEnabled !== "boolean")
         ? {
             ...settings,
             themeMode: "system" as const,
+            restTimerMode: settings?.restTimerMode ?? "stopwatch",
+            restTimerDurationSeconds: settings?.restTimerDurationSeconds ?? 90,
+            restTimerSoundEnabled: settings?.restTimerSoundEnabled ?? true,
+            restTimerVibrationEnabled:
+              settings?.restTimerVibrationEnabled ?? true,
             syncStatus: "pending" as const,
             updatedAt: new Date().toISOString(),
           }
@@ -947,6 +957,10 @@ function isUserSettingsPayload(payload: unknown): payload is UserSettings {
     typeof payload.repsStep === "number" &&
     typeof payload.autoRestTimer === "boolean" &&
     typeof payload.previousResultDefaults === "boolean" &&
+    (payload.restTimerMode === "stopwatch" || payload.restTimerMode === "timer") &&
+    typeof payload.restTimerDurationSeconds === "number" &&
+    typeof payload.restTimerSoundEnabled === "boolean" &&
+    typeof payload.restTimerVibrationEnabled === "boolean" &&
     typeof payload.updatedAt === "string"
   )
 }

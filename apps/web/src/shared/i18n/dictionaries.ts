@@ -30,8 +30,10 @@ export type Dictionary = {
     save: string
     search: string
     settings: string
+    stopwatch: string
     start: string
     syncNow: string
+    timer: string
   }
   labels: {
     account: string
@@ -53,6 +55,14 @@ export type Dictionary = {
     previousResultDefaults: string
     previousResultDefaultsHelp: string
     restTimer: string
+    restTimerDuration: string
+    restTimerMode: string
+    restTimerModeHelp: string
+    restTimerSettings: string
+    restTimerSound: string
+    restTimerSoundHelp: string
+    restTimerVibration: string
+    restTimerVibrationHelp: string
     searchExercise: string
     syncFailed: string
     syncConflicts: string
