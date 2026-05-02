@@ -1,5 +1,7 @@
 "use client"
 
+import Image from "next/image"
+
 import type {
   Exercise,
   ExerciseEntry,
@@ -67,13 +69,24 @@ export function ExerciseList({
       ) : null}
 
       {!loading && exerciseEntries.length === 0 ? (
-        <div className="flex min-h-[52svh] flex-col items-center justify-center gap-3 px-5 py-8 text-center">
+        <div className="flex min-h-[52svh] flex-col items-center justify-center gap-4 px-5 py-8 text-center">
+          <div className="relative h-36 w-full max-w-[220px]">
+            <Image
+              src="/images/empty-day.png"
+              alt=""
+              fill
+              sizes="220px"
+              className="object-contain"
+              priority
+            />
+          </div>
           <p className="text-lg font-medium text-foreground">
             {dictionary.labels.emptyDayMessage}
           </p>
           <Button
-            variant="outline"
+            variant="default"
             size="default"
+            className="min-w-28"
             onClick={onOpenExercisePicker}
           >
             {dictionary.actions.add}
