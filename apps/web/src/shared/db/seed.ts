@@ -1,5 +1,10 @@
 import { starterExercises } from "@/shared/domain/exercise-catalog"
-import type { ExerciseEntry, UserSettings, WorkoutDay } from "@/shared/domain/types"
+import type {
+  ExerciseEntry,
+  Locale,
+  UserSettings,
+  WorkoutDay,
+} from "@/shared/domain/types"
 
 import { db } from "./schema"
 
@@ -8,18 +13,29 @@ const today = "2026-04-26"
 
 const now = new Date("2026-04-26T08:00:00.000Z").toISOString()
 
-const defaultSettings: UserSettings = {
-  id: "local",
-  locale: "en",
-  themeMode: "system",
-  weightUnit: "kg",
-  kgStep: 1,
-  lbStep: 2.5,
-  repsStep: 1,
-  autoRestTimer: false,
-  previousResultDefaults: true,
-  syncStatus: "pending",
-  updatedAt: now,
+function getInitialLocale(): Locale {
+  if (typeof navigator === "undefined") {
+    return "en"
+  }
+
+  const primaryLanguage = navigator.language.toLowerCase()
+  return primaryLanguage.startsWith("ru") ? "ru" : "en"
+}
+
+function createDefaultSettings(): UserSettings {
+  return {
+    id: "local",
+    locale: getInitialLocale(),
+    themeMode: "system",
+    weightUnit: "kg",
+    kgStep: 1,
+    lbStep: 2.5,
+    repsStep: 1,
+    autoRestTimer: false,
+    previousResultDefaults: true,
+    syncStatus: "pending",
+    updatedAt: now,
+  }
 }
 
 const seedEntries: ExerciseEntry[] = [
@@ -103,7 +119,7 @@ export async function seedLocalDatabase() {
   ])
 
   if (settingsCount === 0) {
-    await db.userSettings.put(defaultSettings)
+    await db.userSettings.put(createDefaultSettings())
   }
 
   await db.exercises.bulkPut(
