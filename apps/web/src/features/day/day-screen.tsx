@@ -20,6 +20,7 @@ import {
   createDateStrip,
   getDateState,
   getDateStatusLabel,
+  shiftDateKey,
   toDateKey,
 } from "./lib/date-utils"
 import { useDayScreenData } from "./use-day-screen-data"
@@ -63,6 +64,8 @@ export function DayScreen() {
     exercisesById,
     locale,
     loading,
+    nextDay,
+    previousDay,
     renameCustomExercise,
     settings,
     syncSummary,
@@ -291,11 +294,7 @@ export function DayScreen() {
   }
 
   function handleShiftDate(dayDelta: number) {
-    setSelectedDate((currentDate) => {
-      const nextDate = new Date(`${currentDate}T12:00:00`)
-      nextDate.setDate(nextDate.getDate() + dayDelta)
-      return toDateKey(nextDate)
-    })
+    setSelectedDate((currentDate) => shiftDateKey(currentDate, dayDelta))
   }
 
   function handleTouchStart(clientX: number) {
@@ -331,6 +330,12 @@ export function DayScreen() {
 
     handleShiftDate(finalOffset < 0 ? 1 : -1)
   }
+
+  const previewDay = dragOffset < 0 ? nextDay : previousDay
+  const previewBaseTransform =
+    dragOffset < 0
+      ? `calc(100% + ${dragOffset}px)`
+      : `calc(-100% + ${dragOffset}px)`
 
   return (
     <div className="flex min-h-svh justify-center bg-muted/40 text-foreground">
@@ -379,19 +384,7 @@ export function DayScreen() {
         </div>
 
         <div
-          className={`flex-1 ${
-            isDraggingDay
-              ? ""
-              : contentMotion === "left"
-                ? "animate-[day-slide-left_220ms_ease-out]"
-                : contentMotion === "right"
-                  ? "animate-[day-slide-right_220ms_ease-out]"
-                  : ""
-          }`}
-          style={{
-            transform: isDraggingDay ? `translateX(${dragOffset}px)` : undefined,
-            transition: isDraggingDay ? "none" : undefined,
-          }}
+          className="flex-1 overflow-hidden"
           onTouchStart={(event) =>
             handleTouchStart(event.changedTouches[0].clientX)
           }
@@ -401,21 +394,64 @@ export function DayScreen() {
           onTouchCancel={() => handleTouchEnd()}
           onTouchEnd={() => handleTouchEnd()}
         >
-          <ExerciseList
-            dictionary={dictionary}
-            exerciseEntries={exerciseEntries}
-            exercisesById={exercisesById}
-            loading={loading}
-            locale={locale}
-            onOpenExercisePicker={() => setExercisePickerOpen(true)}
-            repsStep={repsStep}
-            settings={settings}
-            unit={unit}
-            onAddSet={handleAddSet}
-            onDeleteExercise={deleteExercise}
-            onDeleteSet={deleteSet}
-            onUpdateNumber={updateNumber}
-          />
+          <div className="relative h-full w-full">
+            {isDraggingDay ? (
+              <div
+                className="pointer-events-none absolute inset-0"
+                style={{
+                  transform: `translateX(${previewBaseTransform})`,
+                }}
+              >
+                <ExerciseList
+                  dictionary={dictionary}
+                  exerciseEntries={previewDay.exerciseEntries}
+                  exercisesById={exercisesById}
+                  loading={false}
+                  locale={locale}
+                  onOpenExercisePicker={() => {}}
+                  repsStep={repsStep}
+                  settings={settings}
+                  unit={unit}
+                  onAddSet={async () => null}
+                  onDeleteExercise={() => {}}
+                  onDeleteSet={async () => {}}
+                  onUpdateNumber={() => {}}
+                />
+              </div>
+            ) : null}
+
+            <div
+              className={`absolute inset-0 ${
+                isDraggingDay
+                  ? ""
+                  : contentMotion === "left"
+                    ? "animate-[day-slide-left_220ms_ease-out]"
+                    : contentMotion === "right"
+                      ? "animate-[day-slide-right_220ms_ease-out]"
+                      : ""
+              }`}
+              style={{
+                transform: isDraggingDay ? `translateX(${dragOffset}px)` : undefined,
+                transition: isDraggingDay ? "none" : undefined,
+              }}
+            >
+              <ExerciseList
+                dictionary={dictionary}
+                exerciseEntries={exerciseEntries}
+                exercisesById={exercisesById}
+                loading={loading}
+                locale={locale}
+                onOpenExercisePicker={() => setExercisePickerOpen(true)}
+                repsStep={repsStep}
+                settings={settings}
+                unit={unit}
+                onAddSet={handleAddSet}
+                onDeleteExercise={deleteExercise}
+                onDeleteSet={deleteSet}
+                onUpdateNumber={updateNumber}
+              />
+            </div>
+          </div>
         </div>
 
         <Button

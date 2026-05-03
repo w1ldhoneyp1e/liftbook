@@ -17,6 +17,12 @@ export function toDateKey(date: Date) {
   return `${year}-${month}-${day}`
 }
 
+export function shiftDateKey(dateKey: string, dayDelta: number) {
+  const nextDate = new Date(`${dateKey}T12:00:00`)
+  nextDate.setDate(nextDate.getDate() + dayDelta)
+  return toDateKey(nextDate)
+}
+
 export function createDateStrip(
   selectedDate: string,
   locale: Locale

@@ -1,6 +1,7 @@
 "use client"
 
 import Image from "next/image"
+import { memo } from "react"
 
 import type {
   Exercise,
@@ -38,7 +39,7 @@ type ExerciseListProps = {
   ) => void
 }
 
-export function ExerciseList({
+export const ExerciseList = memo(function ExerciseList({
   dictionary,
   exerciseEntries,
   exercisesById,
@@ -107,4 +108,6 @@ export function ExerciseList({
       <div className="h-16" />
     </section>
   )
-}
+})
+
+ExerciseList.displayName = "ExerciseList"

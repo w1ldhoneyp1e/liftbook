@@ -22,6 +22,7 @@ import type {
 } from "@/shared/domain/types"
 import { db } from "@/shared/db/schema"
 import { seedLocalDatabase } from "@/shared/db/seed"
+import { shiftDateKey } from "./lib/date-utils"
 
 type DayScreenData = {
   accountSession: AccountSession | null
@@ -34,6 +35,14 @@ type DayScreenData = {
     pending: number
     synced: number
   }
+  previousDay: DaySnapshot
+  nextDay: DaySnapshot
+}
+
+type DaySnapshot = {
+  date: string
+  workoutDay: WorkoutDay | null
+  exerciseEntries: ExerciseEntry[]
 }
 
 export function useDayScreenData(date: string) {
@@ -48,23 +57,44 @@ export function useDayScreenData(date: string) {
       pending: 0,
       synced: 0,
     },
+    previousDay: {
+      date: shiftDateKey(date, -1),
+      workoutDay: null,
+      exerciseEntries: [],
+    },
+    nextDay: {
+      date: shiftDateKey(date, 1),
+      workoutDay: null,
+      exerciseEntries: [],
+    },
   })
 
   const load = useCallback(async () => {
     await seedLocalDatabase()
     await normalizeLegacyConflicts()
 
+    const previousDate = shiftDateKey(date, -1)
+    const nextDate = shiftDateKey(date, 1)
+
     const [
       accountSession,
       settings,
-      workoutDay,
-      exerciseEntries,
+      currentDay,
+      currentEntries,
+      previousDay,
+      previousEntries,
+      nextDay,
+      nextEntries,
       exercises,
     ] = await Promise.all([
       db.accountSessions.get("local"),
       db.userSettings.get("local"),
       db.workoutDays.where("date").equals(date).first(),
       db.exerciseEntries.where("workoutDate").equals(date).sortBy("position"),
+      db.workoutDays.where("date").equals(previousDate).first(),
+      db.exerciseEntries.where("workoutDate").equals(previousDate).sortBy("position"),
+      db.workoutDays.where("date").equals(nextDate).first(),
+      db.exerciseEntries.where("workoutDate").equals(nextDate).sortBy("position"),
       db.exercises.toArray(),
     ])
     const syncSummary = await getSyncSummary()
@@ -92,21 +122,33 @@ export function useDayScreenData(date: string) {
       await db.userSettings.put(normalizedSettings)
     }
 
-    setState({
-      accountSession: accountSession ?? null,
-      settings: normalizedSettings ?? null,
+    const buildSnapshot = (
+      snapshotDate: string,
+      workoutDay: WorkoutDay | undefined,
+      entries: ExerciseEntry[]
+    ): DaySnapshot => ({
+      date: snapshotDate,
       workoutDay: workoutDay && !workoutDay.deletedAt ? workoutDay : null,
-      exerciseEntries: exerciseEntries
+      exerciseEntries: entries
         .filter((entry) => !entry.deletedAt)
         .map((entry) => ({
           ...entry,
           setEntries: entry.setEntries.filter((setEntry) => !setEntry.deletedAt),
         })),
+    })
+
+    setState({
+      accountSession: accountSession ?? null,
+      settings: normalizedSettings ?? null,
+      workoutDay: buildSnapshot(date, currentDay, currentEntries).workoutDay,
+      exerciseEntries: buildSnapshot(date, currentDay, currentEntries).exerciseEntries,
       exercisesById: Object.fromEntries(
         exercises.map((exercise) => [exercise.id, exercise])
       ),
       loading: false,
       syncSummary,
+      previousDay: buildSnapshot(previousDate, previousDay, previousEntries),
+      nextDay: buildSnapshot(nextDate, nextDay, nextEntries),
     })
   }, [date])
 
