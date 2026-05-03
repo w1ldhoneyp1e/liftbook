@@ -15,6 +15,8 @@ import { muscleGroups } from "@/shared/domain/exercise-catalog"
 import type { Exercise, Locale, MuscleGroupId } from "@/shared/domain/types"
 import type { Dictionary } from "@/shared/i18n/dictionaries"
 
+import { getMuscleGroupColor } from "../lib/muscle-group-colors"
+
 type ExercisePickerDrawerProps = {
   dictionary: Dictionary
   exercises: Exercise[]
@@ -122,31 +124,41 @@ export function ExercisePickerDrawer({
 
           <div className="-mx-1 min-h-11 overflow-x-auto px-1 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <div className="flex min-h-9 items-center gap-2">
-            <button
-              className={`min-h-9 shrink-0 whitespace-nowrap rounded-lg px-3 py-2 text-sm leading-none ${
-                selectedMuscleGroup === null
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-foreground"
-              }`}
-              type="button"
-              onClick={() => setSelectedMuscleGroup(null)}
-            >
-              {dictionary.labels.allMuscleGroups}
-            </button>
-            {muscleGroups.map((muscleGroup) => (
               <button
-                key={muscleGroup}
                 className={`min-h-9 shrink-0 whitespace-nowrap rounded-lg px-3 py-2 text-sm leading-none ${
-                  selectedMuscleGroup === muscleGroup
+                  selectedMuscleGroup === null
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted text-foreground"
                 }`}
                 type="button"
-                onClick={() => setSelectedMuscleGroup(muscleGroup)}
+                onClick={() => setSelectedMuscleGroup(null)}
               >
-                {dictionary.muscleGroups[muscleGroup]}
+                {dictionary.labels.allMuscleGroups}
               </button>
-            ))}
+              {muscleGroups.map((muscleGroup) => {
+                const color = getMuscleGroupColor(muscleGroup)
+                const selected = selectedMuscleGroup === muscleGroup
+
+                return (
+                  <button
+                    key={muscleGroup}
+                    className={`min-h-9 shrink-0 whitespace-nowrap rounded-lg px-3 py-2 text-sm leading-none transition-colors ${
+                      selected
+                        ? color.badgeClassName
+                        : `${color.badgeClassName} opacity-80`
+                    }`}
+                    type="button"
+                    onClick={() => setSelectedMuscleGroup(muscleGroup)}
+                  >
+                    <span className="inline-flex items-center gap-1.5">
+                      <span
+                        className={`size-1.5 rounded-full ${color.dotClassName}`}
+                      />
+                      {dictionary.muscleGroups[muscleGroup]}
+                    </span>
+                  </button>
+                )
+              })}
             </div>
           </div>
 
