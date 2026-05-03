@@ -120,9 +120,10 @@ export function ExercisePickerDrawer({
             ) : null}
           </div>
 
-          <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="-mx-1 min-h-11 overflow-x-auto px-1 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex min-h-9 items-center gap-2">
             <button
-              className={`h-8 shrink-0 rounded-lg px-3 text-sm ${
+              className={`min-h-9 shrink-0 whitespace-nowrap rounded-lg px-3 py-2 text-sm leading-none ${
                 selectedMuscleGroup === null
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted text-foreground"
@@ -135,7 +136,7 @@ export function ExercisePickerDrawer({
             {muscleGroups.map((muscleGroup) => (
               <button
                 key={muscleGroup}
-                className={`h-8 shrink-0 rounded-lg px-3 text-sm ${
+                className={`min-h-9 shrink-0 whitespace-nowrap rounded-lg px-3 py-2 text-sm leading-none ${
                   selectedMuscleGroup === muscleGroup
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted text-foreground"
@@ -146,6 +147,7 @@ export function ExercisePickerDrawer({
                 {dictionary.muscleGroups[muscleGroup]}
               </button>
             ))}
+            </div>
           </div>
 
           <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pb-[max(1rem,env(safe-area-inset-bottom))] pr-1">
