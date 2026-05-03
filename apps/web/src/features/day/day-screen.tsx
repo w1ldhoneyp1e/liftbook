@@ -365,9 +365,9 @@ export function DayScreen() {
       : `calc(-100% + ${dragOffset}px)`
 
   return (
-    <div className="flex min-h-svh justify-center bg-muted/40 text-foreground">
-      <main className="relative flex min-h-svh w-full max-w-md flex-col bg-background">
-        <div className="sticky top-0 z-40 bg-background shadow-sm">
+    <div className="flex min-h-svh justify-center bg-muted/35 text-foreground dark:bg-[#0b0d11]">
+      <main className="relative flex min-h-svh w-full max-w-md flex-col bg-background shadow-[0_0_0_1px_rgba(229,231,235,0.45)] dark:shadow-[0_0_0_1px_rgba(43,49,60,0.9)]">
+        <div className="sticky top-0 z-40 bg-background/95 shadow-sm backdrop-blur dark:bg-background/92 dark:shadow-[0_10px_30px_rgba(0,0,0,0.28)]">
           <DateHeader
             dateStatusLabel={dateStatusLabel}
             dragOffset={dragOffset}

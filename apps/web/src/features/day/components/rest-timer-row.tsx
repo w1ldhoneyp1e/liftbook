@@ -49,7 +49,7 @@ export function RestTimerRow({
     mode === "timer" ? Math.max(durationSeconds - seconds, 0) : seconds
 
   return (
-    <section className="flex items-center justify-between gap-3 px-4 py-3">
+    <section className="flex items-center justify-between gap-3 border-t border-border/60 bg-background/88 px-4 py-3 backdrop-blur dark:bg-background/70">
       <div className="min-w-0">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Timer className="size-4" />
@@ -73,7 +73,7 @@ export function RestTimerRow({
             }
           />
           <PopoverPositioner side="bottom" align="end" sideOffset={8}>
-            <PopoverPopup className="w-[min(22rem,calc(100vw-1.5rem))] p-4">
+            <PopoverPopup className="w-[min(22rem,calc(100vw-1.5rem))] bg-card/97 p-4 backdrop-blur dark:bg-card/95">
               <div className="space-y-4">
                 <div className="space-y-2">
                   <div className="text-sm font-medium">
@@ -109,7 +109,7 @@ export function RestTimerRow({
                     >
                       -
                     </StepButton>
-                    <div className="rounded-xl bg-muted/28 px-3 py-3 text-center font-mono text-base font-semibold ring-1 ring-border/35">
+                    <div className="rounded-xl bg-muted/40 px-3 py-3 text-center font-mono text-base font-semibold ring-1 ring-border/35 dark:bg-muted/55">
                       {formatTimer(durationSeconds)}
                     </div>
                     <StepButton
@@ -175,7 +175,7 @@ function ModeButton({
       className={`h-9 rounded-lg border text-sm ${
         active
           ? "border-primary bg-primary text-primary-foreground"
-          : "border-border bg-background text-foreground"
+          : "border-border/70 bg-card/90 text-foreground hover:bg-muted/45 dark:bg-card/80 dark:hover:bg-muted/45"
       }`}
       type="button"
       onClick={onClick}
@@ -197,7 +197,7 @@ function StepButton({
   return (
     <button
       aria-label={ariaLabel}
-      className="flex h-12 items-center justify-center rounded-xl bg-muted/45 text-lg font-medium text-muted-foreground ring-1 ring-border/35 transition-colors hover:bg-muted/65 hover:text-foreground"
+      className="flex h-12 items-center justify-center rounded-xl bg-muted/45 text-lg font-medium text-muted-foreground ring-1 ring-border/35 transition-colors hover:bg-muted/65 hover:text-foreground dark:bg-muted/55 dark:hover:bg-muted/75"
       type="button"
       onClick={onClick}
     >
@@ -219,7 +219,7 @@ function ToggleRow({
 }) {
   return (
     <button
-      className="flex w-full items-start justify-between gap-3 rounded-lg border border-border px-3 py-3 text-left"
+      className="flex w-full items-start justify-between gap-3 rounded-xl border border-border/70 bg-card/92 px-3 py-3 text-left dark:bg-card/80"
       type="button"
       onClick={onToggle}
     >

@@ -96,7 +96,7 @@ export function ExercisePickerDrawer({
         onOpenChange(nextOpen)
       }}
     >
-      <DrawerContent className="mx-auto max-h-[92svh] max-w-md overflow-hidden rounded-t-xl bg-background">
+      <DrawerContent className="mx-auto max-h-[92svh] max-w-md overflow-hidden rounded-t-xl bg-background/98 backdrop-blur">
         <DrawerHeader className="text-left">
           <DrawerTitle>{dictionary.actions.chooseExercise}</DrawerTitle>
         </DrawerHeader>
@@ -159,7 +159,7 @@ export function ExercisePickerDrawer({
 
           <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pb-[max(1rem,env(safe-area-inset-bottom))] pr-1">
             {filteredExercises.length === 0 ? (
-              <div className="rounded-lg border border-border p-4 text-sm text-muted-foreground">
+              <div className="rounded-xl border border-border/70 bg-card/92 p-4 text-sm text-muted-foreground dark:bg-card/80">
                 {dictionary.labels.noExercisesFound}
               </div>
             ) : null}
@@ -170,7 +170,7 @@ export function ExercisePickerDrawer({
               return (
                 <div
                   key={exercise.id}
-                  className="rounded-lg border border-border px-3 py-3"
+                  className="rounded-xl border border-border/70 bg-card/92 px-3 py-3 dark:bg-card/80"
                 >
                   {editing ? (
                     <div className="flex items-center gap-2">

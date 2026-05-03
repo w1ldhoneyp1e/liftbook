@@ -80,21 +80,24 @@ export function getDateStatusLabel(
 export function getDateTone(state: DateState) {
   if (state === "today") {
     return {
-      headerClassName: "border-emerald-100 bg-emerald-50",
-      labelClassName: "text-emerald-700",
+      headerClassName:
+        "border-emerald-100 bg-emerald-50 dark:border-emerald-900/60 dark:bg-emerald-950/25",
+      labelClassName: "text-emerald-700 dark:text-emerald-300",
     }
   }
 
   if (state === "future") {
     return {
-      headerClassName: "border-sky-100 bg-sky-50",
-      labelClassName: "text-sky-700",
+      headerClassName:
+        "border-sky-100 bg-sky-50 dark:border-sky-900/60 dark:bg-sky-950/25",
+      labelClassName: "text-sky-700 dark:text-sky-300",
     }
   }
 
   return {
-    headerClassName: "border-zinc-200 bg-zinc-50",
-    labelClassName: "text-zinc-600",
+    headerClassName:
+      "border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/20",
+    labelClassName: "text-zinc-600 dark:text-zinc-400",
   }
 }
 
@@ -103,24 +106,24 @@ export function getDateButtonClassName(
   selected: boolean
 ) {
   if (selected && state === "today") {
-    return "bg-white text-emerald-900 shadow-[inset_0_0_0_1.5px_rgba(16,185,129,0.32)]"
+    return "bg-white text-emerald-900 shadow-[inset_0_0_0_1.5px_rgba(16,185,129,0.32)] dark:bg-emerald-950/35 dark:text-emerald-100 dark:shadow-[inset_0_0_0_1.5px_rgba(52,211,153,0.28)]"
   }
 
   if (selected && state === "future") {
-    return "bg-white text-sky-900 shadow-[inset_0_0_0_1.5px_rgba(14,165,233,0.3)]"
+    return "bg-white text-sky-900 shadow-[inset_0_0_0_1.5px_rgba(14,165,233,0.3)] dark:bg-sky-950/35 dark:text-sky-100 dark:shadow-[inset_0_0_0_1.5px_rgba(56,189,248,0.26)]"
   }
 
   if (selected) {
-    return "bg-white text-zinc-900 shadow-[inset_0_0_0_1.5px_rgba(113,113,122,0.28)]"
+    return "bg-white text-zinc-900 shadow-[inset_0_0_0_1.5px_rgba(113,113,122,0.28)] dark:bg-zinc-900/70 dark:text-zinc-100 dark:shadow-[inset_0_0_0_1.5px_rgba(161,161,170,0.22)]"
   }
 
   if (state === "today") {
-    return "bg-white/80 text-emerald-800"
+    return "bg-white/80 text-emerald-800 dark:bg-emerald-950/20 dark:text-emerald-300"
   }
 
   if (state === "future") {
-    return "bg-sky-50 text-sky-800"
+    return "bg-sky-50 text-sky-800 dark:bg-sky-950/20 dark:text-sky-300"
   }
 
-  return "bg-zinc-50 text-zinc-500"
+  return "bg-zinc-50 text-zinc-500 dark:bg-zinc-900/25 dark:text-zinc-400"
 }

@@ -75,7 +75,7 @@ export function SettingsDrawer({
 
   return (
     <Drawer direction="top" open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="mx-auto max-h-[92svh] max-w-md rounded-b-2xl bg-background">
+      <DrawerContent className="mx-auto max-h-[92svh] max-w-md rounded-b-2xl bg-background/98 backdrop-blur">
         <DrawerHeader className="text-left">
           <DrawerTitle>{dictionary.actions.settings}</DrawerTitle>
           <DrawerDescription>Liftbook</DrawerDescription>
@@ -86,7 +86,7 @@ export function SettingsDrawer({
             <Label className="text-sm font-medium">
               {dictionary.labels.account}
             </Label>
-            <div className="rounded-lg bg-muted px-3 py-3">
+            <div className="rounded-xl border border-border/60 bg-card/95 px-3 py-3 shadow-sm dark:border-border dark:bg-card/92 dark:shadow-[0_12px_30px_rgba(0,0,0,0.2)]">
               <div className="text-sm font-medium">
                 {accountSession
                   ? dictionary.labels.accountConnected
@@ -222,7 +222,7 @@ function SyncBadge({ label, tone, value }: SyncBadgeProps) {
       ? "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300"
       : tone === "warning"
         ? "bg-amber-500/12 text-amber-700 dark:text-amber-300"
-        : "bg-muted text-foreground"
+        : "bg-muted/75 text-foreground dark:bg-muted/55"
 
   return (
     <div
@@ -262,8 +262,8 @@ function SettingsSegment<TValue extends string>({
             key={option.value}
             className={`h-9 rounded-lg border text-sm ${
               option.value === value
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-border bg-background text-foreground"
+                ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                : "border-border/70 bg-card/90 text-foreground hover:bg-muted/50 dark:bg-card/80 dark:hover:bg-muted/45"
             }`}
             type="button"
             onClick={() => onChange(option.value)}
@@ -290,7 +290,7 @@ function SettingsSwitchRow({
   onCheckedChange,
 }: SettingsSwitchRowProps) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-3">
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-card/92 px-3 py-3 dark:bg-card/80">
       <div className="min-w-0 flex-1">
         <Label className="text-sm font-medium">{label}</Label>
         {description ? (
