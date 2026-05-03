@@ -150,12 +150,7 @@ export function ExercisePickerDrawer({
                     type="button"
                     onClick={() => setSelectedMuscleGroup(muscleGroup)}
                   >
-                    <span className="inline-flex items-center gap-1.5">
-                      <span
-                        className={`size-1.5 rounded-full ${color.dotClassName}`}
-                      />
-                      {dictionary.muscleGroups[muscleGroup]}
-                    </span>
+                    {dictionary.muscleGroups[muscleGroup]}
                   </button>
                 )
               })}
