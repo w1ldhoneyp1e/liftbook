@@ -99,9 +99,13 @@ export function DateHeader({
         className={`mt-4 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
           isDraggingDay ? "" : "transition-transform duration-200 ease-out"
         }`}
-        style={{
-          transform: `translateX(${dragOffset * 0.35}px)`,
-        }}
+        style={
+          dragOffset !== 0
+            ? {
+                transform: `translateX(${dragOffset * 0.35}px)`,
+              }
+            : undefined
+        }
       >
         {days.map((item) => (
           <button

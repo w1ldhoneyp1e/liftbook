@@ -1,7 +1,14 @@
 "use client"
 
 import { Plus } from "lucide-react"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react"
 
 import { Button } from "@/components/ui/button"
 import type { MuscleGroupId } from "@/shared/domain/types"
@@ -29,11 +36,17 @@ export function DayScreen() {
   const autoSyncSignatureRef = useRef<string | null>(null)
   const initialDateRef = useRef<string | null>(null)
   const touchStartXRef = useRef<number | null>(null)
+  const hasMounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  )
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator === "undefined" ? true : navigator.onLine
   )
-  const today = toDateKey(new Date())
-  const [selectedDate, setSelectedDate] = useState(today)
+  const ssrToday = useMemo(() => new Date().toISOString().slice(0, 10), [])
+  const today = hasMounted ? toDateKey(new Date()) : ssrToday
+  const [selectedDate, setSelectedDate] = useState(ssrToday)
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [exercisePickerOpen, setExercisePickerOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -50,6 +63,9 @@ export function DayScreen() {
   const [syncError, setSyncError] = useState(false)
   const [syncing, setSyncing] = useState(false)
   const [syncMode, setSyncMode] = useState<"auto" | "manual" | null>(null)
+  const effectiveSelectedDate =
+    hasMounted && selectedDate === ssrToday ? today : selectedDate
+
   const {
     accountSession,
     addExercise,
@@ -72,7 +88,7 @@ export function DayScreen() {
     syncPendingChanges,
     updateSettings,
     updateNumber,
-  } = useDayScreenData(selectedDate)
+  } = useDayScreenData(effectiveSelectedDate)
 
   const unit = settings?.weightUnit ?? "kg"
   const repsStep = settings?.repsStep ?? 1
@@ -81,36 +97,36 @@ export function DayScreen() {
   const restTimerSoundEnabled = settings?.restTimerSoundEnabled ?? true
   const restTimerVibrationEnabled = settings?.restTimerVibrationEnabled ?? true
   const days = useMemo(
-    () => createDateStrip(selectedDate, locale),
-    [locale, selectedDate]
+    () => createDateStrip(effectiveSelectedDate, locale),
+    [effectiveSelectedDate, locale]
   )
-  const selectedDateState = getDateState(selectedDate, today)
+  const selectedDateState = getDateState(effectiveSelectedDate, today)
   const dateStatusLabel = getDateStatusLabel(
     selectedDateState,
     dictionary,
-    selectedDate
+    effectiveSelectedDate
   )
 
   useEffect(() => {
     if (initialDateRef.current === null) {
-      initialDateRef.current = selectedDate
+      initialDateRef.current = effectiveSelectedDate
       return
     }
 
     const previousDate = initialDateRef.current
-    if (previousDate === selectedDate) {
+    if (previousDate === effectiveSelectedDate) {
       return
     }
 
-    setContentMotion(selectedDate > previousDate ? "left" : "right")
-    initialDateRef.current = selectedDate
+    setContentMotion(effectiveSelectedDate > previousDate ? "left" : "right")
+    initialDateRef.current = effectiveSelectedDate
 
     const timeoutId = window.setTimeout(() => {
       setContentMotion(null)
     }, 220)
 
     return () => window.clearTimeout(timeoutId)
-  }, [selectedDate])
+  }, [effectiveSelectedDate])
 
   useEffect(() => {
     if (!restTimerRunning) {
@@ -294,7 +310,12 @@ export function DayScreen() {
   }
 
   function handleShiftDate(dayDelta: number) {
-    setSelectedDate((currentDate) => shiftDateKey(currentDate, dayDelta))
+    setSelectedDate((currentDate) =>
+      shiftDateKey(
+        currentDate === ssrToday && hasMounted ? today : currentDate,
+        dayDelta
+      )
+    )
   }
 
   function handleTouchStart(clientX: number) {
@@ -347,7 +368,7 @@ export function DayScreen() {
             days={days}
             dictionary={dictionary}
             isDraggingDay={isDraggingDay}
-            selectedDate={selectedDate}
+            selectedDate={effectiveSelectedDate}
             selectedDateState={selectedDateState}
             today={today}
             onOpenCalendar={() => setCalendarOpen(true)}
@@ -395,7 +416,7 @@ export function DayScreen() {
           onTouchEnd={() => handleTouchEnd()}
         >
           <div className="relative h-full w-full">
-            {isDraggingDay ? (
+            {hasMounted && isDraggingDay ? (
               <div
                 className="pointer-events-none absolute inset-0"
                 style={{
