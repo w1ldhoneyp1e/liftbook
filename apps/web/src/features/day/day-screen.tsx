@@ -79,7 +79,7 @@ export function DayScreen() {
     syncSummary,
     syncPendingChanges,
     updateSettings,
-    updateNumber,
+    updateSet,
   } = useDayScreenData(selectedDate)
 
   const unit = settings?.weightUnit ?? "kg"
@@ -443,7 +443,7 @@ export function DayScreen() {
                   onAddSet={async () => null}
                   onDeleteExercise={() => {}}
                   onDeleteSet={async () => {}}
-                  onUpdateNumber={() => {}}
+                  onUpdateSet={async () => {}}
                 />
               </div>
             ) : null}
@@ -476,7 +476,7 @@ export function DayScreen() {
                 onAddSet={handleAddSet}
                 onDeleteExercise={deleteExercise}
                 onDeleteSet={deleteSet}
-                onUpdateNumber={updateNumber}
+                onUpdateSet={updateSet}
               />
             </div>
           </div>

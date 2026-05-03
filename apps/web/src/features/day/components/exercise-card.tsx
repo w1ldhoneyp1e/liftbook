@@ -42,12 +42,11 @@ type ExerciseCardProps = {
     exerciseEntryId: string,
     setEntryId: string
   ) => Promise<void> | void
-  onUpdateNumber: (
+  onUpdateSet: (
     exerciseEntryId: string,
     setEntryId: string,
-    field: "reps" | "weight",
-    value: number
-  ) => void
+    patch: Partial<{ reps: number; weight: number }>
+  ) => Promise<void> | void
 }
 
 export function ExerciseCard({
@@ -61,7 +60,7 @@ export function ExerciseCard({
   onAddSet,
   onDeleteExercise,
   onDeleteSet,
-  onUpdateNumber,
+  onUpdateSet,
 }: ExerciseCardProps) {
   const primaryMuscleGroup = exercise?.muscleGroupIds[0]
   const primaryMuscleGroupColor = primaryMuscleGroup
@@ -149,7 +148,7 @@ export function ExerciseCard({
     return Number.isFinite(parsed) ? Math.max(0, parsed) : fallback
   }
 
-  function handleSaveSet(setId: string) {
+  async function handleSaveSet(setId: string) {
     const currentSet = activeSets.find((setEntry) => setEntry.id === setId)
 
     if (!currentSet) {
@@ -162,13 +161,12 @@ export function ExerciseCard({
     const nextWeight = parseDraftValue(draftWeight, currentDisplayedWeight)
     const nextReps = parseDraftValue(draftReps, currentSet.reps ?? 0)
 
-    onUpdateNumber(
-      entry.id,
-      setId,
-      "weight",
-      convertDisplayedWeightToKg(nextWeight, displayUnit)
+    await Promise.resolve(
+      onUpdateSet(entry.id, setId, {
+        weight: convertDisplayedWeightToKg(nextWeight, displayUnit),
+        reps: nextReps,
+      })
     )
-    onUpdateNumber(entry.id, setId, "reps", nextReps)
 
     if (creatingSetId === setId) {
       handleSaveNewSet(setId)
@@ -358,7 +356,9 @@ export function ExerciseCard({
                         <Button
                           variant="default"
                           size="default"
-                          onClick={() => handleSaveSet(set.id)}
+                          onClick={() => {
+                            void handleSaveSet(set.id)
+                          }}
                         >
                           {dictionary.actions.save}
                         </Button>
@@ -381,7 +381,9 @@ export function ExerciseCard({
                         <Button
                           variant="default"
                           size="default"
-                          onClick={() => handleSaveSet(set.id)}
+                          onClick={() => {
+                            void handleSaveSet(set.id)
+                          }}
                         >
                           {dictionary.actions.save}
                         </Button>

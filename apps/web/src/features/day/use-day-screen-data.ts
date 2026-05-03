@@ -492,6 +492,28 @@ export function useDayScreenData(date: string) {
     [updateSet]
   )
 
+  const updateSetNumbers = useCallback(
+    async (
+      exerciseEntryId: string,
+      setEntryId: string,
+      patch: Partial<{ reps: number; weight: number }>
+    ) => {
+      const nextPatch = Object.fromEntries(
+        Object.entries(patch).map(([field, value]) => [
+          field,
+          typeof value === "number" ? Math.max(0, value) : value,
+        ])
+      )
+
+      await updateSet(
+        exerciseEntryId,
+        setEntryId,
+        nextPatch as Partial<Pick<SetEntry, "reps" | "weight">>
+      )
+    },
+    [updateSet]
+  )
+
   const incrementNumber = useCallback(
     async (
       exerciseEntryId: string,
@@ -594,6 +616,7 @@ export function useDayScreenData(date: string) {
     deleteExercise,
     deleteSet,
     updateNumber,
+    updateSet: updateSetNumbers,
     incrementNumber,
     renameCustomExercise,
     syncPendingChanges,

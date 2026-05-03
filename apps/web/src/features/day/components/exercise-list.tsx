@@ -31,12 +31,11 @@ type ExerciseListProps = {
     exerciseEntryId: string,
     setEntryId: string
   ) => Promise<void> | void
-  onUpdateNumber: (
+  onUpdateSet: (
     exerciseEntryId: string,
     setEntryId: string,
-    field: "reps" | "weight",
-    value: number
-  ) => void
+    patch: Partial<{ reps: number; weight: number }>
+  ) => Promise<void> | void
 }
 
 export const ExerciseList = memo(function ExerciseList({
@@ -52,7 +51,7 @@ export const ExerciseList = memo(function ExerciseList({
   onAddSet,
   onDeleteExercise,
   onDeleteSet,
-  onUpdateNumber,
+  onUpdateSet,
 }: ExerciseListProps) {
   return (
     <section className="flex flex-1 flex-col gap-4 px-4 py-4">
@@ -101,7 +100,7 @@ export const ExerciseList = memo(function ExerciseList({
           onAddSet={onAddSet}
           onDeleteExercise={onDeleteExercise}
           onDeleteSet={onDeleteSet}
-          onUpdateNumber={onUpdateNumber}
+          onUpdateSet={onUpdateSet}
         />
       ))}
 
