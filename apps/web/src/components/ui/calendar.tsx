@@ -12,18 +12,28 @@ import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from "lucide-react"
 
+function getDateKey(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+
+  return `${year}-${month}-${day}`
+}
+
 function Calendar({
   className,
   classNames,
   showOutsideDays = true,
   captionLayout = "label",
   buttonVariant = "ghost",
+  dayIndicators,
   locale,
   formatters,
   components,
   ...props
 }: React.ComponentProps<typeof DayPicker> & {
   buttonVariant?: React.ComponentProps<typeof Button>["variant"]
+  dayIndicators?: Record<string, React.ReactNode>
 }) {
   const defaultClassNames = getDefaultClassNames()
 
@@ -162,7 +172,11 @@ function Calendar({
           )
         },
         DayButton: ({ ...props }) => (
-          <CalendarDayButton locale={locale} {...props} />
+          <CalendarDayButton
+            locale={locale}
+            indicator={dayIndicators?.[getDateKey(props.day.date)]}
+            {...props}
+          />
         ),
         WeekNumber: ({ children, ...props }) => {
           return (
@@ -183,10 +197,14 @@ function Calendar({
 function CalendarDayButton({
   className,
   day,
+  indicator,
   modifiers,
   locale,
   ...props
-}: React.ComponentProps<typeof DayButton> & { locale?: Partial<Locale> }) {
+}: React.ComponentProps<typeof DayButton> & {
+  indicator?: React.ReactNode
+  locale?: Partial<Locale>
+}) {
   const defaultClassNames = getDefaultClassNames()
 
   const ref = React.useRef<HTMLButtonElement>(null)
@@ -214,7 +232,14 @@ function CalendarDayButton({
         className
       )}
       {...props}
-    />
+    >
+      <span>{day.date.getDate()}</span>
+      {indicator ? (
+        <span className="pointer-events-none absolute inset-x-1 bottom-1 flex justify-center">
+          {indicator}
+        </span>
+      ) : null}
+    </Button>
   )
 }
 

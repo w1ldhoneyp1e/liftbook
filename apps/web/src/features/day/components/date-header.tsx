@@ -9,8 +9,9 @@ import {
 import { useEffect, useRef } from "react"
 
 import { Button } from "@/components/ui/button"
-import type { DateState } from "@/shared/domain/types"
+import type { DateState, MuscleGroupId } from "@/shared/domain/types"
 import type { Dictionary } from "@/shared/i18n/dictionaries"
+import { getMuscleGroupColor } from "../lib/muscle-group-colors"
 
 import {
   type DateStripItem,
@@ -21,6 +22,7 @@ import {
 type DateHeaderProps = {
   dateStatusLabel: string
   dragOffset: number
+  dateMuscleGroups: Record<string, MuscleGroupId[]>
   days: DateStripItem[]
   dictionary: Dictionary
   isDraggingDay: boolean
@@ -35,6 +37,7 @@ type DateHeaderProps = {
 export function DateHeader({
   dateStatusLabel,
   dragOffset,
+  dateMuscleGroups,
   days,
   dictionary,
   isDraggingDay,
@@ -121,6 +124,16 @@ export function DateHeader({
             <span className="block text-[11px] leading-none">{item.day}</span>
             <span className="mt-1 block text-base font-semibold leading-none">
               {item.date}
+            </span>
+            <span className="mt-2 flex h-1.5 items-center justify-center gap-1">
+              {(dateMuscleGroups[item.dateKey] ?? item.muscleGroupIds)
+                .slice(0, 3)
+                .map((muscleGroupId) => (
+                  <span
+                    key={`${item.dateKey}-${muscleGroupId}`}
+                    className={`size-1.5 rounded-full ${getMuscleGroupColor(muscleGroupId).dotClassName}`}
+                  />
+                ))}
             </span>
           </button>
         ))}

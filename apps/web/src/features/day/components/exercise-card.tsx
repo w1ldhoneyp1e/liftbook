@@ -25,6 +25,7 @@ import {
   formatWeightValue,
   getWeightUnitLabel,
 } from "../lib/format"
+import { getMuscleGroupColor } from "../lib/muscle-group-colors"
 import { SetNumberControl } from "./set-number-control"
 
 type ExerciseCardProps = {
@@ -63,6 +64,9 @@ export function ExerciseCard({
   onUpdateNumber,
 }: ExerciseCardProps) {
   const primaryMuscleGroup = exercise?.muscleGroupIds[0]
+  const primaryMuscleGroupColor = primaryMuscleGroup
+    ? getMuscleGroupColor(primaryMuscleGroup)
+    : null
   const exerciseName = exercise?.name[locale] ?? entry.exerciseId
   const activeSets = useMemo(
     () => entry.setEntries.filter((setEntry) => !setEntry.deletedAt),
@@ -185,9 +189,18 @@ export function ExerciseCard({
               {exerciseName}
             </h3>
           </div>
-          <p className="mt-1 truncate text-xs text-muted-foreground">
-            {primaryMuscleGroup ? dictionary.muscleGroups[primaryMuscleGroup] : ""}
-          </p>
+          {primaryMuscleGroup ? (
+            <p
+              className={`mt-1 inline-flex max-w-full items-center gap-1.5 truncate rounded-full px-2 py-0.5 text-xs ${primaryMuscleGroupColor?.badgeClassName}`}
+            >
+              <span
+                className={`size-1.5 shrink-0 rounded-full ${primaryMuscleGroupColor?.dotClassName}`}
+              />
+              <span className="truncate">
+                {dictionary.muscleGroups[primaryMuscleGroup]}
+              </span>
+            </p>
+          ) : null}
         </div>
 
         <div className="flex items-center gap-1">

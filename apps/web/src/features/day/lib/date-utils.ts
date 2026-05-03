@@ -1,10 +1,14 @@
-import type { DateState, Locale } from "@/shared/domain/types"
+import type { DateState, Locale, MuscleGroupId } from "@/shared/domain/types"
 import type { Dictionary } from "@/shared/i18n/dictionaries"
+
+export const DATE_STRIP_DAYS_BACK = 14
+export const DATE_STRIP_DAYS_FORWARD = 7
 
 export type DateStripItem = {
   date: string
   dateKey: string
   day: string
+  muscleGroupIds: MuscleGroupId[]
   selected: boolean
   state: DateState
 }
@@ -25,26 +29,29 @@ export function shiftDateKey(dateKey: string, dayDelta: number) {
 
 export function createDateStrip(
   selectedDate: string,
-  locale: Locale
+  locale: Locale,
+  dateMuscleGroups: Record<string, MuscleGroupId[]> = {}
 ): DateStripItem[] {
   const selected = new Date(`${selectedDate}T12:00:00`)
   const today = toDateKey(new Date())
-  const daysBack = 14
-  const daysForward = 7
 
-  return Array.from({ length: daysBack + daysForward + 1 }, (_, index) => {
+  return Array.from(
+    { length: DATE_STRIP_DAYS_BACK + DATE_STRIP_DAYS_FORWARD + 1 },
+    (_, index) => {
     const date = new Date(selected)
-    date.setDate(selected.getDate() + index - daysBack)
+      date.setDate(selected.getDate() + index - DATE_STRIP_DAYS_BACK)
     const dateKey = toDateKey(date)
 
     return {
       date: String(date.getDate()),
       dateKey,
       day: new Intl.DateTimeFormat(locale, { weekday: "short" }).format(date),
+      muscleGroupIds: dateMuscleGroups[dateKey] ?? [],
       selected: dateKey === selectedDate,
       state: getDateState(dateKey, today),
     }
-  })
+    }
+  )
 }
 
 export function getDateState(

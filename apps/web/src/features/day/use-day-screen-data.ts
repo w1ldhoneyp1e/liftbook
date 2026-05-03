@@ -37,6 +37,7 @@ type DayScreenData = {
   }
   previousDay: DaySnapshot
   nextDay: DaySnapshot
+  dateMuscleGroups: Record<string, MuscleGroupId[]>
 }
 
 type DaySnapshot = {
@@ -67,6 +68,7 @@ export function useDayScreenData(date: string) {
       workoutDay: null,
       exerciseEntries: [],
     },
+    dateMuscleGroups: {},
   })
 
   const load = useCallback(async () => {
@@ -85,6 +87,7 @@ export function useDayScreenData(date: string) {
       previousEntries,
       nextDay,
       nextEntries,
+      allEntries,
       exercises,
     ] = await Promise.all([
       db.accountSessions.get("local"),
@@ -95,6 +98,7 @@ export function useDayScreenData(date: string) {
       db.exerciseEntries.where("workoutDate").equals(previousDate).sortBy("position"),
       db.workoutDays.where("date").equals(nextDate).first(),
       db.exerciseEntries.where("workoutDate").equals(nextDate).sortBy("position"),
+      db.exerciseEntries.toArray(),
       db.exercises.toArray(),
     ])
     const syncSummary = await getSyncSummary()
@@ -137,18 +141,42 @@ export function useDayScreenData(date: string) {
         })),
     })
 
+    const exercisesById = Object.fromEntries(
+      exercises.map((exercise) => [exercise.id, exercise])
+    )
+    const dateMuscleGroups = allEntries.reduce<Record<string, MuscleGroupId[]>>(
+      (summary, entry) => {
+        if (entry.deletedAt) {
+          return summary
+        }
+
+        const exercise = exercisesById[entry.exerciseId]
+        if (!exercise || exercise.deletedAt) {
+          return summary
+        }
+
+        const current = new Set(summary[entry.workoutDate] ?? [])
+        for (const muscleGroupId of exercise.muscleGroupIds) {
+          current.add(muscleGroupId)
+        }
+        summary[entry.workoutDate] = Array.from(current)
+
+        return summary
+      },
+      {}
+    )
+
     setState({
       accountSession: accountSession ?? null,
       settings: normalizedSettings ?? null,
       workoutDay: buildSnapshot(date, currentDay, currentEntries).workoutDay,
       exerciseEntries: buildSnapshot(date, currentDay, currentEntries).exerciseEntries,
-      exercisesById: Object.fromEntries(
-        exercises.map((exercise) => [exercise.id, exercise])
-      ),
+      exercisesById,
       loading: false,
       syncSummary,
       previousDay: buildSnapshot(previousDate, previousDay, previousEntries),
       nextDay: buildSnapshot(nextDate, nextDay, nextEntries),
+      dateMuscleGroups,
     })
   }, [date])
 

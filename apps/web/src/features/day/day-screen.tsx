@@ -67,6 +67,7 @@ export function DayScreen() {
     deleteExercise,
     deleteSet,
     dictionary,
+    dateMuscleGroups,
     exerciseEntries,
     exercisesById,
     locale,
@@ -88,8 +89,8 @@ export function DayScreen() {
   const restTimerSoundEnabled = settings?.restTimerSoundEnabled ?? true
   const restTimerVibrationEnabled = settings?.restTimerVibrationEnabled ?? true
   const days = useMemo(
-    () => createDateStrip(selectedDate, locale),
-    [selectedDate, locale]
+    () => createDateStrip(selectedDate, locale, dateMuscleGroups),
+    [dateMuscleGroups, locale, selectedDate]
   )
   const selectedDateState = getDateState(selectedDate, today)
   const dateStatusLabel = getDateStatusLabel(
@@ -376,6 +377,7 @@ export function DayScreen() {
             selectedDate={selectedDate}
             selectedDateState={selectedDateState}
             today={today}
+            dateMuscleGroups={dateMuscleGroups}
             onOpenCalendar={() => setCalendarOpen(true)}
             onOpenSettings={() => setSettingsOpen(true)}
             onSelectDate={setSelectedDate}
@@ -509,6 +511,7 @@ export function DayScreen() {
         locale={locale}
         open={calendarOpen}
         selectedDate={selectedDate}
+        dateMuscleGroups={dateMuscleGroups}
         onOpenChange={setCalendarOpen}
         onSelectDate={handleSelectCalendarDate}
       />
