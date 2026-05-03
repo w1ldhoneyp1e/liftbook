@@ -27,6 +27,7 @@ import { useDayScreenData } from "./use-day-screen-data"
 export function DayScreen() {
   const autoSyncSignatureRef = useRef<string | null>(null)
   const initialDateRef = useRef<string | null>(null)
+  const touchStartXRef = useRef<number | null>(null)
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator === "undefined" ? true : navigator.onLine
   )
@@ -35,10 +36,11 @@ export function DayScreen() {
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [exercisePickerOpen, setExercisePickerOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [touchStartX, setTouchStartX] = useState<number | null>(null)
   const [contentMotion, setContentMotion] = useState<"left" | "right" | null>(
     null
   )
+  const [dragOffset, setDragOffset] = useState(0)
+  const [isDraggingDay, setIsDraggingDay] = useState(false)
   const [restSeconds, setRestSeconds] = useState(0)
   const [restTimerRunning, setRestTimerRunning] = useState(false)
   const timerAlertPlayedRef = useRef(false)
@@ -296,19 +298,38 @@ export function DayScreen() {
     })
   }
 
-  function handleTouchEnd(clientX: number) {
-    if (touchStartX === null) {
+  function handleTouchStart(clientX: number) {
+    touchStartXRef.current = clientX
+    setIsDraggingDay(true)
+    setContentMotion(null)
+  }
+
+  function handleTouchMove(clientX: number) {
+    if (touchStartXRef.current === null) {
       return
     }
 
-    const deltaX = clientX - touchStartX
-    setTouchStartX(null)
+    const deltaX = clientX - touchStartXRef.current
+    setDragOffset(Math.max(-120, Math.min(120, deltaX)))
+  }
 
-    if (Math.abs(deltaX) < 60) {
+  function handleTouchEnd() {
+    if (touchStartXRef.current === null) {
       return
     }
 
-    handleShiftDate(deltaX < 0 ? 1 : -1)
+    const threshold = 72
+    const finalOffset = dragOffset
+
+    touchStartXRef.current = null
+    setIsDraggingDay(false)
+    setDragOffset(0)
+
+    if (Math.abs(finalOffset) < threshold) {
+      return
+    }
+
+    handleShiftDate(finalOffset < 0 ? 1 : -1)
   }
 
   return (
@@ -317,8 +338,10 @@ export function DayScreen() {
         <div className="sticky top-0 z-40 bg-background shadow-sm">
           <DateHeader
             dateStatusLabel={dateStatusLabel}
+            dragOffset={dragOffset}
             days={days}
             dictionary={dictionary}
+            isDraggingDay={isDraggingDay}
             selectedDate={selectedDate}
             selectedDateState={selectedDateState}
             today={today}
@@ -357,16 +380,26 @@ export function DayScreen() {
 
         <div
           className={`flex-1 ${
-            contentMotion === "left"
-              ? "animate-[day-slide-left_220ms_ease-out]"
-              : contentMotion === "right"
-                ? "animate-[day-slide-right_220ms_ease-out]"
-                : ""
+            isDraggingDay
+              ? ""
+              : contentMotion === "left"
+                ? "animate-[day-slide-left_220ms_ease-out]"
+                : contentMotion === "right"
+                  ? "animate-[day-slide-right_220ms_ease-out]"
+                  : ""
           }`}
+          style={{
+            transform: isDraggingDay ? `translateX(${dragOffset}px)` : undefined,
+            transition: isDraggingDay ? "none" : undefined,
+          }}
           onTouchStart={(event) =>
-            setTouchStartX(event.changedTouches[0].clientX)
+            handleTouchStart(event.changedTouches[0].clientX)
           }
-          onTouchEnd={(event) => handleTouchEnd(event.changedTouches[0].clientX)}
+          onTouchMove={(event) =>
+            handleTouchMove(event.changedTouches[0].clientX)
+          }
+          onTouchCancel={() => handleTouchEnd()}
+          onTouchEnd={() => handleTouchEnd()}
         >
           <ExerciseList
             dictionary={dictionary}

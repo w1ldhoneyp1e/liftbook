@@ -20,8 +20,10 @@ import {
 
 type DateHeaderProps = {
   dateStatusLabel: string
+  dragOffset: number
   days: DateStripItem[]
   dictionary: Dictionary
+  isDraggingDay: boolean
   selectedDate: string
   selectedDateState: DateState
   today: string
@@ -32,8 +34,10 @@ type DateHeaderProps = {
 
 export function DateHeader({
   dateStatusLabel,
+  dragOffset,
   days,
   dictionary,
+  isDraggingDay,
   selectedDate,
   selectedDateState,
   today,
@@ -91,7 +95,14 @@ export function DateHeader({
         </div>
       </div>
 
-      <div className="mt-4 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div
+        className={`mt-4 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+          isDraggingDay ? "" : "transition-transform duration-200 ease-out"
+        }`}
+        style={{
+          transform: `translateX(${dragOffset * 0.35}px)`,
+        }}
+      >
         {days.map((item) => (
           <button
             key={item.dateKey}
