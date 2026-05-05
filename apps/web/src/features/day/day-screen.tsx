@@ -36,6 +36,8 @@ export function DayScreen() {
   const initialDateRef = useRef<string | null>(null)
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null)
   const swipeCurrentRef = useRef<{ x: number; y: number } | null>(null)
+  const [dragOffset, setDragOffset] = useState(0)
+  const [isDraggingDay, setIsDraggingDay] = useState(false)
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator === "undefined" ? true : navigator.onLine
   )
@@ -367,6 +369,7 @@ export function DayScreen() {
   function handleContentTouchStart(clientX: number, clientY: number) {
     swipeStartRef.current = { x: clientX, y: clientY }
     swipeCurrentRef.current = { x: clientX, y: clientY }
+    setIsDraggingDay(false)
   }
 
   function handleContentTouchMove(clientX: number, clientY: number) {
@@ -375,20 +378,40 @@ export function DayScreen() {
     }
 
     swipeCurrentRef.current = { x: clientX, y: clientY }
+
+    const deltaX = clientX - swipeStartRef.current.x
+    const deltaY = clientY - swipeStartRef.current.y
+
+    if (Math.abs(deltaX) < 12 || Math.abs(deltaX) <= Math.abs(deltaY) + 10) {
+      if (!isDraggingDay) {
+        return
+      }
+
+      setIsDraggingDay(false)
+      setDragOffset(0)
+      return
+    }
+
+    setIsDraggingDay(true)
+    setContentMotion(null)
+    setDragOffset(Math.max(-96, Math.min(96, deltaX)))
   }
 
   function handleContentTouchEnd() {
     const start = swipeStartRef.current
     const current = swipeCurrentRef.current
+    const finalOffset = dragOffset
 
     swipeStartRef.current = null
     swipeCurrentRef.current = null
+    setIsDraggingDay(false)
+    setDragOffset(0)
 
     if (!start || !current) {
       return
     }
 
-    const deltaX = current.x - start.x
+    const deltaX = finalOffset || current.x - start.x
     const deltaY = current.y - start.y
 
     if (Math.abs(deltaX) < 72 || Math.abs(deltaX) <= Math.abs(deltaY) + 12) {
@@ -409,10 +432,10 @@ export function DayScreen() {
             authError={authError}
             authSubmitting={authSubmitting}
             dateStatusLabel={dateStatusLabel}
-            dragOffset={0}
+            dragOffset={dragOffset}
             days={days}
             dictionary={dictionary}
-            isDraggingDay={false}
+            isDraggingDay={isDraggingDay}
             motion={contentMotion}
             selectedDate={selectedDate}
             selectedDateState={selectedDateState}
@@ -473,12 +496,27 @@ export function DayScreen() {
         <div className="relative w-full">
           <div
             className={`relative z-10 ${
-              contentMotion === "left"
+              isDraggingDay
+                ? ""
+                : contentMotion === "left"
                 ? "animate-[day-slide-left_220ms_ease-out]"
                 : contentMotion === "right"
                   ? "animate-[day-slide-right_220ms_ease-out]"
                   : ""
             }`}
+            style={{
+              transform:
+                dragOffset !== 0
+                  ? `translateX(${dragOffset * 0.72}px)`
+                  : undefined,
+              opacity:
+                dragOffset !== 0
+                  ? 1 - Math.min(Math.abs(dragOffset) / 480, 0.16)
+                  : undefined,
+              transition: isDraggingDay
+                ? "none"
+                : "transform 180ms ease-out, opacity 180ms ease-out",
+            }}
             onTouchStart={(event) =>
               handleContentTouchStart(
                 event.changedTouches[0].clientX,
