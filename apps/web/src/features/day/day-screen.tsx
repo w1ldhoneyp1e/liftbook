@@ -2,7 +2,6 @@
 
 import { Plus } from "lucide-react"
 import {
-  type PointerEvent,
   useCallback,
   useEffect,
   useMemo,
@@ -27,7 +26,6 @@ import {
   createDateStrip,
   getDateState,
   getDateStatusLabel,
-  shiftDateKey,
   toDateKey,
 } from "./lib/date-utils"
 import { useDayScreenData } from "./use-day-screen-data"
@@ -35,11 +33,6 @@ import { useDayScreenData } from "./use-day-screen-data"
 export function DayScreen() {
   const autoSyncSignatureRef = useRef<string | null>(null)
   const initialDateRef = useRef<string | null>(null)
-  const activePointerIdRef = useRef<number | null>(null)
-  const touchStartRef = useRef<{ x: number; y: number } | null>(null)
-  const touchGestureRef = useRef<"idle" | "pending" | "horizontal" | "vertical">(
-    "idle"
-  )
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator === "undefined" ? true : navigator.onLine
   )
@@ -52,8 +45,6 @@ export function DayScreen() {
   const [contentMotion, setContentMotion] = useState<"left" | "right" | null>(
     null
   )
-  const [dragOffset, setDragOffset] = useState(0)
-  const [isDraggingDay, setIsDraggingDay] = useState(false)
   const [stopwatchSeconds, setStopwatchSeconds] = useState(0)
   const [timerElapsedSeconds, setTimerElapsedSeconds] = useState(0)
   const [runningTimerMode, setRunningTimerMode] = useState<"stopwatch" | "timer" | null>(null)
@@ -78,8 +69,6 @@ export function DayScreen() {
     exercisesById,
     locale,
     loading,
-    nextDay,
-    previousDay,
     renameCustomExercise,
     settings,
     syncSummary,
@@ -337,104 +326,16 @@ export function DayScreen() {
     setCalendarOpen(false)
   }
 
-  function handleShiftDate(dayDelta: number) {
-    setSelectedDate((currentDate) => shiftDateKey(currentDate, dayDelta))
-  }
-
-  function handleTouchStart(pointerId: number, clientX: number, clientY: number) {
-    activePointerIdRef.current = pointerId
-    touchStartRef.current = { x: clientX, y: clientY }
-    touchGestureRef.current = "pending"
-    setContentMotion(null)
-  }
-
-  function handleTouchMove(
-    event: PointerEvent<HTMLDivElement>,
-    pointerId: number,
-    clientX: number,
-    clientY: number
-  ) {
-    if (
-      event.pointerType !== "touch" ||
-      activePointerIdRef.current === null ||
-      activePointerIdRef.current !== pointerId
-    ) {
-      return
-    }
-
-    if (touchStartRef.current === null) {
-      return
-    }
-
-    const deltaX = clientX - touchStartRef.current.x
-    const deltaY = clientY - touchStartRef.current.y
-
-    if (touchGestureRef.current === "pending") {
-      if (Math.abs(deltaX) < 10 && Math.abs(deltaY) < 10) {
-        return
-      }
-
-      if (Math.abs(deltaX) > Math.abs(deltaY) + 6) {
-        touchGestureRef.current = "horizontal"
-        setIsDraggingDay(true)
-      } else {
-        touchGestureRef.current = "vertical"
-        setIsDraggingDay(false)
-        setDragOffset(0)
-        return
-      }
-    }
-
-    if (touchGestureRef.current !== "horizontal") {
-      return
-    }
-
-    event.preventDefault()
-    setDragOffset(Math.max(-120, Math.min(120, deltaX)))
-  }
-
-  function handleTouchEnd() {
-    const gestureMode = touchGestureRef.current
-    const threshold = 72
-    const finalOffset = dragOffset
-
-    activePointerIdRef.current = null
-    touchStartRef.current = null
-    touchGestureRef.current = "idle"
-    setIsDraggingDay(false)
-    setDragOffset(0)
-
-    if (gestureMode === "idle") {
-      return
-    }
-
-    if (gestureMode !== "horizontal") {
-      return
-    }
-
-    if (Math.abs(finalOffset) < threshold) {
-      return
-    }
-
-    handleShiftDate(finalOffset < 0 ? 1 : -1)
-  }
-
-  const previewDay = dragOffset < 0 ? nextDay : previousDay
-  const previewBaseTransform =
-    dragOffset < 0
-      ? `calc(100% + ${dragOffset}px)`
-      : `calc(-100% + ${dragOffset}px)`
-
   return (
     <div className="flex min-h-svh justify-center bg-muted/35 text-foreground dark:bg-[#0b0d11]">
       <main className="relative flex min-h-svh w-full max-w-md flex-col bg-background shadow-[0_0_0_1px_rgba(229,231,235,0.45)] dark:shadow-[0_0_0_1px_rgba(43,49,60,0.9)]">
         <div className="sticky top-0 z-40 bg-background/95 shadow-sm backdrop-blur dark:bg-background/92 dark:shadow-[0_10px_30px_rgba(0,0,0,0.28)]">
           <DateHeader
             dateStatusLabel={dateStatusLabel}
-            dragOffset={dragOffset}
+            dragOffset={0}
             days={days}
             dictionary={dictionary}
-            isDraggingDay={isDraggingDay}
+            isDraggingDay={false}
             selectedDate={selectedDate}
             selectedDateState={selectedDateState}
             today={today}
@@ -487,68 +388,16 @@ export function DayScreen() {
 
         <div
           className="flex-1 overflow-y-auto overscroll-y-contain [touch-action:pan-y]"
-          onPointerDown={(event) => {
-            if (event.pointerType !== "touch") {
-              return
-            }
-
-            handleTouchStart(
-              event.pointerId,
-              event.clientX,
-              event.clientY
-            )
-          }}
-          onPointerMove={(event) =>
-            handleTouchMove(
-              event,
-              event.pointerId,
-              event.clientX,
-              event.clientY
-            )
-          }
-          onPointerCancel={() => handleTouchEnd()}
-          onPointerUp={() => handleTouchEnd()}
         >
           <div className="relative min-h-full w-full">
-            {isDraggingDay ? (
-              <div
-                className="pointer-events-none absolute inset-0"
-                style={{
-                  transform: `translateX(${previewBaseTransform})`,
-                }}
-              >
-                <ExerciseList
-                  dictionary={dictionary}
-                  exerciseEntries={previewDay.exerciseEntries}
-                  exercisesById={exercisesById}
-                  loading={false}
-                  locale={locale}
-                  onOpenExercisePicker={() => {}}
-                  repsStep={repsStep}
-                  settings={settings}
-                  unit={unit}
-                  onAddSet={async () => null}
-                  onDeleteExercise={() => {}}
-                  onDeleteSet={async () => {}}
-                  onUpdateSet={async () => {}}
-                />
-              </div>
-            ) : null}
-
             <div
               className={`relative z-10 min-h-full ${
-                isDraggingDay
-                  ? ""
-                  : contentMotion === "left"
-                    ? "animate-[day-slide-left_220ms_ease-out]"
-                    : contentMotion === "right"
-                      ? "animate-[day-slide-right_220ms_ease-out]"
-                      : ""
+                contentMotion === "left"
+                  ? "animate-[day-slide-left_220ms_ease-out]"
+                  : contentMotion === "right"
+                    ? "animate-[day-slide-right_220ms_ease-out]"
+                    : ""
               }`}
-              style={{
-                transform: isDraggingDay ? `translateX(${dragOffset}px)` : undefined,
-                transition: isDraggingDay ? "none" : undefined,
-              }}
             >
               <ExerciseList
                 dictionary={dictionary}
