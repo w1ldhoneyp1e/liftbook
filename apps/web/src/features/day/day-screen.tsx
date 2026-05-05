@@ -365,6 +365,11 @@ export function DayScreen() {
       <main className="relative flex min-h-svh w-full max-w-md flex-col bg-background shadow-[0_0_0_1px_rgba(229,231,235,0.45)] dark:shadow-[0_0_0_1px_rgba(43,49,60,0.9)]">
         <div className="sticky top-0 z-40 bg-background/95 shadow-sm backdrop-blur dark:bg-background/92 dark:shadow-[0_10px_30px_rgba(0,0,0,0.28)]">
           <DateHeader
+            accountConnecting={accountConnecting}
+            accountError={accountError}
+            accountSession={accountSession}
+            authError={authError}
+            authSubmitting={authSubmitting}
             dateStatusLabel={dateStatusLabel}
             dragOffset={0}
             days={days}
@@ -374,8 +379,11 @@ export function DayScreen() {
             selectedDateState={selectedDateState}
             today={today}
             dateMuscleGroups={dateMuscleGroups}
+            onCreateGuestAccount={handleCreateGuestAccount}
+            onLoginAccount={handleLoginAccount}
             onOpenCalendar={() => setCalendarOpen(true)}
             onOpenSettings={() => setSettingsOpen(true)}
+            onRegisterAccount={handleRegisterAccount}
             onSelectDate={setSelectedDate}
           />
 
@@ -491,11 +499,7 @@ export function DayScreen() {
 
       {settings ? (
         <SettingsDrawer
-          accountConnecting={accountConnecting}
-          accountError={accountError}
           accountSession={accountSession}
-          authError={authError}
-          authSubmitting={authSubmitting}
           dictionary={dictionary}
           open={settingsOpen}
           settings={settings}
@@ -504,10 +508,7 @@ export function DayScreen() {
           syncMode={syncMode}
           syncError={syncError}
           syncing={syncing}
-          onCreateGuestAccount={handleCreateGuestAccount}
-          onLoginAccount={handleLoginAccount}
           onOpenChange={setSettingsOpen}
-          onRegisterAccount={handleRegisterAccount}
           onSyncNow={handleSyncNow}
           onUpdateSettings={updateSettings}
         />

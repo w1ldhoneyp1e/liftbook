@@ -9,9 +9,14 @@ import {
 import { useEffect, useRef } from "react"
 
 import { Button } from "@/components/ui/button"
-import type { DateState, MuscleGroupId } from "@/shared/domain/types"
+import type {
+  AccountSession,
+  DateState,
+  MuscleGroupId,
+} from "@/shared/domain/types"
 import type { Dictionary } from "@/shared/i18n/dictionaries"
 import { getMuscleGroupColor } from "../lib/muscle-group-colors"
+import { AuthPopover } from "./auth-popover"
 
 import {
   type DateStripItem,
@@ -20,6 +25,11 @@ import {
 } from "../lib/date-utils"
 
 type DateHeaderProps = {
+  accountConnecting: boolean
+  accountError: boolean
+  accountSession: AccountSession | null
+  authError: string | null
+  authSubmitting: boolean
   dateStatusLabel: string
   dragOffset: number
   dateMuscleGroups: Record<string, MuscleGroupId[]>
@@ -29,12 +39,20 @@ type DateHeaderProps = {
   selectedDate: string
   selectedDateState: DateState
   today: string
+  onCreateGuestAccount: () => void
+  onLoginAccount: (email: string, password: string) => Promise<void> | void
   onOpenCalendar: () => void
   onOpenSettings: () => void
+  onRegisterAccount: (email: string, password: string) => Promise<void> | void
   onSelectDate: (dateKey: string) => void
 }
 
 export function DateHeader({
+  accountConnecting,
+  accountError,
+  accountSession,
+  authError,
+  authSubmitting,
   dateStatusLabel,
   dragOffset,
   dateMuscleGroups,
@@ -44,8 +62,11 @@ export function DateHeader({
   selectedDate,
   selectedDateState,
   today,
+  onCreateGuestAccount,
+  onLoginAccount,
   onOpenCalendar,
   onOpenSettings,
+  onRegisterAccount,
   onSelectDate,
 }: DateHeaderProps) {
   const dateTone = getDateTone(selectedDateState)
@@ -79,6 +100,17 @@ export function DateHeader({
               {selectedDateState === "future" ? <ArrowLeft /> : <ArrowRight />}
             </Button>
           ) : null}
+          <AuthPopover
+            accountConnecting={accountConnecting}
+            accountError={accountError}
+            accountSession={accountSession}
+            authError={authError}
+            authSubmitting={authSubmitting}
+            dictionary={dictionary}
+            onCreateGuestAccount={onCreateGuestAccount}
+            onLoginAccount={onLoginAccount}
+            onRegisterAccount={onRegisterAccount}
+          />
           <Button
             variant="outline"
             size="icon"
