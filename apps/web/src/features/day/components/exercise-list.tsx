@@ -63,13 +63,13 @@ export const ExerciseList = memo(function ExerciseList({
 
       {!loading && exerciseEntries.length === 0 ? (
         <div className="flex min-h-[52svh] flex-col items-center justify-center gap-4 px-5 py-8 text-center">
-          <div className="relative h-36 w-full max-w-[220px]">
+          <div className="relative h-36 w-full max-w-[220px] dark:hidden">
             <Image
-              src="/images/empty-day.png"
+              src="/images/empty-state-blue.png"
               alt=""
               fill
               sizes="220px"
-              className="object-contain dark:mix-blend-screen dark:brightness-110"
+              className="object-contain"
               priority
             />
           </div>

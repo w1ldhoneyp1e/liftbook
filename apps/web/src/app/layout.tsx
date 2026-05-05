@@ -13,8 +13,9 @@ export const metadata: Metadata = {
     title: "Liftbook",
   },
   icons: {
-    icon: "/manifest-icon.svg",
-    apple: "/manifest-icon.svg",
+    icon: "/favicon.png",
+    apple: "/favicon.png",
+    shortcut: "/favicon.png",
   },
 }
 
