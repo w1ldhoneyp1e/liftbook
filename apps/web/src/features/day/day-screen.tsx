@@ -2,7 +2,7 @@
 
 import { Plus } from "lucide-react"
 import {
-  type TouchEvent,
+  type PointerEvent,
   useCallback,
   useEffect,
   useMemo,
@@ -35,6 +35,7 @@ import { useDayScreenData } from "./use-day-screen-data"
 export function DayScreen() {
   const autoSyncSignatureRef = useRef<string | null>(null)
   const initialDateRef = useRef<string | null>(null)
+  const activePointerIdRef = useRef<number | null>(null)
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
   const touchGestureRef = useRef<"idle" | "pending" | "horizontal" | "vertical">(
     "idle"
@@ -340,17 +341,27 @@ export function DayScreen() {
     setSelectedDate((currentDate) => shiftDateKey(currentDate, dayDelta))
   }
 
-  function handleTouchStart(clientX: number, clientY: number) {
+  function handleTouchStart(pointerId: number, clientX: number, clientY: number) {
+    activePointerIdRef.current = pointerId
     touchStartRef.current = { x: clientX, y: clientY }
     touchGestureRef.current = "pending"
     setContentMotion(null)
   }
 
   function handleTouchMove(
-    event: TouchEvent<HTMLDivElement>,
+    event: PointerEvent<HTMLDivElement>,
+    pointerId: number,
     clientX: number,
     clientY: number
   ) {
+    if (
+      event.pointerType !== "touch" ||
+      activePointerIdRef.current === null ||
+      activePointerIdRef.current !== pointerId
+    ) {
+      return
+    }
+
     if (touchStartRef.current === null) {
       return
     }
@@ -383,18 +394,19 @@ export function DayScreen() {
   }
 
   function handleTouchEnd() {
-    if (touchStartRef.current === null) {
-      return
-    }
-
     const gestureMode = touchGestureRef.current
     const threshold = 72
     const finalOffset = dragOffset
 
+    activePointerIdRef.current = null
     touchStartRef.current = null
     touchGestureRef.current = "idle"
     setIsDraggingDay(false)
     setDragOffset(0)
+
+    if (gestureMode === "idle") {
+      return
+    }
 
     if (gestureMode !== "horizontal") {
       return
@@ -475,21 +487,27 @@ export function DayScreen() {
 
         <div
           className="flex-1 overflow-y-auto overscroll-y-contain [touch-action:pan-y]"
-          onTouchStart={(event) =>
+          onPointerDown={(event) => {
+            if (event.pointerType !== "touch") {
+              return
+            }
+
             handleTouchStart(
-              event.changedTouches[0].clientX,
-              event.changedTouches[0].clientY
+              event.pointerId,
+              event.clientX,
+              event.clientY
             )
-          }
-          onTouchMove={(event) =>
+          }}
+          onPointerMove={(event) =>
             handleTouchMove(
               event,
-              event.changedTouches[0].clientX,
-              event.changedTouches[0].clientY
+              event.pointerId,
+              event.clientX,
+              event.clientY
             )
           }
-          onTouchCancel={() => handleTouchEnd()}
-          onTouchEnd={() => handleTouchEnd()}
+          onPointerCancel={() => handleTouchEnd()}
+          onPointerUp={() => handleTouchEnd()}
         >
           <div className="relative min-h-full w-full">
             {isDraggingDay ? (
