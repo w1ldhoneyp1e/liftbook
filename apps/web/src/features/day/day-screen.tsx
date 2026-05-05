@@ -413,6 +413,7 @@ export function DayScreen() {
             days={days}
             dictionary={dictionary}
             isDraggingDay={false}
+            motion={contentMotion}
             selectedDate={selectedDate}
             selectedDateState={selectedDateState}
             today={today}

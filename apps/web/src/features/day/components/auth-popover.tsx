@@ -7,6 +7,12 @@ import { createPortal } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Popover,
+  PopoverPopup,
+  PopoverPositioner,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import type { AccountSession } from "@/shared/domain/types"
 import type { Dictionary } from "@/shared/i18n/dictionaries"
 
@@ -49,17 +55,65 @@ export function AuthPopover({
   async function handleRegister() {
     await onRegisterAccount(email, password)
     setPassword("")
+    setOpen(false)
   }
 
   async function handleLogin() {
     await onLoginAccount(email, password)
     setPassword("")
+    setOpen(false)
   }
 
   async function handleLogout() {
     await onLogoutAccount()
     setOpen(false)
     setPassword("")
+  }
+
+  async function handleCreateGuest() {
+    await onCreateGuestAccount()
+    setOpen(false)
+  }
+
+  const trigger = (
+    <button
+      className="inline-flex size-9 items-center justify-center rounded-xl border border-border/70 bg-background/92 text-foreground shadow-sm transition-colors hover:bg-muted/50 dark:bg-card/80 dark:hover:bg-muted/45"
+      type="button"
+      aria-label={dictionary.labels.account}
+    >
+      <CircleUserRound className="size-[18px]" />
+    </button>
+  )
+
+  if (isRegisteredAccount) {
+    return (
+      <Popover open={open} withBackdrop={false} onOpenChange={setOpen}>
+        <PopoverTrigger render={trigger} />
+        <PopoverPositioner side="bottom" align="end" sideOffset={10}>
+          <PopoverPopup className="w-56 p-2">
+            <div className="space-y-3">
+              <div className="px-2 pt-1">
+                <p className="text-sm font-semibold">
+                  {dictionary.labels.accountConnected}
+                </p>
+                <p className="mt-1 break-all text-xs text-muted-foreground">
+                  {accountSession?.email ?? accountSession?.userId ?? "Liftbook"}
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => {
+                  void handleLogout()
+                }}
+              >
+                {dictionary.actions.logout}
+              </Button>
+            </div>
+          </PopoverPopup>
+        </PopoverPositioner>
+      </Popover>
+    )
   }
 
   return (
@@ -110,7 +164,9 @@ export function AuthPopover({
                 className="w-full"
                 size="sm"
                 disabled={accountConnecting}
-                onClick={onCreateGuestAccount}
+                onClick={() => {
+                  void handleCreateGuest()
+                }}
               >
                 {dictionary.actions.createGuestAccount}
               </Button>
@@ -120,18 +176,6 @@ export function AuthPopover({
               <p className="text-xs text-destructive">
                 {dictionary.labels.connectionError}
               </p>
-            ) : null}
-
-            {accountSession ? (
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  void handleLogout()
-                }}
-              >
-                {dictionary.actions.logout}
-              </Button>
             ) : null}
 
             {!isRegisteredAccount ? (

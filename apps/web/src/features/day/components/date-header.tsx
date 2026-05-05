@@ -36,6 +36,7 @@ type DateHeaderProps = {
   days: DateStripItem[]
   dictionary: Dictionary
   isDraggingDay: boolean
+  motion: "left" | "right" | null
   selectedDate: string
   selectedDateState: DateState
   today: string
@@ -60,6 +61,7 @@ export function DateHeader({
   days,
   dictionary,
   isDraggingDay,
+  motion,
   selectedDate,
   selectedDateState,
   today,
@@ -135,7 +137,13 @@ export function DateHeader({
 
       <div
         className={`mt-4 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
-          isDraggingDay ? "" : "transition-transform duration-200 ease-out"
+          isDraggingDay
+            ? ""
+            : motion === "left"
+              ? "animate-[date-strip-slide-left_180ms_ease-out]"
+              : motion === "right"
+                ? "animate-[date-strip-slide-right_180ms_ease-out]"
+                : "transition-transform duration-200 ease-out"
         }`}
         style={
           dragOffset !== 0
