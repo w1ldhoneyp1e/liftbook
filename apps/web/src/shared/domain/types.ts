@@ -96,7 +96,6 @@ export type UserSettings = {
   id: "local"
   locale: Locale
   themeMode: ThemeMode
-  version: string
   weightUnit: WeightUnit
   kgStep: number
   lbStep: number

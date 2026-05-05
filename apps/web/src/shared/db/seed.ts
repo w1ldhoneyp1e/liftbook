@@ -5,7 +5,6 @@ import type {
   UserSettings,
   WorkoutDay,
 } from "@/shared/domain/types"
-import { APP_VERSION } from "@/shared/app/version"
 
 import { db } from "./schema"
 
@@ -28,7 +27,6 @@ function createDefaultSettings(): UserSettings {
     id: "local",
     locale: getInitialLocale(),
     themeMode: "system",
-    version: APP_VERSION,
     weightUnit: "kg",
     kgStep: 1,
     lbStep: 2.5,

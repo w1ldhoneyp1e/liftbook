@@ -22,6 +22,7 @@ import {
   applyThemeMode,
   persistThemeMode,
 } from "@/shared/theme/theme-mode"
+import { APP_VERSION } from "@/shared/app/version"
 
 type SettingsDrawerProps = {
   accountConnecting: boolean
@@ -208,7 +209,7 @@ export function SettingsDrawer({
           <section className="space-y-2">
             <Label className="text-sm font-medium">Liftbook</Label>
             <div className="rounded-xl border border-border/70 bg-card/92 px-3 py-3 text-sm text-muted-foreground dark:bg-card/80">
-              v{settings.version}
+              v{APP_VERSION}
             </div>
           </section>
         </div>

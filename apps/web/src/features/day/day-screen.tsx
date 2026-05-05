@@ -2,6 +2,7 @@
 
 import { Plus } from "lucide-react"
 import {
+  type TouchEvent,
   useCallback,
   useEffect,
   useMemo,
@@ -34,7 +35,10 @@ import { useDayScreenData } from "./use-day-screen-data"
 export function DayScreen() {
   const autoSyncSignatureRef = useRef<string | null>(null)
   const initialDateRef = useRef<string | null>(null)
-  const touchStartXRef = useRef<number | null>(null)
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null)
+  const touchGestureRef = useRef<"idle" | "pending" | "horizontal" | "vertical">(
+    "idle"
+  )
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator === "undefined" ? true : navigator.onLine
   )
@@ -336,32 +340,65 @@ export function DayScreen() {
     setSelectedDate((currentDate) => shiftDateKey(currentDate, dayDelta))
   }
 
-  function handleTouchStart(clientX: number) {
-    touchStartXRef.current = clientX
-    setIsDraggingDay(true)
+  function handleTouchStart(clientX: number, clientY: number) {
+    touchStartRef.current = { x: clientX, y: clientY }
+    touchGestureRef.current = "pending"
     setContentMotion(null)
   }
 
-  function handleTouchMove(clientX: number) {
-    if (touchStartXRef.current === null) {
+  function handleTouchMove(
+    event: TouchEvent<HTMLDivElement>,
+    clientX: number,
+    clientY: number
+  ) {
+    if (touchStartRef.current === null) {
       return
     }
 
-    const deltaX = clientX - touchStartXRef.current
+    const deltaX = clientX - touchStartRef.current.x
+    const deltaY = clientY - touchStartRef.current.y
+
+    if (touchGestureRef.current === "pending") {
+      if (Math.abs(deltaX) < 10 && Math.abs(deltaY) < 10) {
+        return
+      }
+
+      if (Math.abs(deltaX) > Math.abs(deltaY) + 6) {
+        touchGestureRef.current = "horizontal"
+        setIsDraggingDay(true)
+      } else {
+        touchGestureRef.current = "vertical"
+        setIsDraggingDay(false)
+        setDragOffset(0)
+        return
+      }
+    }
+
+    if (touchGestureRef.current !== "horizontal") {
+      return
+    }
+
+    event.preventDefault()
     setDragOffset(Math.max(-120, Math.min(120, deltaX)))
   }
 
   function handleTouchEnd() {
-    if (touchStartXRef.current === null) {
+    if (touchStartRef.current === null) {
       return
     }
 
+    const gestureMode = touchGestureRef.current
     const threshold = 72
     const finalOffset = dragOffset
 
-    touchStartXRef.current = null
+    touchStartRef.current = null
+    touchGestureRef.current = "idle"
     setIsDraggingDay(false)
     setDragOffset(0)
+
+    if (gestureMode !== "horizontal") {
+      return
+    }
 
     if (Math.abs(finalOffset) < threshold) {
       return
@@ -439,10 +476,17 @@ export function DayScreen() {
         <div
           className="flex-1 overflow-y-auto overscroll-y-contain [touch-action:pan-y]"
           onTouchStart={(event) =>
-            handleTouchStart(event.changedTouches[0].clientX)
+            handleTouchStart(
+              event.changedTouches[0].clientX,
+              event.changedTouches[0].clientY
+            )
           }
           onTouchMove={(event) =>
-            handleTouchMove(event.changedTouches[0].clientX)
+            handleTouchMove(
+              event,
+              event.changedTouches[0].clientX,
+              event.changedTouches[0].clientY
+            )
           }
           onTouchCancel={() => handleTouchEnd()}
           onTouchEnd={() => handleTouchEnd()}
@@ -507,15 +551,18 @@ export function DayScreen() {
           </div>
         </div>
 
+      </main>
+
+      <div className="pointer-events-none fixed inset-x-0 bottom-[max(1rem,calc(env(safe-area-inset-bottom)+1rem))] z-30 mx-auto flex w-full max-w-md justify-end px-5">
         <Button
           size="icon-lg"
-          className="absolute bottom-5 right-5 z-30 size-12 rounded-full shadow-lg"
+          className="pointer-events-auto size-12 rounded-full shadow-lg"
           aria-label={dictionary.actions.addExercise}
           onClick={() => setExercisePickerOpen(true)}
         >
           <Plus />
         </Button>
-      </main>
+      </div>
 
       <ExercisePickerDrawer
         dictionary={dictionary}

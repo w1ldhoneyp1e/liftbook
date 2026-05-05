@@ -10,7 +10,6 @@ import {
   type SyncEntityType,
 } from "@/shared/api/liftbook-api"
 import { getDictionary } from "@/shared/i18n/dictionaries"
-import { APP_VERSION } from "@/shared/app/version"
 import type {
   AccountSession,
   Exercise,
@@ -103,30 +102,12 @@ export function useDayScreenData(date: string) {
       db.exercises.toArray(),
     ])
     const syncSummary = await getSyncSummary()
-    const normalizedSettings =
-      settings &&
-      (!settings.themeMode ||
-        !settings.version ||
-        !settings.restTimerMode ||
-        typeof settings.restTimerDurationSeconds !== "number" ||
-        typeof settings.restTimerSoundEnabled !== "boolean" ||
-        typeof settings.restTimerVibrationEnabled !== "boolean")
-        ? {
-            ...settings,
-            version: settings?.version ?? APP_VERSION,
-            themeMode: "system" as const,
-            restTimerMode: settings?.restTimerMode ?? "stopwatch",
-            restTimerDurationSeconds: settings?.restTimerDurationSeconds ?? 90,
-            restTimerSoundEnabled: settings?.restTimerSoundEnabled ?? true,
-            restTimerVibrationEnabled:
-              settings?.restTimerVibrationEnabled ?? true,
-            syncStatus: "pending" as const,
-            updatedAt: new Date().toISOString(),
-          }
-        : settings
+    const normalizedSettings = settings
+      ? normalizeStoredUserSettings(settings)
+      : null
 
-    if (normalizedSettings && normalizedSettings !== settings) {
-      await db.userSettings.put(normalizedSettings)
+    if (settings && needsUserSettingsNormalization(settings)) {
+      await db.userSettings.put(normalizedSettings as UserSettings)
     }
 
     const buildSnapshot = (
@@ -573,7 +554,7 @@ export function useDayScreenData(date: string) {
       }
 
       await db.userSettings.put({
-        ...currentSettings,
+        ...normalizeStoredUserSettings(currentSettings),
         ...patch,
         syncStatus: "pending",
         updatedAt: new Date().toISOString(),
@@ -936,11 +917,13 @@ async function applyPulledUserSettings(
   }
 
   if (isUserSettingsPayload(change.payload)) {
-    await db.userSettings.put({
+    await db.userSettings.put(
+      normalizeStoredUserSettings({
       ...change.payload,
       id: "local",
       syncStatus: "synced",
-    } as UserSettings)
+      } as UserSettings)
+    )
   }
 }
 
@@ -1063,7 +1046,6 @@ function isUserSettingsPayload(payload: unknown): payload is UserSettings {
   return (
     payload.id === "local" &&
     (payload.locale === "en" || payload.locale === "ru") &&
-    typeof payload.version === "string" &&
     (payload.themeMode === "system" ||
       payload.themeMode === "light" ||
       payload.themeMode === "dark") &&
@@ -1078,6 +1060,38 @@ function isUserSettingsPayload(payload: unknown): payload is UserSettings {
     typeof payload.restTimerSoundEnabled === "boolean" &&
     typeof payload.restTimerVibrationEnabled === "boolean" &&
     typeof payload.updatedAt === "string"
+  )
+}
+
+function normalizeStoredUserSettings(
+  settings: UserSettings & { version?: string }
+): UserSettings {
+  const nextSettings = { ...settings }
+
+  delete nextSettings.version
+
+  return {
+    ...nextSettings,
+    themeMode: nextSettings.themeMode ?? "system",
+    restTimerMode: nextSettings.restTimerMode ?? "stopwatch",
+    restTimerDurationSeconds: nextSettings.restTimerDurationSeconds ?? 90,
+    restTimerSoundEnabled: nextSettings.restTimerSoundEnabled ?? true,
+    restTimerVibrationEnabled: nextSettings.restTimerVibrationEnabled ?? true,
+    syncStatus: nextSettings.syncStatus ?? "pending",
+    updatedAt: nextSettings.updatedAt ?? new Date().toISOString(),
+  }
+}
+
+function needsUserSettingsNormalization(
+  settings: UserSettings & { version?: string }
+) {
+  return (
+    "version" in settings ||
+    !settings.themeMode ||
+    !settings.restTimerMode ||
+    typeof settings.restTimerDurationSeconds !== "number" ||
+    typeof settings.restTimerSoundEnabled !== "boolean" ||
+    typeof settings.restTimerVibrationEnabled !== "boolean"
   )
 }
 

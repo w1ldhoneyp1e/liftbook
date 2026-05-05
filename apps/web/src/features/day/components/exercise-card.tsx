@@ -1,7 +1,7 @@
 "use client"
 
 import { MoreVertical, Plus, X } from "lucide-react"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -76,6 +76,7 @@ export function ExerciseCard({
   const [menuOpen, setMenuOpen] = useState(false)
   const [draftWeight, setDraftWeight] = useState("")
   const [draftReps, setDraftReps] = useState("")
+  const seededDraftSetIdRef = useRef<string | null>(null)
 
   const editorSet = activeSets.find((setEntry) => setEntry.id === editorSetId)
 
@@ -89,11 +90,13 @@ export function ExerciseCard({
 
   async function handleCancelNewSet(setEntryId: string) {
     await Promise.resolve(onDeleteSet(entry.id, setEntryId))
+    seededDraftSetIdRef.current = null
     setCreatingSetId((current) => (current === setEntryId ? null : current))
     setEditorSetId((current) => (current === setEntryId ? null : current))
   }
 
   function handleSaveNewSet(setEntryId: string) {
+    seededDraftSetIdRef.current = null
     setCreatingSetId((current) => (current === setEntryId ? null : current))
     setEditorSetId((current) => (current === setEntryId ? null : current))
   }
@@ -111,6 +114,7 @@ export function ExerciseCard({
 
     setDraftWeight(formatWeightValue(nextSet.weight ?? 0, displayUnit))
     setDraftReps(formatNumber(nextSet.reps ?? 0))
+    seededDraftSetIdRef.current = setId
     setEditorSetId(setId)
   }
 
@@ -120,6 +124,7 @@ export function ExerciseCard({
       return
     }
 
+    seededDraftSetIdRef.current = null
     setEditorSetId(null)
     setDraftWeight("")
     setDraftReps("")
@@ -173,10 +178,25 @@ export function ExerciseCard({
       return
     }
 
+    seededDraftSetIdRef.current = null
     setEditorSetId(null)
     setDraftWeight("")
     setDraftReps("")
   }
+
+  useEffect(() => {
+    if (!editorSetId || !editorSet) {
+      return
+    }
+
+    if (seededDraftSetIdRef.current === editorSetId) {
+      return
+    }
+
+    setDraftWeight(formatWeightValue(editorSet.weight ?? 0, displayUnit))
+    setDraftReps(formatNumber(editorSet.reps ?? 0))
+    seededDraftSetIdRef.current = editorSetId
+  }, [displayUnit, editorSet, editorSetId])
 
   return (
     <article className="rounded-2xl bg-card px-4 py-4">
@@ -371,6 +391,7 @@ export function ExerciseCard({
                           className="text-destructive hover:text-destructive"
                           onClick={() => {
                             void Promise.resolve(onDeleteSet(entry.id, set.id))
+                            seededDraftSetIdRef.current = null
                             setEditorSetId(null)
                             setDraftWeight("")
                             setDraftReps("")
