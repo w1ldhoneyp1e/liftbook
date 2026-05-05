@@ -53,7 +53,14 @@ export function RestTimerRow({
       <div className="min-w-0">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Timer className="size-4" />
-          <span>{dictionary.labels.restTimer}</span>
+          <span>
+            {mode === "timer"
+              ? dictionary.actions.timer
+              : dictionary.actions.stopwatch}
+          </span>
+          {running ? (
+            <span className="inline-flex size-2 rounded-full bg-red-500 shadow-[0_0_0_4px_rgba(239,68,68,0.12)]" />
+          ) : null}
         </div>
         <div className="mt-0.5 font-mono text-xl font-semibold">
           {formatTimer(displaySeconds)}

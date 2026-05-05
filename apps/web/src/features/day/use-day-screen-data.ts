@@ -10,6 +10,7 @@ import {
   type SyncEntityType,
 } from "@/shared/api/liftbook-api"
 import { getDictionary } from "@/shared/i18n/dictionaries"
+import { APP_VERSION } from "@/shared/app/version"
 import type {
   AccountSession,
   Exercise,
@@ -105,12 +106,14 @@ export function useDayScreenData(date: string) {
     const normalizedSettings =
       settings &&
       (!settings.themeMode ||
+        !settings.version ||
         !settings.restTimerMode ||
         typeof settings.restTimerDurationSeconds !== "number" ||
         typeof settings.restTimerSoundEnabled !== "boolean" ||
         typeof settings.restTimerVibrationEnabled !== "boolean")
         ? {
             ...settings,
+            version: settings?.version ?? APP_VERSION,
             themeMode: "system" as const,
             restTimerMode: settings?.restTimerMode ?? "stopwatch",
             restTimerDurationSeconds: settings?.restTimerDurationSeconds ?? 90,
@@ -225,14 +228,33 @@ export function useDayScreenData(date: string) {
       }
 
       const now = new Date().toISOString()
-      const previousSet = entry.setEntries
+      const activeSetEntries = entry.setEntries.filter(
+        (setEntry) => !setEntry.deletedAt
+      )
+      const setPosition = activeSetEntries.length
+      const previousWorkoutEntries = await db.exerciseEntries
+        .where("exerciseId")
+        .equals(entry.exerciseId)
+        .toArray()
+      const previousWorkoutEntry = previousWorkoutEntries
+        .filter(
+          (previousEntry) =>
+            !previousEntry.deletedAt &&
+            previousEntry.workoutDate < entry.workoutDate
+        )
+        .sort((a, b) => b.workoutDate.localeCompare(a.workoutDate))[0]
+      const previousWorkoutSet = previousWorkoutEntry?.setEntries
+        .filter((setEntry) => !setEntry.deletedAt)
+        .at(setPosition)
+      const previousSet = activeSetEntries
         .filter((setEntry) => !setEntry.deletedAt)
         .at(-1)
+      const sourceSet = previousWorkoutSet ?? previousSet
       const newSet: SetEntry = {
         id: createLocalId("set"),
-        weight: previousSet?.weight ?? 0,
+        weight: sourceSet?.weight ?? 0,
         weightUnit: "kg",
-        reps: previousSet?.reps ?? 0,
+        reps: sourceSet?.reps ?? 0,
         createdAt: now,
         updatedAt: now,
       }
@@ -1041,6 +1063,7 @@ function isUserSettingsPayload(payload: unknown): payload is UserSettings {
   return (
     payload.id === "local" &&
     (payload.locale === "en" || payload.locale === "ru") &&
+    typeof payload.version === "string" &&
     (payload.themeMode === "system" ||
       payload.themeMode === "light" ||
       payload.themeMode === "dark") &&

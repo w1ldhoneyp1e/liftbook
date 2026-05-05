@@ -35,7 +35,7 @@ export function CalendarDrawer({
 }: CalendarDrawerProps) {
   return (
     <Drawer direction="top" open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="mx-auto max-h-[92svh] max-w-md rounded-b-2xl bg-background">
+      <DrawerContent className="mx-auto max-h-[92svh] max-w-md rounded-b-2xl bg-background supports-[height:100dvh]:max-h-[92dvh]">
         <DrawerHeader className="text-left">
           <DrawerTitle>{dictionary.actions.calendar}</DrawerTitle>
           <DrawerDescription>{selectedDate}</DrawerDescription>

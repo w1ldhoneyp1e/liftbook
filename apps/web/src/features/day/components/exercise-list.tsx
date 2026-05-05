@@ -69,7 +69,7 @@ export const ExerciseList = memo(function ExerciseList({
               alt=""
               fill
               sizes="220px"
-              className="object-contain"
+              className="object-contain dark:mix-blend-screen dark:brightness-110"
               priority
             />
           </div>

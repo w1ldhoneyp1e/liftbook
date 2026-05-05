@@ -81,7 +81,7 @@ export function SettingsDrawer({
           <DrawerDescription>Liftbook</DrawerDescription>
         </DrawerHeader>
 
-        <div className="space-y-5 px-4 pb-4">
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           <section className="space-y-2">
             <Label className="text-sm font-medium">
               {dictionary.labels.account}
@@ -204,6 +204,13 @@ export function SettingsDrawer({
               onUpdateSettings({ autoRestTimer })
             }
           />
+
+          <section className="space-y-2">
+            <Label className="text-sm font-medium">Liftbook</Label>
+            <div className="rounded-xl border border-border/70 bg-card/92 px-3 py-3 text-sm text-muted-foreground dark:bg-card/80">
+              v{settings.version}
+            </div>
+          </section>
         </div>
       </DrawerContent>
     </Drawer>

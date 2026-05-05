@@ -49,8 +49,9 @@ export function DayScreen() {
   )
   const [dragOffset, setDragOffset] = useState(0)
   const [isDraggingDay, setIsDraggingDay] = useState(false)
-  const [restSeconds, setRestSeconds] = useState(0)
-  const [restTimerRunning, setRestTimerRunning] = useState(false)
+  const [stopwatchSeconds, setStopwatchSeconds] = useState(0)
+  const [timerElapsedSeconds, setTimerElapsedSeconds] = useState(0)
+  const [runningTimerMode, setRunningTimerMode] = useState<"stopwatch" | "timer" | null>(null)
   const timerAlertPlayedRef = useRef(false)
   const [accountError, setAccountError] = useState(false)
   const [accountConnecting, setAccountConnecting] = useState(false)
@@ -88,6 +89,9 @@ export function DayScreen() {
   const restTimerDurationSeconds = settings?.restTimerDurationSeconds ?? 90
   const restTimerSoundEnabled = settings?.restTimerSoundEnabled ?? true
   const restTimerVibrationEnabled = settings?.restTimerVibrationEnabled ?? true
+  const restTimerRunning = runningTimerMode === restTimerMode
+  const restSeconds =
+    restTimerMode === "timer" ? timerElapsedSeconds : stopwatchSeconds
   const days = useMemo(
     () => createDateStrip(selectedDate, locale, dateMuscleGroups),
     [dateMuscleGroups, locale, selectedDate]
@@ -145,11 +149,16 @@ export function DayScreen() {
     }
 
     const intervalId = window.setInterval(() => {
-      setRestSeconds((seconds) => seconds + 1)
+      if (restTimerMode === "timer") {
+        setTimerElapsedSeconds((seconds) => seconds + 1)
+        return
+      }
+
+      setStopwatchSeconds((seconds) => seconds + 1)
     }, 1000)
 
     return () => window.clearInterval(intervalId)
-  }, [restTimerRunning])
+  }, [restTimerMode, restTimerRunning])
 
   useEffect(() => {
     if (
@@ -165,29 +174,32 @@ export function DayScreen() {
       return
     }
 
-    timerAlertPlayedRef.current = true
-    setRestTimerRunning(false)
+      timerAlertPlayedRef.current = true
+    setRunningTimerMode(null)
 
     if (restTimerVibrationEnabled && typeof navigator !== "undefined" && "vibrate" in navigator) {
-      navigator.vibrate([180, 80, 180])
+      navigator.vibrate([250, 120, 250, 120, 400])
     }
 
     if (restTimerSoundEnabled && typeof window !== "undefined") {
       const audioContext = new window.AudioContext()
-      const oscillator = audioContext.createOscillator()
+      void audioContext.resume()
       const gainNode = audioContext.createGain()
-
-      oscillator.type = "sine"
-      oscillator.frequency.value = 880
-      gainNode.gain.value = 0.04
-
-      oscillator.connect(gainNode)
+      gainNode.gain.value = 0.045
       gainNode.connect(audioContext.destination)
-      oscillator.start()
-      oscillator.stop(audioContext.currentTime + 0.2)
-      oscillator.onended = () => {
+
+      ;[0, 0.24, 0.48].forEach((startAt, index) => {
+        const oscillator = audioContext.createOscillator()
+        oscillator.type = "sine"
+        oscillator.frequency.value = index === 2 ? 1046 : 880
+        oscillator.connect(gainNode)
+        oscillator.start(audioContext.currentTime + startAt)
+        oscillator.stop(audioContext.currentTime + startAt + 0.14)
+      })
+
+      window.setTimeout(() => {
         void audioContext.close()
-      }
+      }, 900)
     }
   }, [
     restSeconds,
@@ -236,8 +248,8 @@ export function DayScreen() {
     const newSetId = await addSet(exerciseEntryId)
 
     if (settings?.autoRestTimer) {
-      setRestSeconds(0)
-      setRestTimerRunning(true)
+      setTimerElapsedSeconds(0)
+      setRunningTimerMode("timer")
     }
 
     return newSetId
@@ -392,16 +404,29 @@ export function DayScreen() {
             soundEnabled={restTimerSoundEnabled}
             vibrationEnabled={restTimerVibrationEnabled}
             onReset={() => {
-              setRestTimerRunning(false)
-              setRestSeconds(0)
+              setRunningTimerMode(null)
+              if (restTimerMode === "timer") {
+                setTimerElapsedSeconds(0)
+                return
+              }
+
+              setStopwatchSeconds(0)
             }}
             onToggleRunning={() =>
-              setRestTimerRunning((running) => !running)
+              setRunningTimerMode((currentMode) =>
+                currentMode === restTimerMode ? null : restTimerMode
+              )
             }
             onUpdateDuration={(seconds) =>
               updateSettings({ restTimerDurationSeconds: seconds })
             }
-            onUpdateMode={(mode) => updateSettings({ restTimerMode: mode })}
+            onUpdateMode={(mode) => {
+              if (mode !== restTimerMode) {
+                setRunningTimerMode(null)
+              }
+
+              updateSettings({ restTimerMode: mode })
+            }}
             onUpdateSoundEnabled={(enabled) =>
               updateSettings({ restTimerSoundEnabled: enabled })
             }
@@ -412,7 +437,7 @@ export function DayScreen() {
         </div>
 
         <div
-          className="flex-1 overflow-hidden"
+          className="flex-1 overflow-y-auto overscroll-y-contain [touch-action:pan-y]"
           onTouchStart={(event) =>
             handleTouchStart(event.changedTouches[0].clientX)
           }
@@ -422,7 +447,7 @@ export function DayScreen() {
           onTouchCancel={() => handleTouchEnd()}
           onTouchEnd={() => handleTouchEnd()}
         >
-          <div className="relative h-full w-full">
+          <div className="relative min-h-full w-full">
             {isDraggingDay ? (
               <div
                 className="pointer-events-none absolute inset-0"
@@ -449,7 +474,7 @@ export function DayScreen() {
             ) : null}
 
             <div
-              className={`absolute inset-0 ${
+              className={`relative z-10 min-h-full ${
                 isDraggingDay
                   ? ""
                   : contentMotion === "left"

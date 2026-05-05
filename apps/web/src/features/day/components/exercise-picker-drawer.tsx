@@ -88,6 +88,7 @@ export function ExercisePickerDrawer({
   return (
     <Drawer
       open={open}
+      repositionInputs={false}
       onOpenChange={(nextOpen) => {
         if (nextOpen) {
           resetFilters()
@@ -96,7 +97,7 @@ export function ExercisePickerDrawer({
         onOpenChange(nextOpen)
       }}
     >
-      <DrawerContent className="mx-auto max-h-[92svh] max-w-md overflow-hidden rounded-t-xl bg-background/98 backdrop-blur">
+      <DrawerContent className="mx-auto max-h-[92svh] max-w-md overflow-hidden rounded-t-xl bg-background/98 backdrop-blur supports-[height:100dvh]:max-h-[92dvh]">
         <DrawerHeader className="text-left">
           <DrawerTitle>{dictionary.actions.chooseExercise}</DrawerTitle>
         </DrawerHeader>
