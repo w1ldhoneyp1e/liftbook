@@ -646,6 +646,11 @@ export function useDayScreenData(date: string) {
     [load]
   )
 
+  const logoutAccount = useCallback(async () => {
+    await db.accountSessions.delete("local")
+    await load()
+  }, [load])
+
   const syncPendingChanges = useCallback(async () => {
     const accountSession = await db.accountSessions.get("local")
 
@@ -677,6 +682,7 @@ export function useDayScreenData(date: string) {
     addSet,
     createGuestAccount,
     loginAccount,
+    logoutAccount,
     registerAccount,
     deleteCustomExercise,
     deleteExercise,

@@ -2,6 +2,7 @@
 
 import { CircleUserRound, X } from "lucide-react"
 import { useState } from "react"
+import { createPortal } from "react-dom"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,6 +19,7 @@ type AuthPopoverProps = {
   dictionary: Dictionary
   onCreateGuestAccount: () => void
   onLoginAccount: (email: string, password: string) => Promise<void> | void
+  onLogoutAccount: () => Promise<void> | void
   onRegisterAccount: (email: string, password: string) => Promise<void> | void
 }
 
@@ -30,6 +32,7 @@ export function AuthPopover({
   dictionary,
   onCreateGuestAccount,
   onLoginAccount,
+  onLogoutAccount,
   onRegisterAccount,
 }: AuthPopoverProps) {
   const [open, setOpen] = useState(false)
@@ -53,6 +56,12 @@ export function AuthPopover({
     setPassword("")
   }
 
+  async function handleLogout() {
+    await onLogoutAccount()
+    setOpen(false)
+    setPassword("")
+  }
+
   return (
     <>
       <button
@@ -64,9 +73,16 @@ export function AuthPopover({
         <CircleUserRound className="size-[18px]" />
       </button>
 
-      {open ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 p-4 supports-backdrop-filter:backdrop-blur-xs">
-          <div className="w-full max-w-sm rounded-2xl border border-border/60 bg-background/96 p-4 shadow-xl">
+      {open && typeof document !== "undefined"
+        ? createPortal(
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/10 p-4 supports-backdrop-filter:backdrop-blur-xs"
+          onClick={() => setOpen(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border border-border/60 bg-background/96 p-4 shadow-xl"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
                 <p className="text-base font-semibold">{dictionary.labels.account}</p>
@@ -104,6 +120,18 @@ export function AuthPopover({
               <p className="text-xs text-destructive">
                 {dictionary.labels.connectionError}
               </p>
+            ) : null}
+
+            {accountSession ? (
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  void handleLogout()
+                }}
+              >
+                {dictionary.actions.logout}
+              </Button>
             ) : null}
 
             {!isRegisteredAccount ? (
@@ -167,7 +195,8 @@ export function AuthPopover({
             ) : null}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       ) : null}
     </>
   )

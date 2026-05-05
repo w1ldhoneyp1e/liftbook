@@ -22,6 +22,7 @@ export const en: Dictionary = {
     goToToday: "Today",
     increase: "Increase",
     login: "Log in",
+    logout: "Log out",
     pause: "Pause",
     reset: "Reset",
     register: "Register",

@@ -26,6 +26,7 @@ import {
   createDateStrip,
   getDateState,
   getDateStatusLabel,
+  shiftDateKey,
   toDateKey,
 } from "./lib/date-utils"
 import { useDayScreenData } from "./use-day-screen-data"
@@ -33,6 +34,8 @@ import { useDayScreenData } from "./use-day-screen-data"
 export function DayScreen() {
   const autoSyncSignatureRef = useRef<string | null>(null)
   const initialDateRef = useRef<string | null>(null)
+  const swipeStartRef = useRef<{ x: number; y: number } | null>(null)
+  const swipeCurrentRef = useRef<{ x: number; y: number } | null>(null)
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator === "undefined" ? true : navigator.onLine
   )
@@ -72,6 +75,7 @@ export function DayScreen() {
     loginAccount,
     locale,
     loading,
+    logoutAccount,
     registerAccount,
     renameCustomExercise,
     settings,
@@ -360,6 +364,40 @@ export function DayScreen() {
     setCalendarOpen(false)
   }
 
+  function handleContentTouchStart(clientX: number, clientY: number) {
+    swipeStartRef.current = { x: clientX, y: clientY }
+    swipeCurrentRef.current = { x: clientX, y: clientY }
+  }
+
+  function handleContentTouchMove(clientX: number, clientY: number) {
+    if (swipeStartRef.current === null) {
+      return
+    }
+
+    swipeCurrentRef.current = { x: clientX, y: clientY }
+  }
+
+  function handleContentTouchEnd() {
+    const start = swipeStartRef.current
+    const current = swipeCurrentRef.current
+
+    swipeStartRef.current = null
+    swipeCurrentRef.current = null
+
+    if (!start || !current) {
+      return
+    }
+
+    const deltaX = current.x - start.x
+    const deltaY = current.y - start.y
+
+    if (Math.abs(deltaX) < 72 || Math.abs(deltaX) <= Math.abs(deltaY) + 12) {
+      return
+    }
+
+    setSelectedDate((currentDate) => shiftDateKey(currentDate, deltaX < 0 ? 1 : -1))
+  }
+
   return (
     <div className="flex min-h-svh justify-center bg-muted/35 text-foreground dark:bg-[#0b0d11]">
       <main className="relative flex min-h-svh w-full max-w-md flex-col bg-background shadow-[0_0_0_1px_rgba(229,231,235,0.45)] dark:shadow-[0_0_0_1px_rgba(43,49,60,0.9)]">
@@ -381,6 +419,9 @@ export function DayScreen() {
             dateMuscleGroups={dateMuscleGroups}
             onCreateGuestAccount={handleCreateGuestAccount}
             onLoginAccount={handleLoginAccount}
+            onLogoutAccount={async () => {
+              await logoutAccount()
+            }}
             onOpenCalendar={() => setCalendarOpen(true)}
             onOpenSettings={() => setSettingsOpen(true)}
             onRegisterAccount={handleRegisterAccount}
@@ -437,6 +478,20 @@ export function DayScreen() {
                   ? "animate-[day-slide-right_220ms_ease-out]"
                   : ""
             }`}
+            onTouchStart={(event) =>
+              handleContentTouchStart(
+                event.changedTouches[0].clientX,
+                event.changedTouches[0].clientY
+              )
+            }
+            onTouchMove={(event) =>
+              handleContentTouchMove(
+                event.changedTouches[0].clientX,
+                event.changedTouches[0].clientY
+              )
+            }
+            onTouchCancel={() => handleContentTouchEnd()}
+            onTouchEnd={() => handleContentTouchEnd()}
           >
             <ExerciseList
               dictionary={dictionary}

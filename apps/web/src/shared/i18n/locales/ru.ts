@@ -22,6 +22,7 @@ export const ru: Dictionary = {
     goToToday: "Сегодня",
     increase: "Увеличить",
     login: "Войти",
+    logout: "Выйти",
     pause: "Пауза",
     reset: "Сброс",
     register: "Зарегистрироваться",

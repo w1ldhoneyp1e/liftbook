@@ -25,6 +25,7 @@ export type Dictionary = {
     goToToday: string
     increase: string
     login: string
+    logout: string
     pause: string
     reset: string
     register: string

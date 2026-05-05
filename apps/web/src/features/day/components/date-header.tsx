@@ -41,6 +41,7 @@ type DateHeaderProps = {
   today: string
   onCreateGuestAccount: () => void
   onLoginAccount: (email: string, password: string) => Promise<void> | void
+  onLogoutAccount: () => Promise<void> | void
   onOpenCalendar: () => void
   onOpenSettings: () => void
   onRegisterAccount: (email: string, password: string) => Promise<void> | void
@@ -64,6 +65,7 @@ export function DateHeader({
   today,
   onCreateGuestAccount,
   onLoginAccount,
+  onLogoutAccount,
   onOpenCalendar,
   onOpenSettings,
   onRegisterAccount,
@@ -109,6 +111,7 @@ export function DateHeader({
             dictionary={dictionary}
             onCreateGuestAccount={onCreateGuestAccount}
             onLoginAccount={onLoginAccount}
+            onLogoutAccount={onLogoutAccount}
             onRegisterAccount={onRegisterAccount}
           />
           <Button
