@@ -1,17 +1,11 @@
 "use client"
 
-import { CircleUserRound } from "lucide-react"
+import { CircleUserRound, X } from "lucide-react"
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Popover,
-  PopoverPopup,
-  PopoverPositioner,
-  PopoverTrigger,
-} from "@/components/ui/popover"
 import type { AccountSession } from "@/shared/domain/types"
 import type { Dictionary } from "@/shared/i18n/dictionaries"
 
@@ -60,21 +54,34 @@ export function AuthPopover({
   }
 
   return (
-    <Popover open={open} withBackdrop={false} onOpenChange={setOpen}>
-      <PopoverTrigger
-        render={
-          <button
-            className="inline-flex size-9 items-center justify-center rounded-xl border border-border/70 bg-background/92 text-foreground shadow-sm transition-colors hover:bg-muted/50 dark:bg-card/80 dark:hover:bg-muted/45"
-            type="button"
-            aria-label={dictionary.labels.account}
-          >
-            <CircleUserRound className="size-[18px]" />
-          </button>
-        }
-      />
-      <PopoverPositioner side="bottom" align="end" sideOffset={10}>
-        <PopoverPopup className="w-[min(24rem,calc(100vw-1rem))] p-4">
-          <div className="space-y-4">
+    <>
+      <button
+        className="inline-flex size-9 items-center justify-center rounded-xl border border-border/70 bg-background/92 text-foreground shadow-sm transition-colors hover:bg-muted/50 dark:bg-card/80 dark:hover:bg-muted/45"
+        type="button"
+        aria-label={dictionary.labels.account}
+        onClick={() => setOpen(true)}
+      >
+        <CircleUserRound className="size-[18px]" />
+      </button>
+
+      {open ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 p-4 supports-backdrop-filter:backdrop-blur-xs">
+          <div className="w-full max-w-sm rounded-2xl border border-border/60 bg-background/96 p-4 shadow-xl">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <p className="text-base font-semibold">{dictionary.labels.account}</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label={dictionary.actions.cancel}
+                onClick={() => setOpen(false)}
+              >
+                <X />
+              </Button>
+            </div>
+
+            <div className="space-y-4">
             <div>
               <p className="text-sm font-semibold">{statusLabel}</p>
               <p className="mt-1 break-all text-xs text-muted-foreground">
@@ -158,9 +165,10 @@ export function AuthPopover({
                 ) : null}
               </div>
             ) : null}
+            </div>
           </div>
-        </PopoverPopup>
-      </PopoverPositioner>
-    </Popover>
+        </div>
+      ) : null}
+    </>
   )
 }

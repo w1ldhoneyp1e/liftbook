@@ -428,35 +428,31 @@ export function DayScreen() {
           />
         </div>
 
-        <div
-          className="flex-1 overflow-y-auto overscroll-y-contain [touch-action:pan-y]"
-        >
-          <div className="relative min-h-full w-full">
-            <div
-              className={`relative z-10 min-h-full ${
-                contentMotion === "left"
-                  ? "animate-[day-slide-left_220ms_ease-out]"
-                  : contentMotion === "right"
-                    ? "animate-[day-slide-right_220ms_ease-out]"
-                    : ""
-              }`}
-            >
-              <ExerciseList
-                dictionary={dictionary}
-                exerciseEntries={exerciseEntries}
-                exercisesById={exercisesById}
-                loading={loading}
-                locale={locale}
-                onOpenExercisePicker={() => setExercisePickerOpen(true)}
-                repsStep={repsStep}
-                settings={settings}
-                unit={unit}
-                onAddSet={handleAddSet}
-                onDeleteExercise={deleteExercise}
-                onDeleteSet={deleteSet}
-                onUpdateSet={updateSet}
-              />
-            </div>
+        <div className="relative w-full">
+          <div
+            className={`relative z-10 ${
+              contentMotion === "left"
+                ? "animate-[day-slide-left_220ms_ease-out]"
+                : contentMotion === "right"
+                  ? "animate-[day-slide-right_220ms_ease-out]"
+                  : ""
+            }`}
+          >
+            <ExerciseList
+              dictionary={dictionary}
+              exerciseEntries={exerciseEntries}
+              exercisesById={exercisesById}
+              loading={loading}
+              locale={locale}
+              onOpenExercisePicker={() => setExercisePickerOpen(true)}
+              repsStep={repsStep}
+              settings={settings}
+              unit={unit}
+              onAddSet={handleAddSet}
+              onDeleteExercise={deleteExercise}
+              onDeleteSet={deleteSet}
+              onUpdateSet={updateSet}
+            />
           </div>
         </div>
 

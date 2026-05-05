@@ -93,7 +93,7 @@ export function DateHeader({
           {selectedDate !== today ? (
             <Button
               variant="outline"
-              size="icon"
+              size="icon-lg"
               aria-label={dictionary.actions.goToToday}
               onClick={() => onSelectDate(today)}
             >
@@ -113,7 +113,7 @@ export function DateHeader({
           />
           <Button
             variant="outline"
-            size="icon"
+            size="icon-lg"
             aria-label={dictionary.actions.calendar}
             onClick={onOpenCalendar}
           >
@@ -121,7 +121,7 @@ export function DateHeader({
           </Button>
           <Button
             variant="outline"
-            size="icon"
+            size="icon-lg"
             aria-label={dictionary.actions.settings}
             onClick={onOpenSettings}
           >
