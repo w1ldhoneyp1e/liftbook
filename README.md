@@ -2,27 +2,12 @@
 
 Liftbook is a mobile-first, offline-first workout journal for gym training.
 
-The first product goal is simple: open the app on an iPhone during a workout and quickly log exercises, sets, reps, and weight. The app should show what the user did for the same exercise in previous workouts, even without an internet connection.
+Current status:
 
-## Product Direction
-
-- Personal workout journal first.
-- Free for the target user.
-- Mobile-first UX for real gym usage.
-- Offline-first data model: local data is primary during use, sync happens later.
-- Account support should appear early, but the workout flow must remain usable without network access.
-- UI text must be translatable.
-- Built with future integration in mind, especially as a standalone service or feature inside a larger corporate HR/training product.
-
-## Current Decisions
-
-- Product name: Liftbook
-- Repository name: liftbook
-- Initial architecture: modular monolith with clear domain boundaries and future service extraction in mind.
-- App direction: PWA with all core workout flows available offline.
-- Repository structure: pnpm monorepo.
-- Web app: Next.js, React, TypeScript, Tailwind CSS, shadcn/ui.
-- Backend direction: custom backend, added when sync/account work starts.
+- MVP 1 is released on a single VPS
+- the main workout flow works offline-first
+- sync and account support exist in basic form
+- current work is focused on MVP 2 polish and next features
 
 ## Development
 
@@ -39,27 +24,6 @@ The API skeleton lives in `apps/api`.
 
 ## Docs
 
-Language mirrors:
-
-- [English docs](docs/en/product-brief.md)
-- [Русская документация](docs/ru/product-brief.md)
-
-Current root docs:
-
-- [Product brief](docs/product-brief.md)
-- [Requirements](docs/requirements.md)
-- [Architecture](docs/architecture.md)
-- [Backend research](docs/backend-research.md)
-- [Domain model draft](docs/domain-model.md)
-- [Exercise catalog plan](docs/exercise-catalog.md)
-- [MVP UX flow](docs/ux-flow.md)
-- [Day screen MVP spec](docs/day-screen-spec.md)
-- [MVP roadmap](docs/mvp-roadmap.md)
-- [MVP 2 plan](docs/ru/mvp2-plan.md)
-- [MVP 2 found issues](docs/ru/mvp2-found-issues.md)
-- [Hardening next steps](docs/ru/hardening-next-steps.md)
-- [API contracts](docs/api-contracts.md)
-- [Deploy and release](docs/ru/deploy-release.md)
-- [Refactor backlog](docs/refactor-backlog.md)
-- [ADR 0001: initial technical direction](docs/adr/0001-initial-technical-direction.md)
-- [ADR 0002: stack and monorepo](docs/adr/0002-stack-and-monorepo.md)
+- [Релиз на VPS](docs/ru/deploy-release.md)
+- [План MVP 2](docs/ru/mvp2-plan.md)
+- [Bugs & feature requests MVP 2](docs/ru/todos/bugs-and-feature-requests-mvp2.md)
