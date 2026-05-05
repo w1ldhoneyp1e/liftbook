@@ -1,4 +1,5 @@
 import pg from "pg"
+import { randomUUID } from "node:crypto"
 
 const { Pool } = pg
 
@@ -45,7 +46,7 @@ export async function createPostgresStore(options) {
       expiresAt,
     }) {
       const session = {
-        id: `session_${userId}`,
+        id: `session_${randomUUID()}`,
         userId,
         accessToken,
         tokenType: "Bearer",
@@ -59,13 +60,14 @@ export async function createPostgresStore(options) {
         clientId,
         locale,
         createdAt: now,
+        updatedAt: now,
       }
 
       await withTransaction(pool, async (client) => {
         await client.query(
-          `insert into users (id, kind, locale, created_at)
-           values ($1, $2, $3, $4)`,
-          [user.id, user.kind, user.locale, user.createdAt]
+          `insert into users (id, kind, locale, created_at, updated_at)
+           values ($1, $2, $3, $4, $5)`,
+          [user.id, user.kind, user.locale, user.createdAt, user.updatedAt]
         )
 
         if (clientId) {
@@ -97,6 +99,131 @@ export async function createPostgresStore(options) {
         user,
         session,
       }
+    },
+    async registerAccount({
+      accessToken,
+      clientId,
+      email,
+      existingUserId,
+      expiresAt,
+      locale,
+      now,
+      passwordHash,
+      passwordSalt,
+      userId,
+    }) {
+      const normalizedEmail = email.toLowerCase()
+      const session = {
+        id: `session_${randomUUID()}`,
+        userId: existingUserId ?? userId,
+        accessToken,
+        tokenType: "Bearer",
+        expiresAt,
+        createdAt: now,
+        updatedAt: now,
+      }
+
+      await withTransaction(pool, async (client) => {
+        if (existingUserId) {
+          const existingUserResult = await client.query(
+            `select id, email
+             from users
+             where id = $1
+             limit 1`,
+            [existingUserId]
+          )
+
+          if (existingUserResult.rows.length === 0) {
+            throw new Error("User not found")
+          }
+
+          if (existingUserResult.rows[0].email) {
+            throw new Error("Current account is already registered")
+          }
+
+          await client.query(
+            `update users
+             set kind = 'account',
+                 email = $2,
+                 password_hash = $3,
+                 password_salt = $4,
+                 locale = $5,
+                 updated_at = $6
+             where id = $1`,
+            [
+              existingUserId,
+              normalizedEmail,
+              passwordHash,
+              passwordSalt,
+              locale,
+              now,
+            ]
+          )
+        } else {
+          await client.query(
+            `insert into users (
+               id,
+               kind,
+               locale,
+               email,
+               password_hash,
+               password_salt,
+               created_at,
+               updated_at
+             ) values ($1, 'account', $2, $3, $4, $5, $6, $7)`,
+            [userId, locale, normalizedEmail, passwordHash, passwordSalt, now, now]
+          )
+        }
+
+        if (clientId) {
+          await client.query(
+            `insert into devices (user_id, client_id, created_at, updated_at)
+             values ($1, $2, $3, $4)
+             on conflict (user_id, client_id)
+             do update set updated_at = excluded.updated_at`,
+            [session.userId, clientId, now, now]
+          )
+        }
+
+        await client.query(
+          `insert into sessions (id, user_id, access_token, token_type, expires_at, created_at, updated_at)
+           values ($1, $2, $3, $4, $5, $6, $7)`,
+          [
+            session.id,
+            session.userId,
+            session.accessToken,
+            session.tokenType,
+            session.expiresAt,
+            session.createdAt,
+            session.updatedAt,
+          ]
+        )
+      })
+
+      const user = await getUserById(pool, session.userId)
+
+      return {
+        user,
+        session,
+      }
+    },
+    async getUserById(userId) {
+      return getUserById(pool, userId)
+    },
+    async getAccountByEmail(email) {
+      const result = await pool.query(
+        `select id, kind, locale, email, password_hash, password_salt, created_at, updated_at
+         from users
+         where lower(email) = lower($1)
+         limit 1`,
+        [email]
+      )
+
+      if (result.rows.length === 0) {
+        return null
+      }
+
+      return mapUserRow(result.rows[0])
     },
     async getSessionByAccessToken(accessToken) {
       const result = await pool.query(
@@ -133,6 +260,67 @@ export async function createPostgresStore(options) {
          do update set updated_at = excluded.updated_at`,
         [userId, clientId, now, now]
       )
+    },
+    async createSessionForUser({
+      accessToken,
+      clientId,
+      expiresAt,
+      now,
+      userId,
+    }) {
+      const user = await getUserById(pool, userId)
+
+      if (!user) {
+        throw new Error("User not found")
+      }
+
+      const session = {
+        id: `session_${randomUUID()}`,
+        userId,
+        accessToken,
+        tokenType: "Bearer",
+        expiresAt,
+        createdAt: now,
+        updatedAt: now,
+      }
+
+      await withTransaction(pool, async (client) => {
+        await client.query(
+          `update users
+           set updated_at = $2
+           where id = $1`,
+          [userId, now]
+        )
+
+        if (clientId) {
+          await client.query(
+            `insert into devices (user_id, client_id, created_at, updated_at)
+             values ($1, $2, $3, $4)
+             on conflict (user_id, client_id)
+             do update set updated_at = excluded.updated_at`,
+            [userId, clientId, now, now]
+          )
+        }
+
+        await client.query(
+          `insert into sessions (id, user_id, access_token, token_type, expires_at, created_at, updated_at)
+           values ($1, $2, $3, $4, $5, $6, $7)`,
+          [
+            session.id,
+            session.userId,
+            session.accessToken,
+            session.tokenType,
+            session.expiresAt,
+            session.createdAt,
+            session.updatedAt,
+          ]
+        )
+      })
+
+      return {
+        user,
+        session,
+      }
     },
     async acceptSyncChanges({
       userId,
@@ -345,6 +533,35 @@ async function withTransaction(pool, callback) {
     throw error
   } finally {
     client.release()
+  }
+}
+
+async function getUserById(pool, userId) {
+  const result = await pool.query(
+    `select id, kind, locale, email, password_hash, password_salt, created_at, updated_at
+     from users
+     where id = $1
+     limit 1`,
+    [userId]
+  )
+
+  if (result.rows.length === 0) {
+    return null
+  }
+
+  return mapUserRow(result.rows[0])
+}
+
+function mapUserRow(row) {
+  return {
+    id: row.id,
+    kind: row.kind,
+    locale: row.locale,
+    email: row.email ?? undefined,
+    passwordHash: row.password_hash ?? undefined,
+    passwordSalt: row.password_salt ?? undefined,
+    createdAt: row.created_at.toISOString(),
+    updatedAt: row.updated_at?.toISOString?.() ?? row.created_at.toISOString(),
   }
 }
 

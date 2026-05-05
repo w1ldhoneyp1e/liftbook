@@ -1,6 +1,10 @@
 const requiredStorageMethods = [
   "getHealthSummary",
   "createGuestSession",
+  "registerAccount",
+  "getUserById",
+  "getAccountByEmail",
+  "createSessionForUser",
   "getSessionByAccessToken",
   "touchSession",
   "touchDevice",

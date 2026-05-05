@@ -19,7 +19,8 @@ export type SyncChange = {
 type GuestAccountResponse = {
   user: {
     id: string
-    kind: "guest"
+    kind: "guest" | "account"
+    email?: string
     createdAt: string
   }
   session: {
@@ -31,6 +32,8 @@ type GuestAccountResponse = {
     cursor: string | null
   }
 }
+
+type AuthAccountResponse = GuestAccountResponse
 
 type PushSyncResponse = {
   accepted: Array<{
@@ -80,6 +83,64 @@ export async function createGuestAccount(locale: Locale) {
   }
 
   return (await response.json()) as GuestAccountResponse
+}
+
+export async function registerAccount({
+  accessToken,
+  email,
+  locale,
+  password,
+}: {
+  accessToken?: string | null
+  email: string
+  locale: Locale
+  password: string
+}) {
+  const response = await fetch(`${apiBaseUrl}/v1/auth/register`, {
+    method: "POST",
+    headers: {
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      clientId: getClientId(),
+      email,
+      locale,
+      password,
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error(await getRequestErrorMessage(response, "Registration failed"))
+  }
+
+  return (await response.json()) as AuthAccountResponse
+}
+
+export async function loginAccount({
+  email,
+  password,
+}: {
+  email: string
+  password: string
+}) {
+  const response = await fetch(`${apiBaseUrl}/v1/auth/login`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      clientId: getClientId(),
+      email,
+      password,
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error(await getRequestErrorMessage(response, "Login failed"))
+  }
+
+  return (await response.json()) as AuthAccountResponse
 }
 
 export async function pushSyncChanges({
@@ -157,4 +218,13 @@ function getClientId() {
 
   window.localStorage.setItem(storageKey, clientId)
   return clientId
+}
+
+async function getRequestErrorMessage(response: Response, fallback: string) {
+  try {
+    const payload = (await response.json()) as { error?: string }
+    return payload.error || `${fallback}: ${response.status}`
+  } catch {
+    return `${fallback}: ${response.status}`
+  }
 }

@@ -1,5 +1,7 @@
 "use client"
 
+import { useState } from "react"
+
 import {
   Drawer,
   DrawerContent,
@@ -8,6 +10,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import type {
@@ -28,6 +31,8 @@ type SettingsDrawerProps = {
   accountConnecting: boolean
   accountError: boolean
   accountSession: AccountSession | null
+  authError: string | null
+  authSubmitting: boolean
   dictionary: Dictionary
   open: boolean
   settings: UserSettings
@@ -40,7 +45,9 @@ type SettingsDrawerProps = {
   syncError: boolean
   syncing: boolean
   onCreateGuestAccount: () => void
+  onLoginAccount: (email: string, password: string) => Promise<void> | void
   onOpenChange: (open: boolean) => void
+  onRegisterAccount: (email: string, password: string) => Promise<void> | void
   onSyncNow: () => void
   onUpdateSettings: (
     patch: Partial<Omit<UserSettings, "id" | "updatedAt">>
@@ -51,6 +58,8 @@ export function SettingsDrawer({
   accountConnecting,
   accountError,
   accountSession,
+  authError,
+  authSubmitting,
   dictionary,
   open,
   settings,
@@ -60,10 +69,14 @@ export function SettingsDrawer({
   syncError,
   syncing,
   onCreateGuestAccount,
+  onLoginAccount,
   onOpenChange,
+  onRegisterAccount,
   onSyncNow,
   onUpdateSettings,
 }: SettingsDrawerProps) {
+  const [email, setEmail] = useState(accountSession?.email ?? "")
+  const [password, setPassword] = useState("")
   const syncStatusText = syncError
     ? dictionary.labels.syncFailed
     : syncing && (syncMode === "manual" || syncSummary.pending > 0)
@@ -73,6 +86,17 @@ export function SettingsDrawer({
         : syncSummary.pending > 0
           ? `${dictionary.labels.syncReady}: ${syncSummary.pending}`
           : dictionary.labels.syncSuccess
+  const isRegisteredAccount = accountSession?.kind === "account"
+
+  async function handleRegister() {
+    await onRegisterAccount(email, password)
+    setPassword("")
+  }
+
+  async function handleLogin() {
+    await onLoginAccount(email, password)
+    setPassword("")
+  }
 
   return (
     <Drawer direction="top" open={open} onOpenChange={onOpenChange}>
@@ -89,12 +113,14 @@ export function SettingsDrawer({
             </Label>
             <div className="rounded-xl border border-border/60 bg-card/95 px-3 py-3 shadow-sm dark:border-border dark:bg-card/92 dark:shadow-[0_12px_30px_rgba(0,0,0,0.2)]">
               <div className="text-sm font-medium">
-                {accountSession
+                {isRegisteredAccount
                   ? dictionary.labels.accountConnected
-                  : dictionary.labels.accountLocalOnly}
+                  : accountSession
+                    ? dictionary.labels.accountGuestConnected
+                    : dictionary.labels.accountLocalOnly}
               </div>
               <div className="mt-1 break-all text-xs text-muted-foreground">
-                {accountSession?.userId ?? "Liftbook"}
+                {accountSession?.email ?? accountSession?.userId ?? "Liftbook"}
               </div>
               {!accountSession ? (
                 <Button
@@ -110,6 +136,66 @@ export function SettingsDrawer({
                 <p className="mt-2 text-xs text-destructive">
                   {dictionary.labels.connectionError}
                 </p>
+              ) : null}
+              {!isRegisteredAccount ? (
+                <div className="mt-4 border-t border-border/60 pt-4">
+                  <div className="text-sm font-medium">
+                    {dictionary.labels.account}
+                  </div>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    {accountSession
+                      ? dictionary.labels.authRegisteredHint
+                      : dictionary.labels.authRegisterHint}
+                  </p>
+                  <div className="mt-3 space-y-2">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">
+                        {dictionary.labels.authEmail}
+                      </Label>
+                      <Input
+                        autoCapitalize="none"
+                        autoComplete="email"
+                        inputMode="email"
+                        placeholder="name@example.com"
+                        value={email}
+                        onChange={(event) => setEmail(event.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">
+                        {dictionary.labels.authPassword}
+                      </Label>
+                      <Input
+                        autoComplete="current-password"
+                        type="password"
+                        value={password}
+                        onChange={(event) => setPassword(event.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      disabled={authSubmitting}
+                      onClick={() => {
+                        void handleLogin()
+                      }}
+                    >
+                      {dictionary.actions.login}
+                    </Button>
+                    <Button
+                      disabled={authSubmitting}
+                      onClick={() => {
+                        void handleRegister()
+                      }}
+                    >
+                      {dictionary.actions.register}
+                    </Button>
+                  </div>
+                  {authError ? (
+                    <p className="mt-2 text-xs text-destructive">{authError}</p>
+                  ) : null}
+                </div>
               ) : null}
               {accountSession ? (
                 <div className="mt-4 border-t border-border/60 pt-4">

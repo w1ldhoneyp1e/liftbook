@@ -43,6 +43,19 @@ const server = createServer(async (request, response) => {
       return
     }
 
+    if (request.method === "POST" && url.pathname === "/v1/auth/register") {
+      const body = await readJsonBody(request)
+      const session = await authService.getSession(request)
+      sendJson(response, 201, await authService.registerAccount(body, session))
+      return
+    }
+
+    if (request.method === "POST" && url.pathname === "/v1/auth/login") {
+      const body = await readJsonBody(request)
+      sendJson(response, 200, await authService.loginAccount(body))
+      return
+    }
+
     if (request.method === "POST" && url.pathname === "/v1/sync/push") {
       const session = await authService.requireSession(request)
 
@@ -94,7 +107,12 @@ const server = createServer(async (request, response) => {
 
     sendJson(response, 404, { error: "Route not found" })
   } catch (error) {
-    sendJson(response, 500, {
+    const statusCode =
+      error && typeof error === "object" && "statusCode" in error
+        ? Number(error.statusCode) || 500
+        : 500
+
+    sendJson(response, statusCode, {
       error: error instanceof Error ? error.message : "Unexpected server error",
     })
   }

@@ -24,8 +24,10 @@ export type Dictionary = {
     expandAll: string
     goToToday: string
     increase: string
+    login: string
     pause: string
     reset: string
+    register: string
     renameCustomExercise: string
     save: string
     search: string
@@ -38,7 +40,12 @@ export type Dictionary = {
   labels: {
     account: string
     accountConnected: string
+    accountGuestConnected: string
     accountLocalOnly: string
+    authEmail: string
+    authPassword: string
+    authRegisteredHint: string
+    authRegisterHint: string
     allMuscleGroups: string
     autoRestTimer: string
     autoRestTimerHelp: string

@@ -6,7 +6,7 @@ export type RestTimerMode = "stopwatch" | "timer"
 
 export type DateState = "past" | "today" | "future"
 
-export type AccountKind = "guest"
+export type AccountKind = "guest" | "account"
 
 export type SyncStatus = "pending" | "synced" | "conflict"
 
@@ -84,6 +84,7 @@ export type AccountSession = {
   id: "local"
   userId: string
   kind: AccountKind
+  email?: string
   accessToken: string
   tokenType: "Bearer"
   expiresAt: string

@@ -4,8 +4,10 @@ import { useCallback, useEffect, useState } from "react"
 
 import {
   createGuestAccount as requestGuestAccount,
+  loginAccount as requestLoginAccount,
   pullSyncChanges,
   pushSyncChanges,
+  registerAccount as requestRegisterAccount,
   type SyncChange,
   type SyncEntityType,
 } from "@/shared/api/liftbook-api"
@@ -585,6 +587,65 @@ export function useDayScreenData(date: string) {
     await load()
   }, [load, state.settings?.locale])
 
+  const registerAccount = useCallback(
+    async (email: string, password: string) => {
+      const locale = state.settings?.locale ?? "en"
+      const currentSession = await db.accountSessions.get("local")
+      const response = await requestRegisterAccount({
+        accessToken: currentSession?.accessToken ?? null,
+        email,
+        locale,
+        password,
+      })
+      const now = new Date().toISOString()
+
+      await db.accountSessions.put({
+        id: "local",
+        userId: response.user.id,
+        kind: response.user.kind,
+        email: response.user.email,
+        accessToken: response.session.accessToken,
+        tokenType: response.session.tokenType,
+        expiresAt: response.session.expiresAt,
+        syncCursor:
+          currentSession?.userId === response.user.id
+            ? currentSession.syncCursor ?? null
+            : response.sync.cursor,
+        createdAt: response.user.createdAt,
+        updatedAt: now,
+      })
+
+      await load()
+    },
+    [load, state.settings?.locale]
+  )
+
+  const loginAccount = useCallback(
+    async (email: string, password: string) => {
+      const response = await requestLoginAccount({
+        email,
+        password,
+      })
+      const now = new Date().toISOString()
+
+      await db.accountSessions.put({
+        id: "local",
+        userId: response.user.id,
+        kind: response.user.kind,
+        email: response.user.email,
+        accessToken: response.session.accessToken,
+        tokenType: response.session.tokenType,
+        expiresAt: response.session.expiresAt,
+        syncCursor: response.sync.cursor,
+        createdAt: response.user.createdAt,
+        updatedAt: now,
+      })
+
+      await load()
+    },
+    [load]
+  )
+
   const syncPendingChanges = useCallback(async () => {
     const accountSession = await db.accountSessions.get("local")
 
@@ -615,6 +676,8 @@ export function useDayScreenData(date: string) {
     addCustomExercise,
     addSet,
     createGuestAccount,
+    loginAccount,
+    registerAccount,
     deleteCustomExercise,
     deleteExercise,
     deleteSet,

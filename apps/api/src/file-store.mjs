@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { dirname, resolve } from "node:path"
+import { randomUUID } from "node:crypto"
 
 const defaultStoreState = {
   version: 1,
@@ -49,9 +50,10 @@ export async function createFileStoreFromPath(filePath) {
         clientId,
         locale,
         createdAt: now,
+        updatedAt: now,
       }
       const session = {
-        id: `session_${userId}`,
+        id: `session_${randomUUID()}`,
         userId,
         accessToken,
         tokenType: "Bearer",
@@ -79,11 +81,141 @@ export async function createFileStoreFromPath(filePath) {
         session,
       }))
     },
+    async registerAccount({
+      accessToken,
+      clientId,
+      email,
+      existingUserId,
+      expiresAt,
+      locale,
+      now,
+      passwordHash,
+      passwordSalt,
+      userId,
+    }) {
+      if (findUserByEmail(state.users, email)) {
+        throw new Error("Email is already registered")
+      }
+
+      const nextUser =
+        existingUserId
+          ? state.users.find((user) => user.id === existingUserId)
+          : null
+
+      const user = nextUser
+        ? {
+            ...nextUser,
+            kind: "account",
+            email,
+            locale,
+            passwordHash,
+            passwordSalt,
+            updatedAt: now,
+          }
+        : {
+            id: userId,
+            kind: "account",
+            email,
+            locale,
+            passwordHash,
+            passwordSalt,
+            createdAt: now,
+            updatedAt: now,
+          }
+      const session = {
+        id: `session_${randomUUID()}`,
+        userId: user.id,
+        accessToken,
+        tokenType: "Bearer",
+        expiresAt,
+        createdAt: now,
+        updatedAt: now,
+      }
+
+      state = {
+        ...state,
+        users: nextUser
+          ? state.users.map((currentUser) =>
+              currentUser.id === user.id ? user : currentUser
+            )
+          : [...state.users, user],
+        devices: clientId
+          ? upsertDevice(state.devices, {
+              userId: user.id,
+              clientId,
+              createdAt: now,
+              updatedAt: now,
+            })
+          : state.devices,
+        sessions: [...state.sessions, session],
+      }
+
+      return queuePersist().then(() => ({
+        user: toPublicUser(user),
+        session,
+      }))
+    },
+    async getUserById(userId) {
+      const user = state.users.find((currentUser) => currentUser.id === userId)
+      return user ?? null
+    },
+    async getAccountByEmail(email) {
+      return findUserByEmail(state.users, email) ?? null
+    },
     async getSessionByAccessToken(accessToken) {
       return (
         state.sessions.find((session) => session.accessToken === accessToken) ??
         null
       )
+    },
+    async createSessionForUser({
+      accessToken,
+      clientId,
+      expiresAt,
+      now,
+      userId,
+    }) {
+      const user = state.users.find((currentUser) => currentUser.id === userId)
+
+      if (!user) {
+        throw new Error("User not found")
+      }
+
+      const session = {
+        id: `session_${randomUUID()}`,
+        userId: user.id,
+        accessToken,
+        tokenType: "Bearer",
+        expiresAt,
+        createdAt: now,
+        updatedAt: now,
+      }
+
+      state = {
+        ...state,
+        users: state.users.map((currentUser) =>
+          currentUser.id === user.id
+            ? {
+                ...currentUser,
+                updatedAt: now,
+              }
+            : currentUser
+        ),
+        devices: clientId
+          ? upsertDevice(state.devices, {
+              userId: user.id,
+              clientId,
+              createdAt: now,
+              updatedAt: now,
+            })
+          : state.devices,
+        sessions: [...state.sessions, session],
+      }
+
+      return queuePersist().then(() => ({
+        user: toPublicUser(user),
+        session,
+      }))
     },
     async touchSession({ accessToken, now }) {
       const nextSessions = state.sessions.map((session) =>
@@ -331,4 +463,25 @@ function mergeSyncEvents(existingEvents, acceptedEvents) {
   const knownIds = new Set(existingEvents.map((event) => event.id))
   const newEvents = acceptedEvents.filter((event) => !knownIds.has(event.id))
   return [...existingEvents, ...newEvents]
+}
+
+function findUserByEmail(users, email) {
+  return (
+    users.find(
+      (user) =>
+        typeof user.email === "string" &&
+        user.email.toLowerCase() === email.toLowerCase()
+    ) ?? null
+  )
+}
+
+function toPublicUser(user) {
+  return {
+    id: user.id,
+    kind: user.kind,
+    email: user.email,
+    locale: user.locale,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+  }
 }

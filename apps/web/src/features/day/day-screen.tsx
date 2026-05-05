@@ -51,6 +51,8 @@ export function DayScreen() {
   const timerAlertPlayedRef = useRef(false)
   const [accountError, setAccountError] = useState(false)
   const [accountConnecting, setAccountConnecting] = useState(false)
+  const [authSubmitting, setAuthSubmitting] = useState(false)
+  const [authError, setAuthError] = useState<string | null>(null)
   const [syncError, setSyncError] = useState(false)
   const [syncing, setSyncing] = useState(false)
   const [syncMode, setSyncMode] = useState<"auto" | "manual" | null>(null)
@@ -67,8 +69,10 @@ export function DayScreen() {
     dateMuscleGroups,
     exerciseEntries,
     exercisesById,
+    loginAccount,
     locale,
     loading,
+    registerAccount,
     renameCustomExercise,
     settings,
     syncSummary,
@@ -259,6 +263,36 @@ export function DayScreen() {
       setAccountError(true)
     } finally {
       setAccountConnecting(false)
+    }
+  }
+
+  async function handleRegisterAccount(email: string, password: string) {
+    setAuthSubmitting(true)
+    setAuthError(null)
+
+    try {
+      await registerAccount(email, password)
+    } catch (error) {
+      setAuthError(
+        error instanceof Error ? error.message : dictionary.labels.connectionError
+      )
+    } finally {
+      setAuthSubmitting(false)
+    }
+  }
+
+  async function handleLoginAccount(email: string, password: string) {
+    setAuthSubmitting(true)
+    setAuthError(null)
+
+    try {
+      await loginAccount(email, password)
+    } catch (error) {
+      setAuthError(
+        error instanceof Error ? error.message : dictionary.labels.connectionError
+      )
+    } finally {
+      setAuthSubmitting(false)
     }
   }
 
@@ -460,6 +494,8 @@ export function DayScreen() {
           accountConnecting={accountConnecting}
           accountError={accountError}
           accountSession={accountSession}
+          authError={authError}
+          authSubmitting={authSubmitting}
           dictionary={dictionary}
           open={settingsOpen}
           settings={settings}
@@ -469,7 +505,9 @@ export function DayScreen() {
           syncError={syncError}
           syncing={syncing}
           onCreateGuestAccount={handleCreateGuestAccount}
+          onLoginAccount={handleLoginAccount}
           onOpenChange={setSettingsOpen}
+          onRegisterAccount={handleRegisterAccount}
           onSyncNow={handleSyncNow}
           onUpdateSettings={updateSettings}
         />
