@@ -33,6 +33,7 @@ type DayScreenData = {
   exerciseEntries: ExerciseEntry[]
   exercisesById: Record<string, Exercise>
   loading: boolean
+  loadError: string | null
   syncSummary: {
     pending: number
     synced: number
@@ -56,6 +57,7 @@ export function useDayScreenData(date: string) {
     exerciseEntries: [],
     exercisesById: {},
     loading: true,
+    loadError: null,
     syncSummary: {
       pending: 0,
       synced: 0,
@@ -74,101 +76,117 @@ export function useDayScreenData(date: string) {
   })
 
   const load = useCallback(async () => {
-    await seedLocalDatabase()
-    await normalizeLegacyConflicts()
+    try {
+      await seedLocalDatabase()
+      await normalizeLegacyConflicts()
 
-    const previousDate = shiftDateKey(date, -1)
-    const nextDate = shiftDateKey(date, 1)
+      const previousDate = shiftDateKey(date, -1)
+      const nextDate = shiftDateKey(date, 1)
 
-    const [
-      accountSession,
-      settings,
-      currentDay,
-      currentEntries,
-      previousDay,
-      previousEntries,
-      nextDay,
-      nextEntries,
-      allEntries,
-      exercises,
-    ] = await Promise.all([
-      db.accountSessions.get("local"),
-      db.userSettings.get("local"),
-      db.workoutDays.where("date").equals(date).first(),
-      db.exerciseEntries.where("workoutDate").equals(date).sortBy("position"),
-      db.workoutDays.where("date").equals(previousDate).first(),
-      db.exerciseEntries.where("workoutDate").equals(previousDate).sortBy("position"),
-      db.workoutDays.where("date").equals(nextDate).first(),
-      db.exerciseEntries.where("workoutDate").equals(nextDate).sortBy("position"),
-      db.exerciseEntries.toArray(),
-      db.exercises.toArray(),
-    ])
-    const syncSummary = await getSyncSummary()
-    const normalizedSettings = settings
-      ? normalizeStoredUserSettings(settings)
-      : null
+      const [
+        accountSession,
+        settings,
+        currentDay,
+        currentEntries,
+        previousDay,
+        previousEntries,
+        nextDay,
+        nextEntries,
+        allEntries,
+        exercises,
+      ] = await Promise.all([
+        db.accountSessions.get("local"),
+        db.userSettings.get("local"),
+        db.workoutDays.where("date").equals(date).first(),
+        db.exerciseEntries.where("workoutDate").equals(date).sortBy("position"),
+        db.workoutDays.where("date").equals(previousDate).first(),
+        db.exerciseEntries
+          .where("workoutDate")
+          .equals(previousDate)
+          .sortBy("position"),
+        db.workoutDays.where("date").equals(nextDate).first(),
+        db.exerciseEntries.where("workoutDate").equals(nextDate).sortBy("position"),
+        db.exerciseEntries.toArray(),
+        db.exercises.toArray(),
+      ])
+      const syncSummary = await getSyncSummary()
+      const normalizedSettings = settings
+        ? normalizeStoredUserSettings(settings)
+        : null
 
-    if (settings && needsUserSettingsNormalization(settings)) {
-      await db.userSettings.put(normalizedSettings as UserSettings)
+      if (settings && needsUserSettingsNormalization(settings)) {
+        await db.userSettings.put(normalizedSettings as UserSettings)
+      }
+
+      const buildSnapshot = (
+        snapshotDate: string,
+        workoutDay: WorkoutDay | undefined,
+        entries: ExerciseEntry[]
+      ): DaySnapshot => ({
+        date: snapshotDate,
+        workoutDay: workoutDay && !workoutDay.deletedAt ? workoutDay : null,
+        exerciseEntries: entries
+          .filter((entry) => !entry.deletedAt)
+          .map((entry) => ({
+            ...entry,
+            setEntries: entry.setEntries.filter((setEntry) => !setEntry.deletedAt),
+          })),
+      })
+
+      const exercisesById = Object.fromEntries(
+        exercises.map((exercise) => [exercise.id, exercise])
+      )
+      const dateMuscleGroups = allEntries.reduce<Record<string, MuscleGroupId[]>>(
+        (summary, entry) => {
+          if (entry.deletedAt) {
+            return summary
+          }
+
+          const exercise = exercisesById[entry.exerciseId]
+          if (!exercise || exercise.deletedAt) {
+            return summary
+          }
+
+          const current = new Set(summary[entry.workoutDate] ?? [])
+          for (const muscleGroupId of exercise.muscleGroupIds) {
+            current.add(muscleGroupId)
+          }
+          summary[entry.workoutDate] = Array.from(current)
+
+          return summary
+        },
+        {}
+      )
+
+      setState({
+        accountSession: accountSession ?? null,
+        settings: normalizedSettings ?? null,
+        workoutDay: buildSnapshot(date, currentDay, currentEntries).workoutDay,
+        exerciseEntries: buildSnapshot(date, currentDay, currentEntries)
+          .exerciseEntries,
+        exercisesById,
+        loading: false,
+        loadError: null,
+        syncSummary,
+        previousDay: buildSnapshot(previousDate, previousDay, previousEntries),
+        nextDay: buildSnapshot(nextDate, nextDay, nextEntries),
+        dateMuscleGroups,
+      })
+    } catch (error) {
+      console.error("Failed to load day screen", error)
+
+      setState((currentState) => ({
+        ...currentState,
+        loading: false,
+        loadError:
+          error instanceof Error
+            ? error.message
+            : "Failed to initialize local data",
+      }))
     }
-
-    const buildSnapshot = (
-      snapshotDate: string,
-      workoutDay: WorkoutDay | undefined,
-      entries: ExerciseEntry[]
-    ): DaySnapshot => ({
-      date: snapshotDate,
-      workoutDay: workoutDay && !workoutDay.deletedAt ? workoutDay : null,
-      exerciseEntries: entries
-        .filter((entry) => !entry.deletedAt)
-        .map((entry) => ({
-          ...entry,
-          setEntries: entry.setEntries.filter((setEntry) => !setEntry.deletedAt),
-        })),
-    })
-
-    const exercisesById = Object.fromEntries(
-      exercises.map((exercise) => [exercise.id, exercise])
-    )
-    const dateMuscleGroups = allEntries.reduce<Record<string, MuscleGroupId[]>>(
-      (summary, entry) => {
-        if (entry.deletedAt) {
-          return summary
-        }
-
-        const exercise = exercisesById[entry.exerciseId]
-        if (!exercise || exercise.deletedAt) {
-          return summary
-        }
-
-        const current = new Set(summary[entry.workoutDate] ?? [])
-        for (const muscleGroupId of exercise.muscleGroupIds) {
-          current.add(muscleGroupId)
-        }
-        summary[entry.workoutDate] = Array.from(current)
-
-        return summary
-      },
-      {}
-    )
-
-    setState({
-      accountSession: accountSession ?? null,
-      settings: normalizedSettings ?? null,
-      workoutDay: buildSnapshot(date, currentDay, currentEntries).workoutDay,
-      exerciseEntries: buildSnapshot(date, currentDay, currentEntries).exerciseEntries,
-      exercisesById,
-      loading: false,
-      syncSummary,
-      previousDay: buildSnapshot(previousDate, previousDay, previousEntries),
-      nextDay: buildSnapshot(nextDate, nextDay, nextEntries),
-      dateMuscleGroups,
-    })
   }, [date])
 
   useEffect(() => {
-    // Dexie is the local offline data source for this client-only screen.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load()
   }, [load])
 

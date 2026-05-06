@@ -19,6 +19,7 @@ type ExerciseListProps = {
   dictionary: Dictionary
   exerciseEntries: ExerciseEntry[]
   exercisesById: Record<string, Exercise>
+  loadError: string | null
   loading: boolean
   locale: Locale
   onOpenExercisePicker: () => void
@@ -42,6 +43,7 @@ export const ExerciseList = memo(function ExerciseList({
   dictionary,
   exerciseEntries,
   exercisesById,
+  loadError,
   loading,
   locale,
   onOpenExercisePicker,
@@ -61,7 +63,13 @@ export const ExerciseList = memo(function ExerciseList({
         </div>
       ) : null}
 
-      {!loading && exerciseEntries.length === 0 ? (
+      {!loading && loadError ? (
+        <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive">
+          {loadError}
+        </div>
+      ) : null}
+
+      {!loading && !loadError && exerciseEntries.length === 0 ? (
         <div className="flex min-h-[52svh] flex-col items-center justify-center gap-4 px-5 py-8 text-center">
           <div className="relative h-36 w-full max-w-[220px] dark:hidden">
             <Image

@@ -75,6 +75,7 @@ export function DayScreen() {
     exerciseEntries,
     exercisesById,
     loginAccount,
+    loadError,
     locale,
     loading,
     logoutAccount,
@@ -536,6 +537,7 @@ export function DayScreen() {
               dictionary={dictionary}
               exerciseEntries={exerciseEntries}
               exercisesById={exercisesById}
+              loadError={loadError}
               loading={loading}
               locale={locale}
               onOpenExercisePicker={() => setExercisePickerOpen(true)}
