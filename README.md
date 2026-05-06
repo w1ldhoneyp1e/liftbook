@@ -26,4 +26,4 @@ The API skeleton lives in `apps/api`.
 
 - [Релиз на VPS](docs/ru/deploy-release.md)
 - [План MVP 2](docs/ru/mvp2-plan.md)
-- [Bugs & feature requests MVP 2](docs/ru/todos/bugs-and-feature-requests-mvp2.md)
+- [Email confirmation](docs/ru/email-confirmation-plan.md)
