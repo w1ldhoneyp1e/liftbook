@@ -13,8 +13,8 @@ export const metadata: Metadata = {
     title: "Liftbook",
   },
   icons: {
-    icon: "/favicon.png",
-    apple: "/favicon.png",
+    icon: "/icon.png",
+    apple: "/apple-icon.png",
     shortcut: "/favicon.png",
   },
 }

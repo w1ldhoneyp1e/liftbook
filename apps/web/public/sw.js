@@ -1,5 +1,5 @@
-const CACHE_NAME = "liftbook-app-shell-v2"
-const APP_SHELL_URLS = ["/", "/manifest.webmanifest", "/favicon.png"]
+const CACHE_NAME = "liftbook-app-shell-v3"
+const APP_SHELL_URLS = ["/", "/manifest.webmanifest", "/favicon.png", "/icon.png", "/apple-icon.png"]
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
