@@ -2,6 +2,8 @@ import {
   Drawer,
   DrawerContent,
   DrawerDescription,
+  DrawerHandle,
+  DrawerHandleSection,
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer"
@@ -68,14 +70,19 @@ export function SettingsDrawer({
   const isRegisteredAccount = accountSession?.kind === "account"
 
   return (
-    <Drawer direction="top" open={open} onOpenChange={onOpenChange}>
+    <Drawer
+      direction="top"
+      handleOnly
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DrawerContent className="mx-auto max-h-[92svh] max-w-md rounded-b-2xl bg-background/98 backdrop-blur">
         <DrawerHeader className="text-left">
           <DrawerTitle>{dictionary.actions.settings}</DrawerTitle>
           <DrawerDescription>Liftbook</DrawerDescription>
         </DrawerHeader>
 
-        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-4 pb-4">
           <section className="space-y-2">
             <Label className="text-sm font-medium">
               {dictionary.labels.account}
@@ -193,6 +200,9 @@ export function SettingsDrawer({
             </div>
           </section>
         </div>
+        <DrawerHandleSection placement="bottom">
+          <DrawerHandle className="flex h-8 w-full max-w-[140px] items-center justify-center bg-transparent after:pointer-events-none after:block after:h-1.5 after:w-[120px] after:rounded-full after:bg-muted-foreground/35 after:content-['']" />
+        </DrawerHandleSection>
       </DrawerContent>
     </Drawer>
   )
