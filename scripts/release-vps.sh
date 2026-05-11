@@ -147,8 +147,8 @@ rotate_backups() {
 }
 
 build_images() {
-  log "Building web and api images"
-  "${COMPOSE[@]}" build api web
+  log "Building api, web and migrate images"
+  "${COMPOSE[@]}" build api web migrate
 }
 
 run_migrations() {
