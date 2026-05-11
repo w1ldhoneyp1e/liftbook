@@ -201,7 +201,7 @@ export function SettingsDrawer({
           </section>
         </div>
         <DrawerHandleSection placement="bottom">
-          <DrawerHandle className="flex h-8 w-full max-w-[140px] items-center justify-center bg-transparent after:pointer-events-none after:block after:h-1.5 after:w-[120px] after:rounded-full after:bg-muted-foreground/35 after:content-['']" />
+          <DrawerHandle className="flex h-8 w-full max-w-[140px] items-center justify-center bg-transparent [&>[data-vaul-handle-hitarea]]:after:pointer-events-none [&>[data-vaul-handle-hitarea]]:after:block [&>[data-vaul-handle-hitarea]]:after:h-1.5 [&>[data-vaul-handle-hitarea]]:after:w-[120px] [&>[data-vaul-handle-hitarea]]:after:rounded-full [&>[data-vaul-handle-hitarea]]:after:bg-muted-foreground/35 [&>[data-vaul-handle-hitarea]]:after:content-['']" />
         </DrawerHandleSection>
       </DrawerContent>
     </Drawer>

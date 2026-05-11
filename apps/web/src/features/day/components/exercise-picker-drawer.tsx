@@ -101,7 +101,7 @@ export function ExercisePickerDrawer({
     >
       <DrawerContent className="mx-auto max-h-[92svh] max-w-md overflow-hidden rounded-t-xl bg-background/98 backdrop-blur supports-[height:100dvh]:max-h-[92dvh]">
         <DrawerHandleSection placement="top">
-          <DrawerHandle className="flex h-8 w-full max-w-[120px] items-center justify-center bg-transparent after:pointer-events-none after:block after:h-1 after:w-[100px] after:rounded-full after:bg-muted-foreground/30 after:content-['']" />
+          <DrawerHandle className="flex h-8 w-full max-w-[120px] items-center justify-center bg-transparent [&>[data-vaul-handle-hitarea]]:after:pointer-events-none [&>[data-vaul-handle-hitarea]]:after:block [&>[data-vaul-handle-hitarea]]:after:h-1 [&>[data-vaul-handle-hitarea]]:after:w-[100px] [&>[data-vaul-handle-hitarea]]:after:rounded-full [&>[data-vaul-handle-hitarea]]:after:bg-muted-foreground/30 [&>[data-vaul-handle-hitarea]]:after:content-['']" />
         </DrawerHandleSection>
         <DrawerHeader className="text-left">
           <DrawerTitle>{dictionary.actions.chooseExercise}</DrawerTitle>
