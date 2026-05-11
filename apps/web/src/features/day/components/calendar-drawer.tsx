@@ -67,7 +67,7 @@ export function CalendarDrawer({
           />
         </div>
         <DrawerHandleSection placement="bottom">
-          <DrawerHandle className="flex h-8 w-full max-w-[140px] items-center justify-center bg-transparent after:pointer-events-none after:block after:h-1.5" />
+          <DrawerHandle className="flex h-8 w-full max-w-[140px] items-center justify-center bg-transparent" />
         </DrawerHandleSection>
       </DrawerContent>
     </Drawer>
