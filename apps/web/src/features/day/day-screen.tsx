@@ -406,9 +406,13 @@ export function DayScreen() {
 
   async function handleAddCustomExercise(
     name: string,
-    muscleGroupId: MuscleGroupId
+    muscleGroupIds: MuscleGroupId[]
   ) {
-    const exerciseEntryId = await addCustomExercise(name, muscleGroupId, locale)
+    const exerciseEntryId = await addCustomExercise(
+      name,
+      muscleGroupIds,
+      locale
+    )
     setHighlightedExerciseEntryId(exerciseEntryId ?? null)
     setExercisePickerOpen(false)
   }
@@ -420,7 +424,7 @@ export function DayScreen() {
 
     const timeoutId = window.setTimeout(() => {
       setHighlightedExerciseEntryId(null)
-    }, 1800)
+    }, 3200)
 
     return () => window.clearTimeout(timeoutId)
   }, [highlightedExerciseEntryId])

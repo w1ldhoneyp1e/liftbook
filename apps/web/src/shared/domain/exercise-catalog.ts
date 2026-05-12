@@ -81,7 +81,8 @@ export const starterExercises: Exercise[] = [
   exercise("donkey_calf_raise", "Donkey calf raise", "Подъемы на носки в наклоне", ["legs"]),
   exercise("tibialis_raise", "Tibialis raise", "Подъемы носков на голень", ["legs"]),
 
-  exercise("shoulder_press", "Shoulder press", "Жим на плечи", ["shoulders", "triceps"]),
+  exercise("dumbbell_shoulder_press", "Dumbbell shoulder press", "Жим гантелей на плечи", ["shoulders", "triceps"]),
+  exercise("military_press", "Military press", "Армейский жим", ["shoulders", "triceps", "core"]),
   exercise("dumbbell_lateral_raise", "Dumbbell lateral raise", "Махи гантелями в стороны", ["shoulders"]),
   exercise("rear_delt_fly", "Rear delt fly", "Разведение на заднюю дельту", ["shoulders"]),
   exercise("front_raise", "Front raise", "Подъем перед собой", ["shoulders"]),

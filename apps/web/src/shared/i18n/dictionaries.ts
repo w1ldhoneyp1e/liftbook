@@ -14,6 +14,7 @@ export type Dictionary = {
     keepLocalVersion: string
     chooseExercise: string
     createCustomExercise: string
+    createCustomExerciseConfirm: string
     collapse: string
     collapseAll: string
     deleteExercise: string
@@ -48,6 +49,8 @@ export type Dictionary = {
     authRegisteredHint: string
     authRegisterHint: string
     allMuscleGroups: string
+    customExerciseCategories: string
+    customExerciseName: string
     autoRestTimer: string
     autoRestTimerHelp: string
     connectionError: string

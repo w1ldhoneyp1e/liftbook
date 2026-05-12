@@ -354,7 +354,12 @@ export function useDayScreenData(date: string) {
   )
 
   const addExercise = useCallback(
-    async (exerciseId: string) => {
+    async (
+      exerciseId: string,
+      options: {
+        insertAtStart?: boolean
+      } = {}
+    ) => {
       const [settings, existingDay, entriesForDate, previousEntries] =
         await Promise.all([
           db.userSettings.get("local"),
@@ -368,6 +373,7 @@ export function useDayScreenData(date: string) {
         ])
 
       const now = new Date().toISOString()
+      const insertAtStart = options.insertAtStart === true
       const workoutDay =
         existingDay ??
         ({
@@ -401,7 +407,7 @@ export function useDayScreenData(date: string) {
         id: createLocalId("entry"),
         exerciseId,
         workoutDate: date,
-        position: entriesForDate.length,
+        position: insertAtStart ? 0 : entriesForDate.length,
         setEntries,
         previousResultSourceId: previousResult?.id,
         createdAt: now,
@@ -416,6 +422,18 @@ export function useDayScreenData(date: string) {
           syncStatus: "pending",
           updatedAt: now,
         })
+
+        if (insertAtStart && entriesForDate.length > 0) {
+          await db.exerciseEntries.bulkPut(
+            entriesForDate.map((entry, index) => ({
+              ...entry,
+              position: index + 1,
+              syncStatus: "pending" as const,
+              updatedAt: now,
+            }))
+          )
+        }
+
         await db.exerciseEntries.put(exerciseEntry)
       })
 
@@ -426,12 +444,19 @@ export function useDayScreenData(date: string) {
   )
 
   const addCustomExercise = useCallback(
-    async (name: string, muscleGroupId: MuscleGroupId, locale: Locale) => {
+    async (
+      name: string,
+      muscleGroupIds: MuscleGroupId[],
+      locale: Locale
+    ) => {
       const trimmedName = name.trim()
 
       if (!trimmedName) {
         return
       }
+
+      const nextMuscleGroupIds =
+        muscleGroupIds.length > 0 ? muscleGroupIds : (["other"] as MuscleGroupId[])
 
       const exerciseId = createLocalId("exercise")
       const now = new Date().toISOString()
@@ -443,7 +468,7 @@ export function useDayScreenData(date: string) {
           ru: trimmedName,
           [locale]: trimmedName,
         },
-        muscleGroupIds: [muscleGroupId],
+        muscleGroupIds: nextMuscleGroupIds,
         trackingMode: "weight_reps",
         builtIn: false,
         createdAt: now,
@@ -451,7 +476,7 @@ export function useDayScreenData(date: string) {
         syncStatus: "pending",
       })
 
-      return addExercise(exerciseId)
+      return addExercise(exerciseId, { insertAtStart: true })
     },
     [addExercise]
   )
