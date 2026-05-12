@@ -1,6 +1,9 @@
 import { createHash, randomUUID, randomBytes, scryptSync, timingSafeEqual } from "node:crypto"
 
-export function createAuthService(store) {
+export function createAuthService(store, options = {}) {
+  const mailService = options.mailService
+  const appOrigin = options.appOrigin ?? null
+
   return {
     async createGuestAccount(body) {
       const now = new Date().toISOString()
@@ -30,7 +33,7 @@ export function createAuthService(store) {
         },
       }
     },
-    async registerAccount(body, existingSession) {
+    async registerAccount(body, existingSession, requestOrigin) {
       const email = normalizeEmail(body.email)
       const password = typeof body.password === "string" ? body.password : ""
       const clientId = typeof body.clientId === "string" ? body.clientId : null
@@ -96,6 +99,15 @@ export function createAuthService(store) {
         throw error
       }
 
+      const verification = await issueVerificationEmail({
+        appOrigin,
+        locale,
+        mailService,
+        requestOrigin,
+        store,
+        user,
+      })
+
       return {
         user: toUserPayload(user),
         session: {
@@ -103,6 +115,7 @@ export function createAuthService(store) {
           tokenType: session.tokenType,
           expiresAt: session.expiresAt,
         },
+        verificationEmailSent: verification.sent,
         sync: {
           cursor: null,
         },
@@ -148,6 +161,67 @@ export function createAuthService(store) {
         sync: {
           cursor: null,
         },
+      }
+    },
+    async resendVerificationEmail(session, requestOrigin) {
+      if (!session) {
+        throw createHttpError(401, "Unauthorized")
+      }
+
+      const user = await store.getUserById(session.userId)
+
+      if (!user?.email) {
+        throw createHttpError(400, "Email account is required")
+      }
+
+      if (user.emailVerifiedAt) {
+        return { sent: false, alreadyVerified: true }
+      }
+
+      const latestToken = await store.getLatestEmailVerificationTokenForUser(user.id)
+
+      if (latestToken) {
+        const elapsedMs =
+          Date.now() - Date.parse(latestToken.createdAt)
+        if (Number.isFinite(elapsedMs) && elapsedMs < 60_000) {
+          throw createHttpError(429, "Verification email was sent recently")
+        }
+      }
+
+      const verification = await issueVerificationEmail({
+        appOrigin,
+        locale: user.locale ?? "en",
+        mailService,
+        requestOrigin,
+        store,
+        user,
+      })
+
+      if (!verification.sent) {
+        throw createHttpError(502, "Failed to send verification email")
+      }
+
+      return { sent: true, alreadyVerified: false }
+    },
+    async verifyEmail(body) {
+      const token = typeof body.token === "string" ? body.token.trim() : ""
+
+      if (!token) {
+        throw createHttpError(400, "Token is required")
+      }
+
+      const user = await store.verifyEmailByTokenHash({
+        now: new Date().toISOString(),
+        tokenHash: hashVerificationToken(token),
+      })
+
+      if (!user) {
+        throw createHttpError(400, "Verification token is invalid or expired")
+      }
+
+      return {
+        user: toUserPayload(user),
+        verified: true,
       }
     },
     async getSession(request) {
@@ -207,6 +281,10 @@ function hashPassword(password, salt) {
   return scryptSync(password, salt, 64).toString("hex")
 }
 
+function hashVerificationToken(token) {
+  return createHash("sha256").update(token).digest("hex")
+}
+
 function verifyPassword(password, salt, expectedHash) {
   const actualHash = hashPassword(password, salt)
 
@@ -237,6 +315,50 @@ function toUserPayload(user) {
     id: user.id,
     kind: user.kind,
     email: user.email,
+    emailVerified: Boolean(user.emailVerifiedAt),
     createdAt: user.createdAt,
   }
+}
+
+async function issueVerificationEmail({
+  appOrigin,
+  locale,
+  mailService,
+  requestOrigin,
+  store,
+  user,
+}) {
+  if (!user.email || !mailService) {
+    return { sent: false }
+  }
+
+  const rawToken = randomBytes(32).toString("hex")
+  const now = new Date()
+  const verifyUrl = `${resolveAppOrigin(appOrigin, requestOrigin)}/auth/verify-email?token=${rawToken}`
+
+  await store.createEmailVerificationToken({
+    id: `verify_${randomUUID()}`,
+    userId: user.id,
+    tokenHash: hashVerificationToken(rawToken),
+    email: user.email,
+    expiresAt: addDays(now, 2).toISOString(),
+    usedAt: null,
+    createdAt: now.toISOString(),
+  })
+
+  try {
+    await mailService.sendVerificationEmail({
+      email: user.email,
+      locale,
+      verifyUrl,
+    })
+    return { sent: true }
+  } catch (error) {
+    console.error("Failed to send verification email", error)
+    return { sent: false }
+  }
+}
+
+function resolveAppOrigin(appOrigin, requestOrigin) {
+  return appOrigin ?? requestOrigin
 }

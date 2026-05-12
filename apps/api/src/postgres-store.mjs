@@ -148,6 +148,7 @@ export async function createPostgresStore(options) {
                  password_hash = $3,
                  password_salt = $4,
                  locale = $5,
+                 email_verified_at = null,
                  updated_at = $6
              where id = $1`,
             [
@@ -166,11 +167,12 @@ export async function createPostgresStore(options) {
                kind,
                locale,
                email,
+               email_verified_at,
                password_hash,
                password_salt,
                created_at,
                updated_at
-             ) values ($1, 'account', $2, $3, $4, $5, $6, $7)`,
+             ) values ($1, 'account', $2, $3, null, $4, $5, $6, $7)`,
             [userId, locale, normalizedEmail, passwordHash, passwordSalt, now, now]
           )
         }
@@ -212,7 +214,7 @@ export async function createPostgresStore(options) {
     },
     async getAccountByEmail(email) {
       const result = await pool.query(
-        `select id, kind, locale, email, password_hash, password_salt, created_at, updated_at
+        `select id, kind, locale, email, email_verified_at, password_hash, password_salt, created_at, updated_at
          from users
          where lower(email) = lower($1)
          limit 1`,
@@ -224,6 +226,82 @@ export async function createPostgresStore(options) {
       }
 
       return mapUserRow(result.rows[0])
+    },
+    async createEmailVerificationToken(token) {
+      await pool.query(
+        `insert into email_verification_tokens (
+           id,
+           user_id,
+           token_hash,
+           email,
+           expires_at,
+           used_at,
+           created_at
+         ) values ($1, $2, $3, $4, $5, $6, $7)`,
+        [
+          token.id,
+          token.userId,
+          token.tokenHash,
+          token.email,
+          token.expiresAt,
+          token.usedAt ?? null,
+          token.createdAt,
+        ]
+      )
+    },
+    async getLatestEmailVerificationTokenForUser(userId) {
+      const result = await pool.query(
+        `select id, user_id, token_hash, email, expires_at, used_at, created_at
+         from email_verification_tokens
+         where user_id = $1
+         order by created_at desc
+         limit 1`,
+        [userId]
+      )
+
+      if (result.rows.length === 0) {
+        return null
+      }
+
+      return mapEmailVerificationTokenRow(result.rows[0])
+    },
+    async verifyEmailByTokenHash({ tokenHash, now }) {
+      return withTransaction(pool, async (client) => {
+        const tokenResult = await client.query(
+          `select id, user_id, token_hash, email, expires_at, used_at, created_at
+           from email_verification_tokens
+           where token_hash = $1
+           limit 1`,
+          [tokenHash]
+        )
+
+        if (tokenResult.rows.length === 0) {
+          return null
+        }
+
+        const token = mapEmailVerificationTokenRow(tokenResult.rows[0])
+
+        if (token.usedAt || token.expiresAt <= now) {
+          return null
+        }
+
+        await client.query(
+          `update users
+           set email_verified_at = $2,
+               updated_at = $2
+           where id = $1`,
+          [token.userId, now]
+        )
+
+        await client.query(
+          `update email_verification_tokens
+           set used_at = coalesce(used_at, $2)
+           where user_id = $1`,
+          [token.userId, now]
+        )
+
+        return getUserById(client, token.userId)
+      })
     },
     async getSessionByAccessToken(accessToken) {
       const result = await pool.query(
@@ -538,7 +616,7 @@ async function withTransaction(pool, callback) {
 
 async function getUserById(pool, userId) {
   const result = await pool.query(
-    `select id, kind, locale, email, password_hash, password_salt, created_at, updated_at
+    `select id, kind, locale, email, email_verified_at, password_hash, password_salt, created_at, updated_at
      from users
      where id = $1
      limit 1`,
@@ -558,10 +636,23 @@ function mapUserRow(row) {
     kind: row.kind,
     locale: row.locale,
     email: row.email ?? undefined,
+    emailVerifiedAt: row.email_verified_at?.toISOString?.() ?? undefined,
     passwordHash: row.password_hash ?? undefined,
     passwordSalt: row.password_salt ?? undefined,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at?.toISOString?.() ?? row.created_at.toISOString(),
+  }
+}
+
+function mapEmailVerificationTokenRow(row) {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    tokenHash: row.token_hash,
+    email: row.email,
+    expiresAt: row.expires_at.toISOString(),
+    usedAt: row.used_at?.toISOString?.() ?? null,
+    createdAt: row.created_at.toISOString(),
   }
 }
 

@@ -8,6 +8,7 @@ import {
   pullSyncChanges,
   pushSyncChanges,
   registerAccount as requestRegisterAccount,
+  resendVerificationEmail as requestResendVerificationEmail,
   type SyncChange,
   type SyncEntityType,
 } from "@/shared/api/liftbook-api"
@@ -620,6 +621,7 @@ export function useDayScreenData(date: string) {
       id: "local",
       userId: response.user.id,
       kind: response.user.kind,
+      emailVerified: response.user.emailVerified,
       accessToken: response.session.accessToken,
       tokenType: response.session.tokenType,
       expiresAt: response.session.expiresAt,
@@ -648,6 +650,7 @@ export function useDayScreenData(date: string) {
         userId: response.user.id,
         kind: response.user.kind,
         email: response.user.email,
+        emailVerified: response.user.emailVerified,
         accessToken: response.session.accessToken,
         tokenType: response.session.tokenType,
         expiresAt: response.session.expiresAt,
@@ -660,6 +663,7 @@ export function useDayScreenData(date: string) {
       })
 
       await load()
+      return response
     },
     [load, state.settings?.locale]
   )
@@ -677,6 +681,7 @@ export function useDayScreenData(date: string) {
         userId: response.user.id,
         kind: response.user.kind,
         email: response.user.email,
+        emailVerified: response.user.emailVerified,
         accessToken: response.session.accessToken,
         tokenType: response.session.tokenType,
         expiresAt: response.session.expiresAt,
@@ -694,6 +699,16 @@ export function useDayScreenData(date: string) {
     await db.accountSessions.delete("local")
     await load()
   }, [load])
+
+  const resendVerificationEmail = useCallback(async () => {
+    const accountSession = await db.accountSessions.get("local")
+
+    if (!accountSession) {
+      throw new Error("Account session is required")
+    }
+
+    return requestResendVerificationEmail(accountSession.accessToken)
+  }, [])
 
   const syncPendingChanges = useCallback(async () => {
     const accountSession = await db.accountSessions.get("local")
@@ -728,6 +743,7 @@ export function useDayScreenData(date: string) {
     loginAccount,
     logoutAccount,
     registerAccount,
+    resendVerificationEmail,
     deleteCustomExercise,
     deleteExercise,
     deleteSet,

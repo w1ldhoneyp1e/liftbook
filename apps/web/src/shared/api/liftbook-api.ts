@@ -21,6 +21,7 @@ type GuestAccountResponse = {
     id: string
     kind: "guest" | "account"
     email?: string
+    emailVerified: boolean
     createdAt: string
   }
   session: {
@@ -34,6 +35,20 @@ type GuestAccountResponse = {
 }
 
 type AuthAccountResponse = GuestAccountResponse
+  & {
+    verificationEmailSent?: boolean
+  }
+
+type VerifyEmailResponse = {
+  verified: boolean
+  user: {
+    id: string
+    kind: "guest" | "account"
+    email?: string
+    emailVerified: boolean
+    createdAt: string
+  }
+}
 
 type PushSyncResponse = {
   accepted: Array<{
@@ -141,6 +156,45 @@ export async function loginAccount({
   }
 
   return (await response.json()) as AuthAccountResponse
+}
+
+export async function resendVerificationEmail(accessToken: string) {
+  const response = await fetch(`${apiBaseUrl}/v1/auth/verify-email/resend`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+  })
+
+  if (!response.ok) {
+    throw new Error(
+      await getRequestErrorMessage(response, "Failed to resend verification email")
+    )
+  }
+
+  return (await response.json()) as {
+    sent: boolean
+    alreadyVerified: boolean
+  }
+}
+
+export async function verifyEmailToken(token: string) {
+  const response = await fetch(`${apiBaseUrl}/v1/auth/verify-email`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ token }),
+  })
+
+  if (!response.ok) {
+    throw new Error(
+      await getRequestErrorMessage(response, "Email verification failed")
+    )
+  }
+
+  return (await response.json()) as VerifyEmailResponse
 }
 
 export async function pushSyncChanges({

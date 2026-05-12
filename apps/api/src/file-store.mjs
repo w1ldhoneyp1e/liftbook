@@ -8,6 +8,7 @@ const defaultStoreState = {
   users: [],
   devices: [],
   sessions: [],
+  emailVerificationTokens: [],
   syncEvents: [],
   syncRecords: [],
 }
@@ -167,6 +168,68 @@ export async function createFileStoreFromPath(filePath) {
         state.sessions.find((session) => session.accessToken === accessToken) ??
         null
       )
+    },
+    async createEmailVerificationToken(token) {
+      state = {
+        ...state,
+        emailVerificationTokens: [
+          ...state.emailVerificationTokens.filter(
+            (currentToken) => currentToken.id !== token.id
+          ),
+          token,
+        ],
+      }
+
+      await queuePersist()
+    },
+    async getLatestEmailVerificationTokenForUser(userId) {
+      return (
+        [...state.emailVerificationTokens]
+          .filter((token) => token.userId === userId)
+          .sort((left, right) => right.createdAt.localeCompare(left.createdAt))[0] ??
+        null
+      )
+    },
+    async verifyEmailByTokenHash({ tokenHash, now }) {
+      const token = state.emailVerificationTokens.find(
+        (currentToken) => currentToken.tokenHash === tokenHash
+      )
+
+      if (!token || token.usedAt || token.expiresAt <= now) {
+        return null
+      }
+
+      const user = state.users.find((currentUser) => currentUser.id === token.userId)
+
+      if (!user) {
+        return null
+      }
+
+      const nextUser = {
+        ...user,
+        emailVerifiedAt: now,
+        updatedAt: now,
+      }
+
+      state = {
+        ...state,
+        users: state.users.map((currentUser) =>
+          currentUser.id === nextUser.id ? nextUser : currentUser
+        ),
+        emailVerificationTokens: state.emailVerificationTokens.map(
+          (currentToken) =>
+            currentToken.userId === token.userId
+              ? {
+                  ...currentToken,
+                  usedAt: currentToken.usedAt ?? now,
+                }
+              : currentToken
+        ),
+      }
+
+      await queuePersist()
+
+      return toPublicUser(nextUser)
     },
     async createSessionForUser({
       accessToken,
@@ -391,6 +454,9 @@ async function loadState(filePath) {
       users: Array.isArray(parsed.users) ? parsed.users : [],
       devices: Array.isArray(parsed.devices) ? parsed.devices : [],
       sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
+      emailVerificationTokens: Array.isArray(parsed.emailVerificationTokens)
+        ? parsed.emailVerificationTokens
+        : [],
       syncEvents: Array.isArray(parsed.syncEvents) ? parsed.syncEvents : [],
       syncRecords: Array.isArray(parsed.syncRecords) ? parsed.syncRecords : [],
     }
@@ -480,6 +546,7 @@ function toPublicUser(user) {
     id: user.id,
     kind: user.kind,
     email: user.email,
+    emailVerifiedAt: user.emailVerifiedAt,
     locale: user.locale,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,

@@ -21,12 +21,14 @@ type AuthPopoverProps = {
   accountError: boolean
   accountSession: AccountSession | null
   authError: string | null
+  authNotice: string | null
   authSubmitting: boolean
   dictionary: Dictionary
   onCreateGuestAccount: () => void
   onLoginAccount: (email: string, password: string) => Promise<void> | void
   onLogoutAccount: () => Promise<void> | void
   onRegisterAccount: (email: string, password: string) => Promise<void> | void
+  onResendVerificationEmail: () => Promise<void> | void
 }
 
 export function AuthPopover({
@@ -34,18 +36,21 @@ export function AuthPopover({
   accountError,
   accountSession,
   authError,
+  authNotice,
   authSubmitting,
   dictionary,
   onCreateGuestAccount,
   onLoginAccount,
   onLogoutAccount,
   onRegisterAccount,
+  onResendVerificationEmail,
 }: AuthPopoverProps) {
   const [open, setOpen] = useState(false)
   const [email, setEmail] = useState(accountSession?.email ?? "")
   const [password, setPassword] = useState("")
 
   const isRegisteredAccount = accountSession?.kind === "account"
+  const isVerifiedAccount = Boolean(accountSession?.emailVerified)
   const statusLabel = isRegisteredAccount
     ? dictionary.labels.accountConnected
     : accountSession
@@ -100,6 +105,34 @@ export function AuthPopover({
                   {accountSession?.email ?? accountSession?.userId ?? "Liftbook"}
                 </p>
               </div>
+              {!isVerifiedAccount ? (
+                <div className="space-y-2 rounded-xl border border-amber-500/20 bg-amber-500/5 p-3">
+                  <p className="text-xs font-medium text-foreground">
+                    {dictionary.labels.authVerificationPending}
+                  </p>
+                  <p className="text-xs leading-relaxed text-muted-foreground">
+                    {dictionary.labels.authVerificationHint}
+                  </p>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    disabled={authSubmitting}
+                    onClick={() => {
+                      void onResendVerificationEmail()
+                    }}
+                  >
+                    {dictionary.actions.resendVerificationEmail}
+                  </Button>
+                </div>
+              ) : null}
+              {authNotice ? (
+                <p className="px-2 text-xs text-emerald-600 dark:text-emerald-400">
+                  {authNotice}
+                </p>
+              ) : null}
+              {authError ? (
+                <p className="px-2 text-xs text-destructive">{authError}</p>
+              ) : null}
               <Button
                 variant="outline"
                 className="w-full justify-start"
@@ -234,6 +267,11 @@ export function AuthPopover({
 
                 {authError ? (
                   <p className="text-xs text-destructive">{authError}</p>
+                ) : null}
+                {authNotice ? (
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                    {authNotice}
+                  </p>
                 ) : null}
               </div>
             ) : null}

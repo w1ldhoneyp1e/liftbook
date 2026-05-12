@@ -66,6 +66,7 @@ export function DayScreen() {
   const [accountConnecting, setAccountConnecting] = useState(false)
   const [authSubmitting, setAuthSubmitting] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
+  const [authNotice, setAuthNotice] = useState<string | null>(null)
   const [syncError, setSyncError] = useState(false)
   const [syncing, setSyncing] = useState(false)
   const [syncMode, setSyncMode] = useState<"auto" | "manual" | null>(null)
@@ -87,6 +88,7 @@ export function DayScreen() {
     locale,
     loading,
     logoutAccount,
+    resendVerificationEmail,
     registerAccount,
     renameCustomExercise,
     settings,
@@ -456,9 +458,15 @@ export function DayScreen() {
   async function handleRegisterAccount(email: string, password: string) {
     setAuthSubmitting(true)
     setAuthError(null)
+    setAuthNotice(null)
 
     try {
-      await registerAccount(email, password)
+      const response = await registerAccount(email, password)
+      setAuthNotice(
+        response?.verificationEmailSent === false
+          ? dictionary.labels.authVerificationHint
+          : dictionary.labels.authVerificationSent
+      )
     } catch (error) {
       setAuthError(
         error instanceof Error ? error.message : dictionary.labels.connectionError
@@ -471,9 +479,27 @@ export function DayScreen() {
   async function handleLoginAccount(email: string, password: string) {
     setAuthSubmitting(true)
     setAuthError(null)
+    setAuthNotice(null)
 
     try {
       await loginAccount(email, password)
+    } catch (error) {
+      setAuthError(
+        error instanceof Error ? error.message : dictionary.labels.connectionError
+      )
+    } finally {
+      setAuthSubmitting(false)
+    }
+  }
+
+  async function handleResendVerificationEmail() {
+    setAuthSubmitting(true)
+    setAuthError(null)
+    setAuthNotice(null)
+
+    try {
+      await resendVerificationEmail()
+      setAuthNotice(dictionary.labels.authVerificationSent)
     } catch (error) {
       setAuthError(
         error instanceof Error ? error.message : dictionary.labels.connectionError
@@ -611,6 +637,7 @@ export function DayScreen() {
             accountError={accountError}
             accountSession={accountSession}
             authError={authError}
+            authNotice={authNotice}
             authSubmitting={authSubmitting}
             dateStatusLabel={dateStatusLabel}
             dragOffset={dragOffset}
@@ -630,6 +657,7 @@ export function DayScreen() {
             onOpenCalendar={() => setCalendarOpen(true)}
             onOpenSettings={() => setSettingsOpen(true)}
             onRegisterAccount={handleRegisterAccount}
+            onResendVerificationEmail={handleResendVerificationEmail}
             onSelectDate={setSelectedDate}
           />
 

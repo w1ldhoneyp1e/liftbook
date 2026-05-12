@@ -30,6 +30,7 @@ export type Dictionary = {
     pause: string
     reset: string
     register: string
+    resendVerificationEmail: string
     renameCustomExercise: string
     save: string
     search: string
@@ -48,6 +49,9 @@ export type Dictionary = {
     authPassword: string
     authRegisteredHint: string
     authRegisterHint: string
+    authVerificationHint: string
+    authVerificationPending: string
+    authVerificationSent: string
     allMuscleGroups: string
     customExerciseCategories: string
     customExerciseName: string

@@ -85,6 +85,7 @@ export type AccountSession = {
   userId: string
   kind: AccountKind
   email?: string
+  emailVerified?: boolean
   accessToken: string
   tokenType: "Bearer"
   expiresAt: string

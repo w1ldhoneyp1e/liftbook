@@ -29,6 +29,7 @@ type DateHeaderProps = {
   accountError: boolean
   accountSession: AccountSession | null
   authError: string | null
+  authNotice: string | null
   authSubmitting: boolean
   dateStatusLabel: string
   dragOffset: number
@@ -46,6 +47,7 @@ type DateHeaderProps = {
   onOpenCalendar: () => void
   onOpenSettings: () => void
   onRegisterAccount: (email: string, password: string) => Promise<void> | void
+  onResendVerificationEmail: () => Promise<void> | void
   onSelectDate: (dateKey: string) => void
 }
 
@@ -54,6 +56,7 @@ export function DateHeader({
   accountError,
   accountSession,
   authError,
+  authNotice,
   authSubmitting,
   dateStatusLabel,
   dragOffset,
@@ -71,6 +74,7 @@ export function DateHeader({
   onOpenCalendar,
   onOpenSettings,
   onRegisterAccount,
+  onResendVerificationEmail,
   onSelectDate,
 }: DateHeaderProps) {
   const dateTone = getDateTone(selectedDateState)
@@ -109,12 +113,14 @@ export function DateHeader({
             accountError={accountError}
             accountSession={accountSession}
             authError={authError}
+            authNotice={authNotice}
             authSubmitting={authSubmitting}
             dictionary={dictionary}
             onCreateGuestAccount={onCreateGuestAccount}
             onLoginAccount={onLoginAccount}
             onLogoutAccount={onLogoutAccount}
             onRegisterAccount={onRegisterAccount}
+            onResendVerificationEmail={onResendVerificationEmail}
           />
           <Button
             variant="outline"

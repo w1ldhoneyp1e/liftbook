@@ -12,7 +12,12 @@ export function setCorsHeaders(response) {
 
 export function getRequestOrigin(request) {
   const host = request.headers.host ?? `localhost:${defaultPort}`
-  return `http://${host}`
+  const forwardedProto = request.headers["x-forwarded-proto"]
+  const protocol =
+    typeof forwardedProto === "string" && forwardedProto.length > 0
+      ? forwardedProto.split(",")[0]
+      : "http"
+  return `${protocol}://${host}`
 }
 
 export async function readJsonBody(request) {

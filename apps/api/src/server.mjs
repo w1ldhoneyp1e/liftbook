@@ -3,12 +3,17 @@ import { createServer } from "node:http"
 import { createAuthService } from "./auth-service.mjs"
 import { loadConfig } from "./config.mjs"
 import { getRequestOrigin, readJsonBody, sendJson, setCorsHeaders } from "./http.mjs"
+import { createMailService } from "./mail-service.mjs"
 import { createStorage } from "./storage.mjs"
 import { createSyncService } from "./sync-service.mjs"
 
 const config = loadConfig()
 const storage = await createStorage(config)
-const authService = createAuthService(storage)
+const mailService = createMailService(config)
+const authService = createAuthService(storage, {
+  appOrigin: config.appOrigin,
+  mailService,
+})
 const syncService = createSyncService(storage, config.sync)
 
 const server = createServer(async (request, response) => {
@@ -46,13 +51,42 @@ const server = createServer(async (request, response) => {
     if (request.method === "POST" && url.pathname === "/v1/auth/register") {
       const body = await readJsonBody(request)
       const session = await authService.getSession(request)
-      sendJson(response, 201, await authService.registerAccount(body, session))
+      sendJson(
+        response,
+        201,
+        await authService.registerAccount(body, session, getRequestOrigin(request))
+      )
       return
     }
 
     if (request.method === "POST" && url.pathname === "/v1/auth/login") {
       const body = await readJsonBody(request)
       sendJson(response, 200, await authService.loginAccount(body))
+      return
+    }
+
+    if (request.method === "POST" && url.pathname === "/v1/auth/verify-email/resend") {
+      const session = await authService.requireSession(request)
+
+      if (!session) {
+        sendJson(response, 401, { error: "Unauthorized" })
+        return
+      }
+
+      sendJson(
+        response,
+        200,
+        await authService.resendVerificationEmail(
+          session,
+          getRequestOrigin(request)
+        )
+      )
+      return
+    }
+
+    if (request.method === "POST" && url.pathname === "/v1/auth/verify-email") {
+      const body = await readJsonBody(request)
+      sendJson(response, 200, await authService.verifyEmail(body))
       return
     }
 
