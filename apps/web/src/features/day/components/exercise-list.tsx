@@ -22,6 +22,7 @@ type ExerciseListProps = {
   loadError: string | null
   loading: boolean
   locale: Locale
+  highlightedExerciseEntryId: string | null
   onOpenExercisePicker: () => void
   repsStep: number
   settings: UserSettings | null
@@ -46,6 +47,7 @@ export const ExerciseList = memo(function ExerciseList({
   loadError,
   loading,
   locale,
+  highlightedExerciseEntryId,
   onOpenExercisePicker,
   repsStep,
   settings,
@@ -101,6 +103,7 @@ export const ExerciseList = memo(function ExerciseList({
           dictionary={dictionary}
           entry={entry}
           exercise={exercisesById[entry.exerciseId]}
+          highlighted={highlightedExerciseEntryId === entry.id}
           locale={locale}
           repsStep={repsStep}
           settings={settings}

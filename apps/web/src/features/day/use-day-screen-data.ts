@@ -420,6 +420,7 @@ export function useDayScreenData(date: string) {
       })
 
       await load()
+      return exerciseEntry.id
     },
     [date, load]
   )
@@ -450,7 +451,7 @@ export function useDayScreenData(date: string) {
         syncStatus: "pending",
       })
 
-      await addExercise(exerciseId)
+      return addExercise(exerciseId)
     },
     [addExercise]
   )
@@ -1146,6 +1147,9 @@ function isUserSettingsPayload(payload: unknown): payload is UserSettings {
     typeof payload.restTimerDurationSeconds === "number" &&
     typeof payload.restTimerSoundEnabled === "boolean" &&
     typeof payload.restTimerVibrationEnabled === "boolean" &&
+    typeof payload.restTimerNotificationsEnabled === "boolean" &&
+    typeof payload.restTimerWakeLockEnabled === "boolean" &&
+    typeof payload.restTimerLockScreenEnabled === "boolean" &&
     typeof payload.updatedAt === "string"
   )
 }
@@ -1164,6 +1168,11 @@ function normalizeStoredUserSettings(
     restTimerDurationSeconds: nextSettings.restTimerDurationSeconds ?? 90,
     restTimerSoundEnabled: nextSettings.restTimerSoundEnabled ?? true,
     restTimerVibrationEnabled: nextSettings.restTimerVibrationEnabled ?? true,
+    restTimerNotificationsEnabled:
+      nextSettings.restTimerNotificationsEnabled ?? true,
+    restTimerWakeLockEnabled: nextSettings.restTimerWakeLockEnabled ?? true,
+    restTimerLockScreenEnabled:
+      nextSettings.restTimerLockScreenEnabled ?? false,
     syncStatus: nextSettings.syncStatus ?? "pending",
     updatedAt: nextSettings.updatedAt ?? new Date().toISOString(),
   }
@@ -1178,7 +1187,10 @@ function needsUserSettingsNormalization(
     !settings.restTimerMode ||
     typeof settings.restTimerDurationSeconds !== "number" ||
     typeof settings.restTimerSoundEnabled !== "boolean" ||
-    typeof settings.restTimerVibrationEnabled !== "boolean"
+    typeof settings.restTimerVibrationEnabled !== "boolean" ||
+    typeof settings.restTimerNotificationsEnabled !== "boolean" ||
+    typeof settings.restTimerWakeLockEnabled !== "boolean" ||
+    typeof settings.restTimerLockScreenEnabled !== "boolean"
   )
 }
 

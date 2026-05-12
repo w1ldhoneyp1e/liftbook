@@ -20,14 +20,20 @@ type RestTimerRowProps = {
   mode: RestTimerMode
   running: boolean
   seconds: number
+  lockScreenEnabled: boolean
+  notificationsEnabled: boolean
   soundEnabled: boolean
   vibrationEnabled: boolean
+  wakeLockEnabled: boolean
   onReset: () => void
   onToggleRunning: () => void
   onUpdateDuration: (seconds: number) => void
+  onUpdateLockScreenEnabled: (enabled: boolean) => void
   onUpdateMode: (mode: RestTimerMode) => void
+  onUpdateNotificationsEnabled: (enabled: boolean) => void
   onUpdateSoundEnabled: (enabled: boolean) => void
   onUpdateVibrationEnabled: (enabled: boolean) => void
+  onUpdateWakeLockEnabled: (enabled: boolean) => void
 }
 
 export function RestTimerRow({
@@ -36,14 +42,20 @@ export function RestTimerRow({
   mode,
   running,
   seconds,
+  lockScreenEnabled,
+  notificationsEnabled,
   soundEnabled,
   vibrationEnabled,
+  wakeLockEnabled,
   onReset,
   onToggleRunning,
   onUpdateDuration,
+  onUpdateLockScreenEnabled,
   onUpdateMode,
+  onUpdateNotificationsEnabled,
   onUpdateSoundEnabled,
   onUpdateVibrationEnabled,
+  onUpdateWakeLockEnabled,
 }: RestTimerRowProps) {
   const displaySeconds =
     mode === "timer" ? Math.max(durationSeconds - seconds, 0) : seconds
@@ -129,6 +141,20 @@ export function RestTimerRow({
                 </div>
 
                 <ToggleRow
+                  checked={wakeLockEnabled}
+                  description={dictionary.labels.restTimerWakeLockHelp}
+                  label={dictionary.labels.restTimerWakeLock}
+                  onToggle={() => onUpdateWakeLockEnabled(!wakeLockEnabled)}
+                />
+                <ToggleRow
+                  checked={notificationsEnabled}
+                  description={dictionary.labels.restTimerNotificationsHelp}
+                  label={dictionary.labels.restTimerNotifications}
+                  onToggle={() =>
+                    onUpdateNotificationsEnabled(!notificationsEnabled)
+                  }
+                />
+                <ToggleRow
                   checked={soundEnabled}
                   description={dictionary.labels.restTimerSoundHelp}
                   label={dictionary.labels.restTimerSound}
@@ -140,6 +166,14 @@ export function RestTimerRow({
                   label={dictionary.labels.restTimerVibration}
                   onToggle={() =>
                     onUpdateVibrationEnabled(!vibrationEnabled)
+                  }
+                />
+                <ToggleRow
+                  checked={lockScreenEnabled}
+                  description={dictionary.labels.restTimerLockScreenHelp}
+                  label={dictionary.labels.restTimerLockScreen}
+                  onToggle={() =>
+                    onUpdateLockScreenEnabled(!lockScreenEnabled)
                   }
                 />
               </div>

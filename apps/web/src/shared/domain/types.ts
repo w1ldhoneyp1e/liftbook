@@ -107,5 +107,8 @@ export type UserSettings = {
   restTimerDurationSeconds: number
   restTimerSoundEnabled: boolean
   restTimerVibrationEnabled: boolean
+  restTimerNotificationsEnabled: boolean
+  restTimerWakeLockEnabled: boolean
+  restTimerLockScreenEnabled: boolean
   updatedAt: string
 } & Partial<SyncMetadata>

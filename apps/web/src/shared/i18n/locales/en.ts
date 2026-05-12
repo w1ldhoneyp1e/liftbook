@@ -69,6 +69,13 @@ export const en: Dictionary = {
     restTimerSoundHelp: "Play a signal when the timer ends",
     restTimerVibration: "Vibration",
     restTimerVibrationHelp: "Vibrate when the timer ends",
+    restTimerNotifications: "System notifications",
+    restTimerNotificationsHelp: "Show a notification when the timer finishes",
+    restTimerWakeLock: "Keep screen awake",
+    restTimerWakeLockHelp: "Prevent the screen from dimming while the timer or stopwatch is running",
+    restTimerLockScreen: "Show on lock screen",
+    restTimerLockScreenHelp:
+      "Try to expose the timer through media session. Browser support varies",
     searchExercise: "Search exercise",
     syncConflicts: "Conflicts",
     syncConflictsHelp: "Local and remote changes collided",

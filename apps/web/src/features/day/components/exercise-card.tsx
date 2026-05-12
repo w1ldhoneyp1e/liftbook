@@ -32,6 +32,7 @@ type ExerciseCardProps = {
   dictionary: Dictionary
   entry: ExerciseEntry
   exercise: Exercise | undefined
+  highlighted: boolean
   locale: Locale
   repsStep: number
   settings: UserSettings | null
@@ -53,6 +54,7 @@ export function ExerciseCard({
   dictionary,
   entry,
   exercise,
+  highlighted,
   locale,
   repsStep,
   settings,
@@ -198,8 +200,28 @@ export function ExerciseCard({
     seededDraftSetIdRef.current = editorSetId
   }, [displayUnit, editorSet, editorSetId])
 
+  const articleRef = useRef<HTMLElement | null>(null)
+
+  useEffect(() => {
+    if (!highlighted || !articleRef.current) {
+      return
+    }
+
+    articleRef.current.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    })
+  }, [highlighted])
+
   return (
-    <article className="rounded-2xl bg-card px-4 py-4">
+    <article
+      ref={articleRef}
+      className={`rounded-2xl bg-card px-4 py-4 transition-shadow transition-colors ${
+        highlighted
+          ? "ring-2 ring-primary/35 shadow-[0_0_0_4px_rgba(59,130,246,0.08)]"
+          : ""
+      }`}
+    >
       <div className="flex items-start gap-3.5">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">

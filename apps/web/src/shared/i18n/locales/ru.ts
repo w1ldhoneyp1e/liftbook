@@ -69,6 +69,13 @@ export const ru: Dictionary = {
     restTimerSoundHelp: "Проигрывать сигнал по окончании таймера",
     restTimerVibration: "Вибрация",
     restTimerVibrationHelp: "Вибрировать по окончании таймера",
+    restTimerNotifications: "Системные уведомления",
+    restTimerNotificationsHelp: "Показывать уведомление, когда таймер закончится",
+    restTimerWakeLock: "Не давать экрану гаснуть",
+    restTimerWakeLockHelp: "Удерживать экран включенным, пока таймер или секундомер запущен",
+    restTimerLockScreen: "Показывать на экране блокировки",
+    restTimerLockScreenHelp:
+      "Пробовать показать таймер через media session. Работает не во всех браузерах",
     searchExercise: "Найти упражнение",
     syncConflicts: "Конфликты",
     syncConflictsHelp: "Локальные и удаленные изменения столкнулись",

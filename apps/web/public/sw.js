@@ -64,3 +64,20 @@ self.addEventListener("fetch", (event) => {
     })
   )
 })
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type !== "show-timer-notification") {
+    return
+  }
+
+  const { title, body, tag } = event.data.payload ?? {}
+
+  event.waitUntil(
+    self.registration.showNotification(title ?? "Liftbook", {
+      body,
+      tag,
+      icon: "/icon.png",
+      badge: "/icon.png",
+    })
+  )
+})

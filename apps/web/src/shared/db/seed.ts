@@ -37,6 +37,9 @@ function createDefaultSettings(): UserSettings {
     restTimerDurationSeconds: 90,
     restTimerSoundEnabled: true,
     restTimerVibrationEnabled: true,
+    restTimerNotificationsEnabled: true,
+    restTimerWakeLockEnabled: true,
+    restTimerLockScreenEnabled: false,
     syncStatus: "pending",
     updatedAt: now,
   }

@@ -31,9 +31,15 @@ import {
 } from "./lib/date-utils"
 import { useDayScreenData } from "./use-day-screen-data"
 
+type WakeLockHandle = {
+  release: () => Promise<void>
+}
+
 export function DayScreen() {
   const autoSyncSignatureRef = useRef<string | null>(null)
   const initialDateRef = useRef<string | null>(null)
+  const wakeLockRef = useRef<WakeLockHandle | null>(null)
+  const silentAudioRef = useRef<HTMLAudioElement | null>(null)
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null)
   const swipeCurrentRef = useRef<{ x: number; y: number } | null>(null)
   const [dragOffset, setDragOffset] = useState(0)
@@ -46,6 +52,8 @@ export function DayScreen() {
   const [selectedDate, setSelectedDate] = useState(ssrToday)
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [exercisePickerOpen, setExercisePickerOpen] = useState(false)
+  const [highlightedExerciseEntryId, setHighlightedExerciseEntryId] =
+    useState<string | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [contentMotion, setContentMotion] = useState<"left" | "right" | null>(
     null
@@ -92,8 +100,13 @@ export function DayScreen() {
   const repsStep = settings?.repsStep ?? 1
   const restTimerMode = settings?.restTimerMode ?? "stopwatch"
   const restTimerDurationSeconds = settings?.restTimerDurationSeconds ?? 90
+  const restTimerNotificationsEnabled =
+    settings?.restTimerNotificationsEnabled ?? true
   const restTimerSoundEnabled = settings?.restTimerSoundEnabled ?? true
   const restTimerVibrationEnabled = settings?.restTimerVibrationEnabled ?? true
+  const restTimerWakeLockEnabled = settings?.restTimerWakeLockEnabled ?? true
+  const restTimerLockScreenEnabled =
+    settings?.restTimerLockScreenEnabled ?? false
   const restTimerRunning = runningTimerMode === restTimerMode
   const restSeconds =
     restTimerMode === "timer" ? timerElapsedSeconds : stopwatchSeconds
@@ -166,6 +179,128 @@ export function DayScreen() {
   }, [restTimerMode, restTimerRunning])
 
   useEffect(() => {
+    async function releaseWakeLock() {
+      if (!wakeLockRef.current) {
+        return
+      }
+
+      try {
+        await wakeLockRef.current.release()
+      } catch {
+        // Ignore release failures.
+      } finally {
+        wakeLockRef.current = null
+      }
+    }
+
+    async function acquireWakeLock() {
+      if (
+        !restTimerRunning ||
+        !restTimerWakeLockEnabled ||
+        typeof navigator === "undefined" ||
+        !("wakeLock" in navigator) ||
+        document.visibilityState !== "visible"
+      ) {
+        await releaseWakeLock()
+        return
+      }
+
+      if (wakeLockRef.current) {
+        return
+      }
+
+      try {
+        wakeLockRef.current = await navigator.wakeLock.request("screen")
+      } catch {
+        wakeLockRef.current = null
+      }
+    }
+
+    function handleVisibilityChange() {
+      void acquireWakeLock()
+    }
+
+    void acquireWakeLock()
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
+      void releaseWakeLock()
+    }
+  }, [restTimerRunning, restTimerWakeLockEnabled])
+
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator)) {
+      return
+    }
+
+    navigator.mediaSession.setActionHandler("play", () => {
+      setRunningTimerMode(restTimerMode)
+    })
+    navigator.mediaSession.setActionHandler("pause", () => {
+      setRunningTimerMode(null)
+    })
+    navigator.mediaSession.setActionHandler("stop", () => {
+      setRunningTimerMode(null)
+      if (restTimerMode === "timer") {
+        setTimerElapsedSeconds(0)
+        return
+      }
+
+      setStopwatchSeconds(0)
+    })
+
+    const mediaTitle =
+      restTimerMode === "timer"
+        ? `${dictionary.actions.timer}: ${Math.max(restTimerDurationSeconds - restSeconds, 0)}s`
+        : `${dictionary.actions.stopwatch}: ${restSeconds}s`
+
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: mediaTitle,
+      artist: "Liftbook",
+      album: dictionary.labels.restTimer,
+      artwork: [
+        {
+          src: "/icon.png",
+          sizes: "512x512",
+          type: "image/png",
+        },
+      ],
+    })
+    navigator.mediaSession.playbackState = restTimerRunning ? "playing" : "paused"
+
+    if (!restTimerLockScreenEnabled) {
+      silentAudioRef.current?.pause()
+      silentAudioRef.current = null
+      return
+    }
+
+    if (!silentAudioRef.current) {
+      const audio = new Audio(
+        "data:audio/wav;base64,UklGRlQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YTAAAAAA"
+      )
+      audio.loop = true
+      audio.volume = 0.001
+      silentAudioRef.current = audio
+    }
+
+    if (restTimerRunning) {
+      void silentAudioRef.current.play().catch(() => {})
+    } else {
+      silentAudioRef.current.pause()
+    }
+  }, [
+    dictionary.actions.stopwatch,
+    dictionary.actions.timer,
+    dictionary.labels.restTimer,
+    restSeconds,
+    restTimerDurationSeconds,
+    restTimerLockScreenEnabled,
+    restTimerMode,
+    restTimerRunning,
+  ])
+
+  useEffect(() => {
     if (
       restTimerMode !== "timer" ||
       !restTimerRunning ||
@@ -179,7 +314,7 @@ export function DayScreen() {
       return
     }
 
-      timerAlertPlayedRef.current = true
+    timerAlertPlayedRef.current = true
     setRunningTimerMode(null)
 
     if (restTimerVibrationEnabled && typeof navigator !== "undefined" && "vibrate" in navigator) {
@@ -206,10 +341,37 @@ export function DayScreen() {
         void audioContext.close()
       }, 900)
     }
+
+    if (
+      restTimerNotificationsEnabled &&
+      typeof window !== "undefined" &&
+      "Notification" in window &&
+      Notification.permission === "granted"
+    ) {
+      const body = `${dictionary.labels.restTimer}: ${dictionary.actions.timer}`
+
+      void navigator.serviceWorker?.ready
+        .then((registration) =>
+          registration.active?.postMessage({
+            type: "show-timer-notification",
+            payload: {
+              body,
+              tag: "liftbook-rest-timer",
+              title: "Liftbook",
+            },
+          })
+        )
+        .catch(() => {
+          new Notification("Liftbook", { body, tag: "liftbook-rest-timer" })
+        })
+    }
   }, [
+    dictionary.actions.timer,
+    dictionary.labels.restTimer,
     restSeconds,
     restTimerDurationSeconds,
     restTimerMode,
+    restTimerNotificationsEnabled,
     restTimerRunning,
     restTimerSoundEnabled,
     restTimerVibrationEnabled,
@@ -237,7 +399,8 @@ export function DayScreen() {
   }, [settings?.themeMode])
 
   async function handleAddExercise(exerciseId: string) {
-    await addExercise(exerciseId)
+    const exerciseEntryId = await addExercise(exerciseId)
+    setHighlightedExerciseEntryId(exerciseEntryId ?? null)
     setExercisePickerOpen(false)
   }
 
@@ -245,9 +408,22 @@ export function DayScreen() {
     name: string,
     muscleGroupId: MuscleGroupId
   ) {
-    await addCustomExercise(name, muscleGroupId, locale)
+    const exerciseEntryId = await addCustomExercise(name, muscleGroupId, locale)
+    setHighlightedExerciseEntryId(exerciseEntryId ?? null)
     setExercisePickerOpen(false)
   }
+
+  useEffect(() => {
+    if (!highlightedExerciseEntryId) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setHighlightedExerciseEntryId(null)
+    }, 1800)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [highlightedExerciseEntryId])
 
   async function handleAddSet(exerciseEntryId: string) {
     const newSetId = await addSet(exerciseEntryId)
@@ -456,11 +632,14 @@ export function DayScreen() {
           <RestTimerRow
             dictionary={dictionary}
             durationSeconds={restTimerDurationSeconds}
+            lockScreenEnabled={restTimerLockScreenEnabled}
             mode={restTimerMode}
+            notificationsEnabled={restTimerNotificationsEnabled}
             running={restTimerRunning}
             seconds={restSeconds}
             soundEnabled={restTimerSoundEnabled}
             vibrationEnabled={restTimerVibrationEnabled}
+            wakeLockEnabled={restTimerWakeLockEnabled}
             onReset={() => {
               setRunningTimerMode(null)
               if (restTimerMode === "timer") {
@@ -478,6 +657,9 @@ export function DayScreen() {
             onUpdateDuration={(seconds) =>
               updateSettings({ restTimerDurationSeconds: seconds })
             }
+            onUpdateLockScreenEnabled={(enabled) =>
+              updateSettings({ restTimerLockScreenEnabled: enabled })
+            }
             onUpdateMode={(mode) => {
               if (mode !== restTimerMode) {
                 setRunningTimerMode(null)
@@ -485,11 +667,31 @@ export function DayScreen() {
 
               updateSettings({ restTimerMode: mode })
             }}
+            onUpdateNotificationsEnabled={async (enabled) => {
+              if (
+                enabled &&
+                typeof window !== "undefined" &&
+                "Notification" in window &&
+                Notification.permission === "default"
+              ) {
+                const permission = await Notification.requestPermission()
+
+                if (permission !== "granted") {
+                  updateSettings({ restTimerNotificationsEnabled: false })
+                  return
+                }
+              }
+
+              updateSettings({ restTimerNotificationsEnabled: enabled })
+            }}
             onUpdateSoundEnabled={(enabled) =>
               updateSettings({ restTimerSoundEnabled: enabled })
             }
             onUpdateVibrationEnabled={(enabled) =>
               updateSettings({ restTimerVibrationEnabled: enabled })
+            }
+            onUpdateWakeLockEnabled={(enabled) =>
+              updateSettings({ restTimerWakeLockEnabled: enabled })
             }
           />
         </div>
@@ -537,6 +739,7 @@ export function DayScreen() {
               dictionary={dictionary}
               exerciseEntries={exerciseEntries}
               exercisesById={exercisesById}
+              highlightedExerciseEntryId={highlightedExerciseEntryId}
               loadError={loadError}
               loading={loading}
               locale={locale}

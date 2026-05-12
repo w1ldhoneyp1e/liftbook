@@ -71,6 +71,12 @@ export type Dictionary = {
     restTimerSoundHelp: string
     restTimerVibration: string
     restTimerVibrationHelp: string
+    restTimerNotifications: string
+    restTimerNotificationsHelp: string
+    restTimerWakeLock: string
+    restTimerWakeLockHelp: string
+    restTimerLockScreen: string
+    restTimerLockScreenHelp: string
     searchExercise: string
     syncFailed: string
     syncConflicts: string
