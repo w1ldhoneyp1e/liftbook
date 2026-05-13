@@ -2,11 +2,11 @@
 
 import { CircleUserRound, X } from "lucide-react"
 import { useState } from "react"
-import { createPortal } from "react-dom"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { ModalPopup } from "@/components/ui/modal-popup"
 import {
   Popover,
   PopoverPopup,
@@ -160,31 +160,22 @@ export function AuthPopover({
         <CircleUserRound className="size-[18px]" />
       </button>
 
-      {open && typeof document !== "undefined"
-        ? createPortal(
-        <div
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/10 p-4 supports-backdrop-filter:backdrop-blur-xs"
-          onClick={() => setOpen(false)}
-        >
-          <div
-            className="w-full max-w-sm rounded-2xl border border-border/60 bg-background/96 p-4 shadow-xl"
-            onClick={(event) => event.stopPropagation()}
+      <ModalPopup open={open} onOpenChange={setOpen}>
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <p className="text-base font-semibold">{dictionary.labels.account}</p>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={dictionary.actions.cancel}
+            onClick={() => setOpen(false)}
           >
-            <div className="mb-4 flex items-start justify-between gap-3">
-              <div>
-                <p className="text-base font-semibold">{dictionary.labels.account}</p>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label={dictionary.actions.cancel}
-                onClick={() => setOpen(false)}
-              >
-                <X />
-              </Button>
-            </div>
+            <X />
+          </Button>
+        </div>
 
-            <div className="space-y-4">
+        <div className="space-y-4">
             <div>
               <p className="text-sm font-semibold">{statusLabel}</p>
               <p className="mt-1 break-all text-xs text-muted-foreground">
@@ -275,11 +266,8 @@ export function AuthPopover({
                 ) : null}
               </div>
             ) : null}
-            </div>
-          </div>
-        </div>,
-        document.body
-      ) : null}
+        </div>
+      </ModalPopup>
     </>
   )
 }

@@ -2,7 +2,6 @@
 
 import { Check, Pencil, Plus, Search, Trash2, X } from "lucide-react"
 import { useState } from "react"
-import { createPortal } from "react-dom"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -15,6 +14,7 @@ import {
 } from "@/components/ui/drawer"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { ModalPopup } from "@/components/ui/modal-popup"
 import { muscleGroups } from "@/shared/domain/exercise-catalog"
 import type { Exercise, Locale, MuscleGroupId } from "@/shared/domain/types"
 import type { Dictionary } from "@/shared/i18n/dictionaries"
@@ -309,94 +309,78 @@ export function ExercisePickerDrawer({
           </div>
         </DrawerContent>
       </Drawer>
-      {createModalOpen && typeof document !== "undefined"
-        ? createPortal(
-          <div
-            className="fixed inset-0 z-[90] flex items-center justify-center bg-black/10 p-4 supports-backdrop-filter:backdrop-blur-xs"
+      <ModalPopup open={createModalOpen} onOpenChange={setCreateModalOpen}>
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <p className="text-base font-semibold">
+              {dictionary.actions.createCustomExercise}
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={dictionary.actions.cancel}
             onClick={closeCreateModal}
           >
-            <div
-              className="w-full max-w-sm rounded-2xl border border-border/60 bg-background/96 p-4 shadow-xl"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <div className="mb-4 flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-base font-semibold">
-                    {dictionary.actions.createCustomExercise}
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={dictionary.actions.cancel}
-                  onClick={closeCreateModal}
-                >
-                  <X />
-                </Button>
-              </div>
+            <X />
+          </Button>
+        </div>
 
-              <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">
-                    {dictionary.labels.customExerciseName}
-                  </Label>
-                  <Input
-                    autoFocus
-                    value={createName}
-                    onChange={(event) => setCreateName(event.target.value)}
-                  />
-                </div>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">
+              {dictionary.labels.customExerciseName}
+            </Label>
+            <Input
+              autoFocus
+              value={createName}
+              onChange={(event) => setCreateName(event.target.value)}
+            />
+          </div>
 
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">
-                    {dictionary.labels.customExerciseCategories}
-                  </Label>
-                  <div className="flex flex-wrap gap-2">
-                    {muscleGroups.map((muscleGroup) => {
-                      const color = getMuscleGroupColor(muscleGroup)
-                      const selected = createMuscleGroups.includes(muscleGroup)
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">
+              {dictionary.labels.customExerciseCategories}
+            </Label>
+            <div className="flex flex-wrap gap-2">
+              {muscleGroups.map((muscleGroup) => {
+                const color = getMuscleGroupColor(muscleGroup)
+                const selected = createMuscleGroups.includes(muscleGroup)
 
-                      return (
-                        <button
-                          key={muscleGroup}
-                          className={`min-h-9 rounded-lg px-3 py-2 text-sm leading-none transition-colors ${
-                            selected
-                              ? color.badgeClassName
-                              : `${color.badgeClassName} opacity-55`
-                          }`}
-                          type="button"
-                          onClick={() => toggleCreateMuscleGroup(muscleGroup)}
-                        >
-                          {dictionary.muscleGroups[muscleGroup]}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={closeCreateModal}
+                return (
+                  <button
+                    key={muscleGroup}
+                    className={`min-h-9 rounded-lg px-3 py-2 text-sm leading-none transition-colors ${
+                      selected
+                        ? color.badgeClassName
+                        : `${color.badgeClassName} opacity-55`
+                    }`}
+                    type="button"
+                    onClick={() => toggleCreateMuscleGroup(muscleGroup)}
                   >
-                    {dictionary.actions.cancel}
-                  </Button>
-                  <Button
-                    disabled={!canSubmitCustomExercise}
-                    onClick={() => {
-                      onCreateCustomExercise(createName.trim(), createMuscleGroups)
-                      closeCreateModal()
-                    }}
-                  >
-                    {dictionary.actions.createCustomExerciseConfirm}
-                  </Button>
-                </div>
-              </div>
+                    {dictionary.muscleGroups[muscleGroup]}
+                  </button>
+                )
+              })}
             </div>
-          </div>,
-          document.body
-        )
-        : null}
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <Button variant="outline" onClick={closeCreateModal}>
+              {dictionary.actions.cancel}
+            </Button>
+            <Button
+              disabled={!canSubmitCustomExercise}
+              onClick={() => {
+                onCreateCustomExercise(createName.trim(), createMuscleGroups)
+                closeCreateModal()
+              }}
+            >
+              {dictionary.actions.createCustomExerciseConfirm}
+            </Button>
+          </div>
+        </div>
+      </ModalPopup>
     </>
   )
 }
