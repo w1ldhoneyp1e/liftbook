@@ -59,6 +59,8 @@ export const ExerciseList = memo(function ExerciseList({
   onDeleteSet,
   onUpdateSet,
 }: ExerciseListProps) {
+  const showEmptyState = !loading && !loadError && exerciseEntries.length === 0
+
   return (
     <section className="flex flex-1 flex-col gap-4 px-4 py-4">
       {loading ? (
@@ -73,9 +75,19 @@ export const ExerciseList = memo(function ExerciseList({
         </div>
       ) : null}
 
-      {!loading && !loadError && exerciseEntries.length === 0 ? (
+      {showEmptyState ? (
         <div className="flex min-h-[52svh] flex-col items-center justify-center gap-4 px-5 py-8 text-center">
-          {!previewMode ? (
+          {previewMode ? (
+            <div className="relative h-28 w-full max-w-[180px] opacity-80 dark:hidden">
+              <Image
+                src="/images/empty-state-blue.png"
+                alt=""
+                fill
+                sizes="180px"
+                className="object-contain"
+              />
+            </div>
+          ) : (
             <div className="relative h-36 w-full max-w-[220px] dark:hidden">
               <Image
                 src="/images/empty-state-blue.png"
@@ -86,7 +98,7 @@ export const ExerciseList = memo(function ExerciseList({
                 priority
               />
             </div>
-          ) : null}
+          )}
           <p className="text-lg font-medium text-foreground">
             {dictionary.labels.emptyDayMessage}
           </p>

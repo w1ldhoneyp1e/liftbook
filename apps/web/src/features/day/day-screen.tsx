@@ -49,6 +49,7 @@ export function DayScreen() {
   const isRecenteringRef = useRef(false)
   const isTouchingCarouselRef = useRef(false)
   const dateStripRef = useRef<HTMLDivElement | null>(null)
+  const dateStripTrackRef = useRef<HTMLDivElement | null>(null)
   const [isDayCarouselMoving, setIsDayCarouselMoving] = useState(false)
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator === "undefined" ? true : navigator.onLine
@@ -568,13 +569,13 @@ export function DayScreen() {
   }
 
   function resetDateStripTransform() {
-    if (!dateStripRef.current) {
+    if (!dateStripTrackRef.current) {
       return
     }
 
-    dateStripRef.current.style.transition =
+    dateStripTrackRef.current.style.transition =
       "transform 220ms cubic-bezier(0.22, 1, 0.36, 1)"
-    dateStripRef.current.style.transform = "translateX(0px)"
+    dateStripTrackRef.current.style.transform = "translateX(0px)"
   }
 
   function clearCarouselIdleTimeout() {
@@ -683,9 +684,9 @@ export function DayScreen() {
       currentDate === nextVisualDate ? currentDate : nextVisualDate
     )
 
-    if (dateStripRef.current) {
-      dateStripRef.current.style.transition = "none"
-      dateStripRef.current.style.transform = `translateX(${centerOffset * -0.22}px)`
+    if (dateStripTrackRef.current) {
+      dateStripTrackRef.current.style.transition = "none"
+      dateStripTrackRef.current.style.transform = `translateX(${centerOffset * -0.22}px)`
     }
 
     if (isTouchingCarouselRef.current) {
@@ -738,6 +739,7 @@ export function DayScreen() {
             dateStatusLabel={dateStatusLabel}
             days={days}
             dateStripRef={dateStripRef}
+            dateStripTrackRef={dateStripTrackRef}
             dictionary={dictionary}
             isDraggingDay={isDayCarouselMoving}
             motion={null}
