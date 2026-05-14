@@ -24,6 +24,7 @@ type ExerciseListProps = {
   locale: Locale
   highlightedExerciseEntryId: string | null
   onOpenExercisePicker: () => void
+  previewMode?: boolean
   repsStep: number
   settings: UserSettings | null
   unit: WeightUnit
@@ -49,6 +50,7 @@ export const ExerciseList = memo(function ExerciseList({
   locale,
   highlightedExerciseEntryId,
   onOpenExercisePicker,
+  previewMode = false,
   repsStep,
   settings,
   unit,
@@ -73,27 +75,31 @@ export const ExerciseList = memo(function ExerciseList({
 
       {!loading && !loadError && exerciseEntries.length === 0 ? (
         <div className="flex min-h-[52svh] flex-col items-center justify-center gap-4 px-5 py-8 text-center">
-          <div className="relative h-36 w-full max-w-[220px] dark:hidden">
-            <Image
-              src="/images/empty-state-blue.png"
-              alt=""
-              fill
-              sizes="220px"
-              className="object-contain"
-              priority
-            />
-          </div>
+          {!previewMode ? (
+            <div className="relative h-36 w-full max-w-[220px] dark:hidden">
+              <Image
+                src="/images/empty-state-blue.png"
+                alt=""
+                fill
+                sizes="220px"
+                className="object-contain"
+                priority
+              />
+            </div>
+          ) : null}
           <p className="text-lg font-medium text-foreground">
             {dictionary.labels.emptyDayMessage}
           </p>
-          <Button
-            variant="default"
-            size="default"
-            className="min-w-28"
-            onClick={onOpenExercisePicker}
-          >
-            {dictionary.actions.add}
-          </Button>
+          {!previewMode ? (
+            <Button
+              variant="default"
+              size="default"
+              className="min-w-28"
+              onClick={onOpenExercisePicker}
+            >
+              {dictionary.actions.add}
+            </Button>
+          ) : null}
         </div>
       ) : null}
 

@@ -14,10 +14,7 @@ import type {
   Dictionary,
 } from "@/shared/i18n/dictionaries"
 import type {
-  Exercise,
-  ExerciseEntry,
   MuscleGroupId,
-  WeightUnit,
 } from "@/shared/domain/types"
 import {
   applyThemeMode,
@@ -37,12 +34,6 @@ import {
   shiftDateKey,
   toDateKey,
 } from "./lib/date-utils"
-import {
-  formatTimer,
-  formatWeightValue,
-  getWeightUnitLabel,
-} from "./lib/format"
-import { getMuscleGroupColor } from "./lib/muscle-group-colors"
 import { useDayScreenData } from "./use-day-screen-data"
 
 type WakeLockHandle = {
@@ -56,6 +47,7 @@ export function DayScreen() {
   const carouselRef = useRef<HTMLDivElement | null>(null)
   const carouselIdleTimeoutRef = useRef<number | null>(null)
   const isRecenteringRef = useRef(false)
+  const isTouchingCarouselRef = useRef(false)
   const dateStripRef = useRef<HTMLDivElement | null>(null)
   const [isDayCarouselMoving, setIsDayCarouselMoving] = useState(false)
   const [isOnline, setIsOnline] = useState(() =>
@@ -585,6 +577,20 @@ export function DayScreen() {
     dateStripRef.current.style.transform = "translateX(0px)"
   }
 
+  function clearCarouselIdleTimeout() {
+    if (carouselIdleTimeoutRef.current !== null) {
+      window.clearTimeout(carouselIdleTimeoutRef.current)
+      carouselIdleTimeoutRef.current = null
+    }
+  }
+
+  function scheduleCarouselSettle(delay = 90) {
+    clearCarouselIdleTimeout()
+    carouselIdleTimeoutRef.current = window.setTimeout(() => {
+      settleCarousel()
+    }, delay)
+  }
+
   const scrollCarouselToCenter = useCallback(
     (behavior: ScrollBehavior = "auto") => {
       if (!carouselRef.current) {
@@ -679,22 +685,31 @@ export function DayScreen() {
 
     if (dateStripRef.current) {
       dateStripRef.current.style.transition = "none"
-      dateStripRef.current.style.transform = `translateX(${centerOffset * 0.22}px)`
+      dateStripRef.current.style.transform = `translateX(${centerOffset * -0.22}px)`
     }
 
-    if (carouselIdleTimeoutRef.current !== null) {
-      window.clearTimeout(carouselIdleTimeoutRef.current)
+    if (isTouchingCarouselRef.current) {
+      clearCarouselIdleTimeout()
+      return
     }
 
-    carouselIdleTimeoutRef.current = window.setTimeout(() => {
-      settleCarousel()
-    }, 90)
+    scheduleCarouselSettle()
+  }
+
+  function handleCarouselTouchStart() {
+    isTouchingCarouselRef.current = true
+    clearCarouselIdleTimeout()
+  }
+
+  function handleCarouselTouchEnd() {
+    isTouchingCarouselRef.current = false
+    scheduleCarouselSettle(40)
   }
 
   useEffect(() => {
     return () => {
       if (carouselIdleTimeoutRef.current !== null) {
-        window.clearTimeout(carouselIdleTimeoutRef.current)
+        clearCarouselIdleTimeout()
       }
     }
   }, [])
@@ -814,6 +829,9 @@ export function DayScreen() {
           ref={carouselRef}
           className="flex flex-1 overflow-x-auto overscroll-x-contain snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           onScroll={handleCarouselScroll}
+          onTouchStart={handleCarouselTouchStart}
+          onTouchEnd={handleCarouselTouchEnd}
+          onTouchCancel={handleCarouselTouchEnd}
         >
           {carouselDates.map((paneDate, paneIndex) => {
             const snapshot = daySnapshots[paneDate] ?? {
@@ -825,7 +843,7 @@ export function DayScreen() {
 
             return (
               <div
-                key={paneDate}
+                key={paneIndex}
                 className="w-full shrink-0 snap-center [scroll-snap-stop:always]"
               >
                 {isCenterPane ? (
@@ -919,155 +937,39 @@ export function DayScreen() {
 
 type SwipePreviewDayPaneProps = {
   dictionary: Dictionary
-  exerciseEntries: ExerciseEntry[]
-  exercisesById: Record<string, Exercise>
-  highlightedExerciseEntryId?: string | null
-  interactive?: boolean
-  loadError?: string | null
-  loading?: boolean
+  exerciseEntries: Parameters<typeof ExerciseList>[0]["exerciseEntries"]
+  exercisesById: Parameters<typeof ExerciseList>[0]["exercisesById"]
   locale: "en" | "ru"
-  onAddSet?: (exerciseEntryId: string) => Promise<string | null>
-  onDeleteExercise?: (exerciseEntryId: string) => void
-  onDeleteSet?: (
-    exerciseEntryId: string,
-    setEntryId: string
-  ) => Promise<void> | void
-  onOpenExercisePicker?: () => void
-  onUpdateSet?: (
-    exerciseEntryId: string,
-    setEntryId: string,
-    patch: Partial<{ reps: number; weight: number }>
-  ) => Promise<void> | void
-  repsStep?: number
-  settings?: Parameters<typeof ExerciseList>[0]["settings"]
-  unit: WeightUnit
+  unit: Parameters<typeof ExerciseList>[0]["unit"]
 }
 
 function SwipePreviewDayPane({
   dictionary,
   exerciseEntries,
   exercisesById,
-  highlightedExerciseEntryId = null,
-  interactive = false,
-  loadError = null,
-  loading = false,
   locale,
-  onAddSet,
-  onDeleteExercise,
-  onDeleteSet,
-  onOpenExercisePicker,
-  onUpdateSet,
-  repsStep = 1,
-  settings = null,
   unit,
 }: SwipePreviewDayPaneProps) {
-  if (interactive) {
-    return (
+  return (
+    <div className="pointer-events-none">
       <ExerciseList
         dictionary={dictionary}
         exerciseEntries={exerciseEntries}
         exercisesById={exercisesById}
-        highlightedExerciseEntryId={highlightedExerciseEntryId}
-        loadError={loadError}
-        loading={loading}
+        highlightedExerciseEntryId={null}
+        loadError={null}
+        loading={false}
         locale={locale}
-        onOpenExercisePicker={onOpenExercisePicker ?? (() => {})}
-        repsStep={repsStep}
-        settings={settings}
+        onOpenExercisePicker={() => {}}
+        previewMode
+        repsStep={1}
+        settings={null}
         unit={unit}
-        onAddSet={onAddSet ?? (async () => null)}
-        onDeleteExercise={onDeleteExercise ?? (() => {})}
-        onDeleteSet={onDeleteSet ?? (() => {})}
-        onUpdateSet={onUpdateSet ?? (() => {})}
+        onAddSet={async () => null}
+        onDeleteExercise={() => {}}
+        onDeleteSet={() => {}}
+        onUpdateSet={() => {}}
       />
-    )
-  }
-
-  return (
-    <section className="flex min-h-full flex-col gap-4 px-4 py-4">
-      {exerciseEntries.length === 0 ? (
-        <div className="flex min-h-[52svh] items-center justify-center px-5 py-8 text-center text-sm text-muted-foreground">
-          {dictionary.labels.emptyDayMessage}
-        </div>
-      ) : (
-        exerciseEntries.map((entry) => {
-          const exercise = exercisesById[entry.exerciseId]
-          const exerciseName = exercise?.name[locale] ?? entry.exerciseId
-          const primaryMuscleGroup = exercise?.muscleGroupIds[0]
-          const primaryMuscleGroupColor = primaryMuscleGroup
-            ? getMuscleGroupColor(primaryMuscleGroup)
-            : null
-
-          return (
-            <article
-              key={entry.id}
-              className="rounded-2xl bg-card px-4 py-4"
-            >
-              <div className="min-w-0">
-                <h3 className="truncate text-base font-semibold leading-tight">
-                  {exerciseName}
-                </h3>
-                {primaryMuscleGroup ? (
-                  <p
-                    className={`mt-1 inline-flex max-w-full items-center gap-1.5 truncate rounded-full px-2 py-0.5 text-xs ${primaryMuscleGroupColor?.badgeClassName}`}
-                  >
-                    <span
-                      className={`size-1.5 shrink-0 rounded-full ${primaryMuscleGroupColor?.dotClassName}`}
-                    />
-                    <span className="truncate">
-                      {dictionary.muscleGroups[primaryMuscleGroup]}
-                    </span>
-                  </p>
-                ) : null}
-              </div>
-              <div className="mt-3 flex flex-wrap gap-2.5">
-                {entry.setEntries.map((setEntry, index) => (
-                  <span
-                    key={setEntry.id}
-                    className="inline-flex items-center rounded-full bg-muted px-3 py-1 text-xs text-foreground/90"
-                  >
-                    {formatSetPreview(setEntry, index + 1, dictionary, unit)}
-                  </span>
-                ))}
-              </div>
-            </article>
-          )
-        })
-      )}
-      <div className="h-16" />
-    </section>
+    </div>
   )
-}
-
-function formatSetPreview(
-  setEntry: ExerciseEntry["setEntries"][number],
-  index: number,
-  dictionary: Dictionary,
-  unit: WeightUnit
-) {
-  if (typeof setEntry.weight === "number" || typeof setEntry.reps === "number") {
-    const parts: string[] = [`#${index}`]
-
-    if (typeof setEntry.weight === "number") {
-      parts.push(
-        `${formatWeightValue(setEntry.weight, unit)} ${getWeightUnitLabel(dictionary, unit)}`
-      )
-    }
-
-    if (typeof setEntry.reps === "number") {
-      parts.push(`${setEntry.reps} ${dictionary.units.reps}`)
-    }
-
-    return parts.join(" · ")
-  }
-
-  if (typeof setEntry.durationSeconds === "number") {
-    return `#${index} · ${formatTimer(setEntry.durationSeconds)}`
-  }
-
-  if (typeof setEntry.distanceMeters === "number") {
-    return `#${index} · ${setEntry.distanceMeters} м`
-  }
-
-  return `#${index}`
 }
