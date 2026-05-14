@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
   type TouchEvent,
+  type UIEvent,
 } from "react"
 import { flushSync } from "react-dom"
 
@@ -46,6 +47,7 @@ export function DayScreen() {
   const carouselRef = useRef<HTMLDivElement | null>(null)
   const carouselIdleTimeoutRef = useRef<number | null>(null)
   const carouselCommitTimeoutRef = useRef<number | null>(null)
+  const dayPaneScrollPositionsRef = useRef<Record<string, number>>({})
   const isRecenteringRef = useRef(false)
   const isSettlingCarouselRef = useRef(false)
   const isTouchingCarouselRef = useRef(false)
@@ -818,6 +820,21 @@ export function DayScreen() {
     window.requestAnimationFrame(() => animateAndCommitCarousel(swipeDelta))
   }
 
+  function handleDayPaneScroll(
+    dateKey: string,
+    event: UIEvent<HTMLDivElement>
+  ) {
+    dayPaneScrollPositionsRef.current[dateKey] = event.currentTarget.scrollTop
+  }
+
+  function restoreDayPaneScroll(dateKey: string, node: HTMLDivElement | null) {
+    if (!node) {
+      return
+    }
+
+    node.scrollTop = dayPaneScrollPositionsRef.current[dateKey] ?? 0
+  }
+
   useEffect(() => {
     return () => {
       if (carouselIdleTimeoutRef.current !== null) {
@@ -841,9 +858,9 @@ export function DayScreen() {
   }
 
   return (
-    <div className="flex min-h-svh justify-center bg-muted/35 text-foreground dark:bg-[#0b0d11]">
-      <main className="relative flex min-h-svh w-full max-w-md flex-col bg-background shadow-[0_0_0_1px_rgba(229,231,235,0.45)] dark:shadow-[0_0_0_1px_rgba(43,49,60,0.9)]">
-        <div className="sticky top-0 z-40 bg-background/95 shadow-sm backdrop-blur dark:bg-background/92 dark:shadow-[0_10px_30px_rgba(0,0,0,0.28)]">
+    <div className="flex h-svh justify-center overflow-hidden bg-muted/35 text-foreground dark:bg-[#0b0d11]">
+      <main className="relative flex h-svh min-h-0 w-full max-w-md flex-col overflow-hidden bg-background shadow-[0_0_0_1px_rgba(229,231,235,0.45)] dark:shadow-[0_0_0_1px_rgba(43,49,60,0.9)]">
+        <div className="z-40 shrink-0 bg-background/95 shadow-sm backdrop-blur dark:bg-background/92 dark:shadow-[0_10px_30px_rgba(0,0,0,0.28)]">
           <DateHeader
             accountConnecting={accountConnecting}
             accountError={accountError}
@@ -943,7 +960,7 @@ export function DayScreen() {
 
         <div
           ref={carouselRef}
-          className="flex flex-1 overflow-x-auto overscroll-x-contain snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="flex min-h-0 flex-1 overflow-x-auto overflow-y-hidden overscroll-x-contain snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           onScroll={handleCarouselScroll}
           onTouchStart={handleCarouselTouchStart}
           onTouchMove={handleCarouselTouchMove}
@@ -964,9 +981,13 @@ export function DayScreen() {
             return (
               <div
                 key={paneIndex}
-                className="w-full shrink-0 snap-center [scroll-snap-stop:always]"
+                ref={(node) => restoreDayPaneScroll(paneDate, node)}
+                className="h-full min-h-0 w-full shrink-0 snap-center overflow-y-auto overscroll-y-contain [scrollbar-width:none] [scroll-snap-stop:always] [&::-webkit-scrollbar]:hidden"
+                onScroll={(event) => handleDayPaneScroll(paneDate, event)}
               >
-                <div className={isCenterPane ? "" : "pointer-events-none"}>
+                <div
+                  className={`min-h-full ${isCenterPane ? "" : "pointer-events-none"}`}
+                >
                   <ExerciseList
                     dictionary={dictionary}
                     exerciseEntries={paneExerciseEntries}

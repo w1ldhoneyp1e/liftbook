@@ -62,7 +62,7 @@ export const ExerciseList = memo(function ExerciseList({
   const showEmptyState = !loading && !loadError && exerciseEntries.length === 0
 
   return (
-    <section className="flex flex-1 flex-col gap-4 px-4 py-4">
+    <section className="flex min-h-full flex-col gap-4 px-4 py-4">
       {loading ? (
         <div className="rounded-xl bg-muted/40 p-4 text-base text-muted-foreground">
           {dictionary.labels.loading}
