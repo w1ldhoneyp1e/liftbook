@@ -82,6 +82,7 @@ export function DateHeader({
   const dateTone = getDateTone(selectedDateState)
   const selectedDateRef = useRef<HTMLButtonElement | null>(null)
   const lastScrolledSelectedDateRef = useRef<string | null>(null)
+  const dateScrollAnimationRef = useRef<number | null>(null)
 
   useEffect(() => {
     if (isDraggingDay) {
@@ -93,12 +94,61 @@ export function DateHeader({
     }
 
     lastScrolledSelectedDateRef.current = selectedDate
-    selectedDateRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "nearest",
-      inline: "center",
-    })
-  }, [isDraggingDay, selectedDate])
+    const container = dateStripRef?.current
+    const selectedButton = selectedDateRef.current
+
+    if (!container || !selectedButton) {
+      return
+    }
+
+    const animatedContainer = container
+
+    if (dateScrollAnimationRef.current !== null) {
+      window.cancelAnimationFrame(dateScrollAnimationRef.current)
+      dateScrollAnimationRef.current = null
+    }
+
+    const containerRect = container.getBoundingClientRect()
+    const buttonRect = selectedButton.getBoundingClientRect()
+    const startLeft = container.scrollLeft
+    const targetLeft =
+      startLeft +
+      buttonRect.left -
+      containerRect.left -
+      (container.clientWidth - selectedButton.offsetWidth) / 2
+    const maxLeft = container.scrollWidth - container.clientWidth
+    const endLeft = Math.max(0, Math.min(targetLeft, maxLeft))
+    const distance = endLeft - startLeft
+    const durationMs = 280
+    const startedAt = performance.now()
+
+    if (Math.abs(distance) < 1) {
+      return
+    }
+
+    function animate(now: number) {
+      const progress = Math.min((now - startedAt) / durationMs, 1)
+      const easedProgress = 1 - Math.pow(1 - progress, 3)
+
+      animatedContainer.scrollLeft = startLeft + distance * easedProgress
+
+      if (progress < 1) {
+        dateScrollAnimationRef.current = window.requestAnimationFrame(animate)
+        return
+      }
+
+      dateScrollAnimationRef.current = null
+    }
+
+    dateScrollAnimationRef.current = window.requestAnimationFrame(animate)
+
+    return () => {
+      if (dateScrollAnimationRef.current !== null) {
+        window.cancelAnimationFrame(dateScrollAnimationRef.current)
+        dateScrollAnimationRef.current = null
+      }
+    }
+  }, [dateStripRef, isDraggingDay, selectedDate])
 
   return (
     <header className={`px-4 pb-3 pt-4 ${dateTone.headerClassName}`}>
