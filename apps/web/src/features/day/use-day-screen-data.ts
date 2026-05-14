@@ -29,6 +29,7 @@ import { shiftDateKey } from "./lib/date-utils"
 
 type DayScreenData = {
   accountSession: AccountSession | null
+  resolvedDate: string | null
   settings: UserSettings | null
   workoutDay: WorkoutDay | null
   exerciseEntries: ExerciseEntry[]
@@ -53,6 +54,7 @@ type DaySnapshot = {
 export function useDayScreenData(date: string) {
   const [state, setState] = useState<DayScreenData>({
     accountSession: null,
+    resolvedDate: null,
     settings: null,
     workoutDay: null,
     exerciseEntries: [],
@@ -161,6 +163,7 @@ export function useDayScreenData(date: string) {
 
       setState({
         accountSession: accountSession ?? null,
+        resolvedDate: date,
         settings: normalizedSettings ?? null,
         workoutDay: buildSnapshot(date, currentDay, currentEntries).workoutDay,
         exerciseEntries: buildSnapshot(date, currentDay, currentEntries)
@@ -178,6 +181,7 @@ export function useDayScreenData(date: string) {
 
       setState((currentState) => ({
         ...currentState,
+        resolvedDate: date,
         loading: false,
         loadError:
           error instanceof Error
