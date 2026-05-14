@@ -64,9 +64,9 @@ export const ru: Dictionary = {
     noExercisesFound: "Упражнения не найдены",
     futureDate: "Будущая дата",
     pastDate: "Прошлая дата",
-    previousResultDefaults: "Подставлять прошлый результат",
+    previousResultDefaults: "Автоподстановка прошлых подходов",
     previousResultDefaultsHelp:
-      "Создавать новые подходы на основе последнего результата упражнения",
+      "При добавлении упражнения копировать подходы из последней тренировки",
     restTimer: "Таймер отдыха",
     restTimerDuration: "Длительность",
     restTimerMode: "Режим",

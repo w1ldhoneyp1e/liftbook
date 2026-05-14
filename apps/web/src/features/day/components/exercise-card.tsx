@@ -4,6 +4,7 @@ import { MoreVertical, Plus, X } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import {
   Popover,
   PopoverPopup,
@@ -296,6 +297,7 @@ export function ExerciseCard({
           const setWeight = set.weight ?? 0
           const setReps = set.reps ?? 0
           const isCreatingSet = creatingSetId === set.id
+          const isPreviousResultSet = Boolean(set.previousResultSourceSetId)
 
           return (
             <Popover
@@ -315,12 +317,24 @@ export function ExerciseCard({
               <PopoverTrigger
                 render={
                   <button
-                    className="inline-flex min-w-[4.5rem] flex-col items-center justify-center rounded-xl bg-muted/50 px-2.5 py-2.5 text-center transition-colors hover:bg-muted"
+                    className={cn(
+                      "inline-flex min-w-[4.5rem] flex-col items-center justify-center rounded-xl px-2.5 py-2.5 text-center transition-colors",
+                      isPreviousResultSet
+                        ? "border border-border/50 bg-muted/25 text-muted-foreground opacity-75 hover:bg-muted/45 hover:opacity-90"
+                        : "bg-muted/50 hover:bg-muted"
+                    )}
                     type="button"
                     aria-label={`${exerciseName} set ${index + 1}`}
                     onClick={() => openEditor(set.id)}
                   >
-                    <div className="flex items-center gap-1 text-xs font-semibold text-foreground">
+                    <div
+                      className={cn(
+                        "flex items-center gap-1 text-xs font-semibold",
+                        isPreviousResultSet
+                          ? "text-muted-foreground"
+                          : "text-foreground"
+                      )}
+                    >
                       <span>{formatWeightValue(setWeight, displayUnit)}</span>
                       <span className="text-[11px] text-muted-foreground">
                         {getWeightUnitLabel(dictionary, displayUnit)}

@@ -53,6 +53,7 @@ export type SetEntry = {
   weight?: number
   weightUnit?: WeightUnit
   reps?: number
+  previousResultSourceSetId?: string
   durationSeconds?: number
   distanceMeters?: number
   deletedAt?: string

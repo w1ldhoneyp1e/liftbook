@@ -30,10 +30,10 @@ export function shiftDateKey(dateKey: string, dayDelta: number) {
 export function createDateStrip(
   selectedDate: string,
   locale: Locale,
-  dateMuscleGroups: Record<string, MuscleGroupId[]> = {}
+  dateMuscleGroups: Record<string, MuscleGroupId[]> = {},
+  todayKey = toDateKey(new Date())
 ): DateStripItem[] {
   const selected = new Date(`${selectedDate}T12:00:00`)
-  const today = toDateKey(new Date())
 
   return Array.from(
     { length: DATE_STRIP_DAYS_BACK + DATE_STRIP_DAYS_FORWARD + 1 },
@@ -48,7 +48,7 @@ export function createDateStrip(
       day: new Intl.DateTimeFormat(locale, { weekday: "short" }).format(date),
       muscleGroupIds: dateMuscleGroups[dateKey] ?? [],
       selected: dateKey === selectedDate,
-      state: getDateState(dateKey, today),
+      state: getDateState(dateKey, todayKey),
     }
     }
   )

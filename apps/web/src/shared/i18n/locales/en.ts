@@ -64,9 +64,9 @@ export const en: Dictionary = {
     noExercisesFound: "No exercises found",
     futureDate: "Future date",
     pastDate: "Past date",
-    previousResultDefaults: "Use previous result as default",
+    previousResultDefaults: "Autofill previous sets",
     previousResultDefaultsHelp:
-      "Create new sets from the latest result of the same exercise",
+      "Copy sets from the latest workout when adding an exercise",
     restTimer: "Rest timer",
     restTimerDuration: "Duration",
     restTimerMode: "Mode",

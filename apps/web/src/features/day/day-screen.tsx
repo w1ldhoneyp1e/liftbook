@@ -40,6 +40,8 @@ type WakeLockHandle = {
   release: () => Promise<void>
 }
 
+const INITIAL_DATE_KEY = "2000-01-01"
+
 export function DayScreen() {
   const autoSyncSignatureRef = useRef<string | null>(null)
   const wakeLockRef = useRef<WakeLockHandle | null>(null)
@@ -59,12 +61,13 @@ export function DayScreen() {
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator === "undefined" ? true : navigator.onLine
   )
-  const ssrToday = useMemo(() => new Date().toISOString().slice(0, 10), [])
-  const [today, setToday] = useState(ssrToday)
-  const [selectedDate, setSelectedDate] = useState(ssrToday)
-  const [carouselCenterDate, setCarouselCenterDate] = useState(ssrToday)
-  const [calendarCenterDate, setCalendarCenterDate] = useState(ssrToday)
-  const [visualDate, setVisualDate] = useState(ssrToday)
+  const [today, setToday] = useState(INITIAL_DATE_KEY)
+  const [selectedDate, setSelectedDate] = useState(INITIAL_DATE_KEY)
+  const [carouselCenterDate, setCarouselCenterDate] =
+    useState(INITIAL_DATE_KEY)
+  const [calendarCenterDate, setCalendarCenterDate] =
+    useState(INITIAL_DATE_KEY)
+  const [visualDate, setVisualDate] = useState(INITIAL_DATE_KEY)
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [exercisePickerOpen, setExercisePickerOpen] = useState(false)
   const [highlightedExerciseEntryId, setHighlightedExerciseEntryId] =
@@ -126,8 +129,8 @@ export function DayScreen() {
   const restSeconds =
     restTimerMode === "timer" ? timerElapsedSeconds : stopwatchSeconds
   const days = useMemo(
-    () => createDateStrip(calendarCenterDate, locale, dateMuscleGroups),
-    [calendarCenterDate, dateMuscleGroups, locale]
+    () => createDateStrip(calendarCenterDate, locale, dateMuscleGroups, today),
+    [calendarCenterDate, dateMuscleGroups, locale, today]
   )
   const carouselDates = useMemo(
     () =>
@@ -157,26 +160,26 @@ export function DayScreen() {
 
       setToday(localToday)
 
-      if (localToday === ssrToday) {
+      if (localToday === INITIAL_DATE_KEY) {
         return
       }
 
       setSelectedDate((currentDate) =>
-        currentDate === ssrToday ? localToday : currentDate
+        currentDate === INITIAL_DATE_KEY ? localToday : currentDate
       )
       setCarouselCenterDate((currentDate) =>
-        currentDate === ssrToday ? localToday : currentDate
+        currentDate === INITIAL_DATE_KEY ? localToday : currentDate
       )
       setCalendarCenterDate((currentDate) =>
-        currentDate === ssrToday ? localToday : currentDate
+        currentDate === INITIAL_DATE_KEY ? localToday : currentDate
       )
       setVisualDate((currentDate) =>
-        currentDate === ssrToday ? localToday : currentDate
+        currentDate === INITIAL_DATE_KEY ? localToday : currentDate
       )
     }, 0)
 
     return () => window.clearTimeout(timeoutId)
-  }, [ssrToday])
+  }, [])
 
   useEffect(() => {
     if (!restTimerRunning) {

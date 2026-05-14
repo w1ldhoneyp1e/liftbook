@@ -247,7 +247,12 @@ export function useDayScreenData(date: string) {
         updatedAt: now,
         setEntries: entry.setEntries.map((setEntry) =>
           setEntry.id === setEntryId
-            ? { ...setEntry, ...patch, updatedAt: now }
+            ? {
+                ...setEntry,
+                ...patch,
+                previousResultSourceSetId: undefined,
+                updatedAt: now,
+              }
             : setEntry
         ),
       }
@@ -437,6 +442,7 @@ export function useDayScreenData(date: string) {
             ...setEntry,
             id: createLocalId("set"),
             deletedAt: undefined,
+            previousResultSourceSetId: setEntry.id,
             createdAt: now,
             updatedAt: now,
           })) ?? []
