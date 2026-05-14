@@ -6,7 +6,7 @@ import {
   CalendarDays,
   Settings,
 } from "lucide-react"
-import { useEffect, useRef, type RefObject } from "react"
+import { useEffect, useLayoutEffect, useRef } from "react"
 
 import { Button } from "@/components/ui/button"
 import type {
@@ -34,7 +34,7 @@ type DateHeaderProps = {
   dateStatusLabel: string
   dateMuscleGroups: Record<string, MuscleGroupId[]>
   days: DateStripItem[]
-  dateStripRef?: RefObject<HTMLDivElement | null>
+  dateStripCenterDate: string
   dictionary: Dictionary
   isDraggingDay: boolean
   motion: "left" | "right" | null
@@ -49,6 +49,7 @@ type DateHeaderProps = {
   onOpenSettings: () => void
   onRegisterAccount: (email: string, password: string) => Promise<void> | void
   onResendVerificationEmail: () => Promise<void> | void
+  onDateStripSettled: (dateKey: string) => void
   onSelectDate: (dateKey: string) => void
 }
 
@@ -61,7 +62,7 @@ export function DateHeader({
   authSubmitting,
   dateStatusLabel,
   dateMuscleGroups,
-  dateStripRef,
+  dateStripCenterDate,
   days,
   dictionary,
   isDraggingDay,
@@ -77,15 +78,42 @@ export function DateHeader({
   onOpenSettings,
   onRegisterAccount,
   onResendVerificationEmail,
+  onDateStripSettled,
   onSelectDate,
 }: DateHeaderProps) {
   const dateTone = getDateTone(selectedDateState)
+  const dateStripRef = useRef<HTMLDivElement | null>(null)
   const selectedDateRef = useRef<HTMLButtonElement | null>(null)
   const lastScrolledSelectedDateRef = useRef<string | null>(null)
   const dateScrollAnimationRef = useRef<number | null>(null)
 
+  useLayoutEffect(() => {
+    if (dateStripCenterDate !== selectedDate || isDraggingDay) {
+      return
+    }
+
+    const container = dateStripRef?.current
+    const selectedButton = selectedDateRef.current
+
+    if (!container || !selectedButton) {
+      return
+    }
+
+    const containerRect = container.getBoundingClientRect()
+    const buttonRect = selectedButton.getBoundingClientRect()
+    const targetLeft =
+      container.scrollLeft +
+      buttonRect.left -
+      containerRect.left -
+      (container.clientWidth - selectedButton.offsetWidth) / 2
+    const maxLeft = container.scrollWidth - container.clientWidth
+
+    container.scrollLeft = Math.max(0, Math.min(targetLeft, maxLeft))
+    lastScrolledSelectedDateRef.current = selectedDate
+  }, [dateStripCenterDate, dateStripRef, isDraggingDay, selectedDate])
+
   useEffect(() => {
-    if (isDraggingDay) {
+    if (isDraggingDay || dateStripCenterDate === selectedDate) {
       return
     }
 
@@ -98,6 +126,7 @@ export function DateHeader({
     const selectedButton = selectedDateRef.current
 
     if (!container || !selectedButton) {
+      onDateStripSettled(selectedDate)
       return
     }
 
@@ -123,6 +152,7 @@ export function DateHeader({
     const startedAt = performance.now()
 
     if (Math.abs(distance) < 1) {
+      onDateStripSettled(selectedDate)
       return
     }
 
@@ -138,6 +168,7 @@ export function DateHeader({
       }
 
       dateScrollAnimationRef.current = null
+      onDateStripSettled(selectedDate)
     }
 
     dateScrollAnimationRef.current = window.requestAnimationFrame(animate)
@@ -148,7 +179,13 @@ export function DateHeader({
         dateScrollAnimationRef.current = null
       }
     }
-  }, [dateStripRef, isDraggingDay, selectedDate])
+  }, [
+    dateStripCenterDate,
+    dateStripRef,
+    isDraggingDay,
+    onDateStripSettled,
+    selectedDate,
+  ])
 
   return (
     <header className={`px-4 pb-3 pt-4 ${dateTone.headerClassName}`}>

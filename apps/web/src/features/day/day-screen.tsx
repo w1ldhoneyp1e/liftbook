@@ -55,7 +55,6 @@ export function DayScreen() {
   const touchStartTimeRef = useRef(0)
   const touchLastXRef = useRef(0)
   const touchLastTimeRef = useRef(0)
-  const dateStripRef = useRef<HTMLDivElement | null>(null)
   const [isDayCarouselMoving, setIsDayCarouselMoving] = useState(false)
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator === "undefined" ? true : navigator.onLine
@@ -64,6 +63,7 @@ export function DayScreen() {
   const [today, setToday] = useState(ssrToday)
   const [selectedDate, setSelectedDate] = useState(ssrToday)
   const [carouselCenterDate, setCarouselCenterDate] = useState(ssrToday)
+  const [calendarCenterDate, setCalendarCenterDate] = useState(ssrToday)
   const [visualDate, setVisualDate] = useState(ssrToday)
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [exercisePickerOpen, setExercisePickerOpen] = useState(false)
@@ -126,8 +126,8 @@ export function DayScreen() {
   const restSeconds =
     restTimerMode === "timer" ? timerElapsedSeconds : stopwatchSeconds
   const days = useMemo(
-    () => createDateStrip(selectedDate, locale, dateMuscleGroups),
-    [dateMuscleGroups, locale, selectedDate]
+    () => createDateStrip(calendarCenterDate, locale, dateMuscleGroups),
+    [calendarCenterDate, dateMuscleGroups, locale]
   )
   const carouselDates = useMemo(
     () =>
@@ -165,6 +165,9 @@ export function DayScreen() {
         currentDate === ssrToday ? localToday : currentDate
       )
       setCarouselCenterDate((currentDate) =>
+        currentDate === ssrToday ? localToday : currentDate
+      )
+      setCalendarCenterDate((currentDate) =>
         currentDate === ssrToday ? localToday : currentDate
       )
       setVisualDate((currentDate) =>
@@ -577,9 +580,15 @@ export function DayScreen() {
   }
 
   function handleSelectDate(dateKey: string) {
+    const dateExistsInStrip = days.some((day) => day.dateKey === dateKey)
+
     setSelectedDate(dateKey)
     setCarouselCenterDate(dateKey)
     setVisualDate(dateKey)
+
+    if (!dateExistsInStrip) {
+      setCalendarCenterDate(dateKey)
+    }
   }
 
   function clearCarouselIdleTimeout() {
@@ -853,6 +862,7 @@ export function DayScreen() {
 
     setSelectedDate(dateKey)
     setCarouselCenterDate(dateKey)
+    setCalendarCenterDate(dateKey)
     setVisualDate(dateKey)
     setCalendarOpen(false)
   }
@@ -870,7 +880,7 @@ export function DayScreen() {
             authSubmitting={authSubmitting}
             dateStatusLabel={dateStatusLabel}
             days={days}
-            dateStripRef={dateStripRef}
+            dateStripCenterDate={calendarCenterDate}
             dictionary={dictionary}
             isDraggingDay={isDayCarouselMoving}
             motion={null}
@@ -888,6 +898,7 @@ export function DayScreen() {
             onOpenSettings={() => setSettingsOpen(true)}
             onRegisterAccount={handleRegisterAccount}
             onResendVerificationEmail={handleResendVerificationEmail}
+            onDateStripSettled={setCalendarCenterDate}
             onSelectDate={handleSelectDate}
           />
 
