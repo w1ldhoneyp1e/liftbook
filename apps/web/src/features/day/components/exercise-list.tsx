@@ -90,16 +90,15 @@ export const ExerciseList = memo(function ExerciseList({
           <p className="text-lg font-medium text-foreground">
             {dictionary.labels.emptyDayMessage}
           </p>
-          {!previewMode ? (
-            <Button
-              variant="default"
-              size="default"
-              className="min-w-28"
-              onClick={onOpenExercisePicker}
-            >
-              {dictionary.actions.add}
-            </Button>
-          ) : null}
+          <Button
+            variant="default"
+            size="default"
+            className="min-w-28"
+            tabIndex={previewMode ? -1 : undefined}
+            onClick={onOpenExercisePicker}
+          >
+            {dictionary.actions.add}
+          </Button>
         </div>
       ) : null}
 
