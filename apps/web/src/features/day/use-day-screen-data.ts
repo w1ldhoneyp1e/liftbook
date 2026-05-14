@@ -34,6 +34,7 @@ type DayScreenData = {
   workoutDay: WorkoutDay | null
   exerciseEntries: ExerciseEntry[]
   exercisesById: Record<string, Exercise>
+  daySnapshots: Record<string, DaySnapshot>
   loading: boolean
   loadError: string | null
   syncSummary: {
@@ -51,6 +52,8 @@ type DaySnapshot = {
   exerciseEntries: ExerciseEntry[]
 }
 
+const DAY_WINDOW_RADIUS = 7
+
 export function useDayScreenData(date: string) {
   const [state, setState] = useState<DayScreenData>({
     accountSession: null,
@@ -59,6 +62,7 @@ export function useDayScreenData(date: string) {
     workoutDay: null,
     exerciseEntries: [],
     exercisesById: {},
+    daySnapshots: {},
     loading: true,
     loadError: null,
     syncSummary: {
@@ -85,30 +89,23 @@ export function useDayScreenData(date: string) {
 
       const previousDate = shiftDateKey(date, -1)
       const nextDate = shiftDateKey(date, 1)
+      const dayWindowDates = Array.from(
+        { length: DAY_WINDOW_RADIUS * 2 + 1 },
+        (_, index) => shiftDateKey(date, index - DAY_WINDOW_RADIUS)
+      )
 
       const [
         accountSession,
         settings,
-        currentDay,
-        currentEntries,
-        previousDay,
-        previousEntries,
-        nextDay,
-        nextEntries,
+        workoutDays,
+        dayEntries,
         allEntries,
         exercises,
       ] = await Promise.all([
         db.accountSessions.get("local"),
         db.userSettings.get("local"),
-        db.workoutDays.where("date").equals(date).first(),
-        db.exerciseEntries.where("workoutDate").equals(date).sortBy("position"),
-        db.workoutDays.where("date").equals(previousDate).first(),
-        db.exerciseEntries
-          .where("workoutDate")
-          .equals(previousDate)
-          .sortBy("position"),
-        db.workoutDays.where("date").equals(nextDate).first(),
-        db.exerciseEntries.where("workoutDate").equals(nextDate).sortBy("position"),
+        db.workoutDays.where("date").anyOf(dayWindowDates).toArray(),
+        db.exerciseEntries.where("workoutDate").anyOf(dayWindowDates).toArray(),
         db.exerciseEntries.toArray(),
         db.exercises.toArray(),
       ])
@@ -130,6 +127,7 @@ export function useDayScreenData(date: string) {
         workoutDay: workoutDay && !workoutDay.deletedAt ? workoutDay : null,
         exerciseEntries: entries
           .filter((entry) => !entry.deletedAt)
+          .sort((left, right) => left.position - right.position)
           .map((entry) => ({
             ...entry,
             setEntries: entry.setEntries.filter((setEntry) => !setEntry.deletedAt),
@@ -138,6 +136,30 @@ export function useDayScreenData(date: string) {
 
       const exercisesById = Object.fromEntries(
         exercises.map((exercise) => [exercise.id, exercise])
+      )
+      const workoutDaysByDate = Object.fromEntries(
+        workoutDays.map((workoutDay) => [workoutDay.date, workoutDay])
+      )
+      const dayEntriesByDate = dayEntries.reduce<Record<string, ExerciseEntry[]>>(
+        (entriesByDate, entry) => {
+          if (!entriesByDate[entry.workoutDate]) {
+            entriesByDate[entry.workoutDate] = []
+          }
+
+          entriesByDate[entry.workoutDate].push(entry)
+          return entriesByDate
+        },
+        {}
+      )
+      const daySnapshots = Object.fromEntries(
+        dayWindowDates.map((snapshotDate) => [
+          snapshotDate,
+          buildSnapshot(
+            snapshotDate,
+            workoutDaysByDate[snapshotDate],
+            dayEntriesByDate[snapshotDate] ?? []
+          ),
+        ])
       )
       const dateMuscleGroups = allEntries.reduce<Record<string, MuscleGroupId[]>>(
         (summary, entry) => {
@@ -165,15 +187,15 @@ export function useDayScreenData(date: string) {
         accountSession: accountSession ?? null,
         resolvedDate: date,
         settings: normalizedSettings ?? null,
-        workoutDay: buildSnapshot(date, currentDay, currentEntries).workoutDay,
-        exerciseEntries: buildSnapshot(date, currentDay, currentEntries)
-          .exerciseEntries,
+        workoutDay: daySnapshots[date]?.workoutDay ?? null,
+        exerciseEntries: daySnapshots[date]?.exerciseEntries ?? [],
         exercisesById,
+        daySnapshots,
         loading: false,
         loadError: null,
         syncSummary,
-        previousDay: buildSnapshot(previousDate, previousDay, previousEntries),
-        nextDay: buildSnapshot(nextDate, nextDay, nextEntries),
+        previousDay: daySnapshots[previousDate] ?? createEmptyDaySnapshot(previousDate),
+        nextDay: daySnapshots[nextDate] ?? createEmptyDaySnapshot(nextDate),
         dateMuscleGroups,
       })
     } catch (error) {
@@ -759,6 +781,14 @@ export function useDayScreenData(date: string) {
     updateSettings,
     locale: state.settings?.locale ?? "en",
     dictionary: getDictionary(state.settings?.locale ?? "en"),
+  }
+}
+
+function createEmptyDaySnapshot(date: string): DaySnapshot {
+  return {
+    date,
+    workoutDay: null,
+    exerciseEntries: [],
   }
 }
 

@@ -49,27 +49,15 @@ type WakeLockHandle = {
   release: () => Promise<void>
 }
 
-type TransientDayView = {
-  date: string
-  exerciseEntries: ExerciseEntry[]
-}
-
 export function DayScreen() {
   const autoSyncSignatureRef = useRef<string | null>(null)
-  const initialDateRef = useRef<string | null>(null)
-  const suppressNextMotionRef = useRef(false)
   const wakeLockRef = useRef<WakeLockHandle | null>(null)
   const silentAudioRef = useRef<HTMLAudioElement | null>(null)
-  const swipeContainerRef = useRef<HTMLDivElement | null>(null)
-  const swipeTrackRef = useRef<HTMLDivElement | null>(null)
+  const carouselRef = useRef<HTMLDivElement | null>(null)
+  const carouselIdleTimeoutRef = useRef<number | null>(null)
+  const isRecenteringRef = useRef(false)
   const dateStripRef = useRef<HTMLDivElement | null>(null)
-  const swipeStartRef = useRef<{ x: number; y: number } | null>(null)
-  const swipeCurrentRef = useRef<{ x: number; y: number } | null>(null)
-  const dragOffsetRef = useRef(0)
-  const [isDraggingDay, setIsDraggingDay] = useState(false)
-  const [settlingSwipe, setSettlingSwipe] = useState<
-    "next" | "prev" | "reset" | null
-  >(null)
+  const [isDayCarouselMoving, setIsDayCarouselMoving] = useState(false)
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator === "undefined" ? true : navigator.onLine
   )
@@ -80,12 +68,7 @@ export function DayScreen() {
   const [exercisePickerOpen, setExercisePickerOpen] = useState(false)
   const [highlightedExerciseEntryId, setHighlightedExerciseEntryId] =
     useState<string | null>(null)
-  const [transientDayView, setTransientDayView] =
-    useState<TransientDayView | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [contentMotion, setContentMotion] = useState<"left" | "right" | null>(
-    null
-  )
   const [stopwatchSeconds, setStopwatchSeconds] = useState(0)
   const [timerElapsedSeconds, setTimerElapsedSeconds] = useState(0)
   const [runningTimerMode, setRunningTimerMode] = useState<"stopwatch" | "timer" | null>(null)
@@ -108,8 +91,8 @@ export function DayScreen() {
     deleteExercise,
     deleteSet,
     dictionary,
+    daySnapshots,
     dateMuscleGroups,
-    exerciseEntries,
     exercisesById,
     loginAccount,
     loadError,
@@ -125,8 +108,6 @@ export function DayScreen() {
     syncPendingChanges,
     updateSettings,
     updateSet,
-    previousDay,
-    nextDay,
   } = useDayScreenData(selectedDate)
 
   const unit = settings?.weightUnit ?? "kg"
@@ -147,49 +128,23 @@ export function DayScreen() {
     () => createDateStrip(selectedDate, locale, dateMuscleGroups),
     [dateMuscleGroups, locale, selectedDate]
   )
+  const carouselDates = useMemo(
+    () => [-2, -1, 0, 1, 2].map((offset) => shiftDateKey(selectedDate, offset)),
+    [selectedDate]
+  )
   const selectedDateState = getDateState(selectedDate, today)
   const dateStatusLabel = getDateStatusLabel(
     selectedDateState,
     dictionary,
     selectedDate
   )
-  const isAwaitingSelectedDateData =
-    resolvedDate !== null && resolvedDate !== selectedDate
-  const displayedExerciseEntries =
-    transientDayView?.date === selectedDate && isAwaitingSelectedDateData
-      ? transientDayView.exerciseEntries
-      : exerciseEntries
-  const displayedLoadError = isAwaitingSelectedDateData ? null : loadError
-  const displayedLoading =
-    isAwaitingSelectedDateData && transientDayView?.date === selectedDate
-      ? false
-      : loading
-
-  const applySwipeOffset = useCallback(
-    (
-      offset: number,
-      options: {
-        immediate?: boolean
-      } = {}
-    ) => {
-      dragOffsetRef.current = offset
-
-      if (swipeTrackRef.current) {
-        swipeTrackRef.current.style.transition = options.immediate
-          ? "none"
-          : "transform 220ms cubic-bezier(0.22, 1, 0.36, 1)"
-        swipeTrackRef.current.style.transform = `translateX(calc(-33.333% + ${offset}px))`
-      }
-
-      if (dateStripRef.current) {
-        dateStripRef.current.style.transition = options.immediate
-          ? "none"
-          : "transform 220ms cubic-bezier(0.22, 1, 0.36, 1)"
-        dateStripRef.current.style.transform = `translateX(${offset * 0.35}px)`
-      }
-    },
-    []
-  )
+  const currentDaySnapshot = daySnapshots[selectedDate] ?? {
+    date: selectedDate,
+    workoutDay: null,
+    exerciseEntries: [],
+  }
+  const currentDayIsResolving =
+    loading || resolvedDate !== selectedDate || !daySnapshots[selectedDate]
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -201,7 +156,6 @@ export function DayScreen() {
         return
       }
 
-      initialDateRef.current = localToday
       setSelectedDate((currentDate) =>
         currentDate === ssrToday ? localToday : currentDate
       )
@@ -209,67 +163,6 @@ export function DayScreen() {
 
     return () => window.clearTimeout(timeoutId)
   }, [ssrToday])
-
-  useEffect(() => {
-    if (initialDateRef.current === null) {
-      initialDateRef.current = selectedDate
-      return
-    }
-
-    if (suppressNextMotionRef.current) {
-      initialDateRef.current = selectedDate
-      suppressNextMotionRef.current = false
-      setContentMotion(null)
-      return
-    }
-
-    const previousDate = initialDateRef.current
-    if (previousDate === selectedDate) {
-      return
-    }
-
-    setContentMotion(selectedDate > previousDate ? "left" : "right")
-    initialDateRef.current = selectedDate
-
-    const timeoutId = window.setTimeout(() => {
-      setContentMotion(null)
-    }, 220)
-
-    return () => window.clearTimeout(timeoutId)
-  }, [selectedDate])
-
-  useEffect(() => {
-    if (settlingSwipe === null) {
-      return
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      if (settlingSwipe === "next" || settlingSwipe === "prev") {
-        const targetDate = shiftDateKey(
-          selectedDate,
-          settlingSwipe === "next" ? 1 : -1
-        )
-        const targetSnapshot =
-          settlingSwipe === "next" ? nextDay : previousDay
-
-        setTransientDayView({
-          date: targetDate,
-          exerciseEntries: targetSnapshot.exerciseEntries,
-        })
-        suppressNextMotionRef.current = true
-        setSelectedDate(targetDate)
-      }
-
-      applySwipeOffset(0, { immediate: true })
-      setSettlingSwipe(null)
-    }, 220)
-
-    return () => window.clearTimeout(timeoutId)
-  }, [applySwipeOffset, nextDay, previousDay, selectedDate, settlingSwipe])
-
-  useEffect(() => {
-    applySwipeOffset(dragOffsetRef.current, { immediate: true })
-  }, [applySwipeOffset, isDraggingDay, settlingSwipe])
 
   useEffect(() => {
     if (!restTimerRunning) {
@@ -672,6 +565,116 @@ export function DayScreen() {
     await runSync("manual")
   }
 
+  function resetDateStripTransform() {
+    if (!dateStripRef.current) {
+      return
+    }
+
+    dateStripRef.current.style.transition =
+      "transform 220ms cubic-bezier(0.22, 1, 0.36, 1)"
+    dateStripRef.current.style.transform = "translateX(0px)"
+  }
+
+  const scrollCarouselToCenter = useCallback(
+    (behavior: ScrollBehavior = "auto") => {
+      if (!carouselRef.current) {
+        return
+      }
+
+      const carouselWidth = carouselRef.current.clientWidth
+
+      carouselRef.current.scrollTo({
+        left: carouselWidth * 2,
+        behavior,
+      })
+      resetDateStripTransform()
+    },
+    []
+  )
+
+  useEffect(() => {
+    if (!carouselRef.current) {
+      return
+    }
+
+    isRecenteringRef.current = true
+
+    const frameId = window.requestAnimationFrame(() => {
+      scrollCarouselToCenter("auto")
+
+      window.setTimeout(() => {
+        isRecenteringRef.current = false
+      }, 40)
+    })
+
+    return () => window.cancelAnimationFrame(frameId)
+  }, [scrollCarouselToCenter, selectedDate])
+
+  function settleCarousel() {
+    if (!carouselRef.current) {
+      return
+    }
+
+    const carouselWidth = carouselRef.current.clientWidth
+
+    if (carouselWidth === 0) {
+      return
+    }
+
+    const rawIndex = carouselRef.current.scrollLeft / carouselWidth
+    const nearestIndex = Math.round(rawIndex)
+    const deltaFromCenter = nearestIndex - 2
+
+    resetDateStripTransform()
+    setIsDayCarouselMoving(false)
+
+    if (deltaFromCenter === 0) {
+      scrollCarouselToCenter("smooth")
+      return
+    }
+
+    const clampedDelta = deltaFromCenter > 0 ? 1 : -1
+    setSelectedDate((currentDate) => shiftDateKey(currentDate, clampedDelta))
+  }
+
+  function handleCarouselScroll() {
+    if (!carouselRef.current || isRecenteringRef.current) {
+      return
+    }
+
+    const carouselWidth = carouselRef.current.clientWidth
+
+    if (carouselWidth === 0) {
+      return
+    }
+
+    const centerOffset = carouselRef.current.scrollLeft - carouselWidth * 2
+    const isMoving = Math.abs(centerOffset) > 4
+
+    setIsDayCarouselMoving(isMoving)
+
+    if (dateStripRef.current) {
+      dateStripRef.current.style.transition = "none"
+      dateStripRef.current.style.transform = `translateX(${centerOffset * 0.22}px)`
+    }
+
+    if (carouselIdleTimeoutRef.current !== null) {
+      window.clearTimeout(carouselIdleTimeoutRef.current)
+    }
+
+    carouselIdleTimeoutRef.current = window.setTimeout(() => {
+      settleCarousel()
+    }, 90)
+  }
+
+  useEffect(() => {
+    return () => {
+      if (carouselIdleTimeoutRef.current !== null) {
+        window.clearTimeout(carouselIdleTimeoutRef.current)
+      }
+    }
+  }, [])
+
   function handleSelectCalendarDate(date: Date | undefined) {
     if (!date) {
       return
@@ -680,82 +683,6 @@ export function DayScreen() {
     setSelectedDate(toDateKey(date))
     setCalendarOpen(false)
   }
-
-  function handleContentTouchStart(clientX: number, clientY: number) {
-    if (resolvedDate !== selectedDate || settlingSwipe !== null) {
-      return
-    }
-
-    swipeStartRef.current = { x: clientX, y: clientY }
-    swipeCurrentRef.current = { x: clientX, y: clientY }
-    setIsDraggingDay(false)
-    applySwipeOffset(0, { immediate: true })
-  }
-
-  function handleContentTouchMove(clientX: number, clientY: number) {
-    if (swipeStartRef.current === null) {
-      return
-    }
-
-    swipeCurrentRef.current = { x: clientX, y: clientY }
-
-    const deltaX = clientX - swipeStartRef.current.x
-    const deltaY = clientY - swipeStartRef.current.y
-
-    if (Math.abs(deltaX) < 12 || Math.abs(deltaX) <= Math.abs(deltaY) + 10) {
-      if (!isDraggingDay) {
-        return
-      }
-
-      setIsDraggingDay(false)
-      applySwipeOffset(0, { immediate: true })
-      return
-    }
-
-    const containerWidth = swipeContainerRef.current?.offsetWidth ?? 320
-
-    setIsDraggingDay(true)
-    setContentMotion(null)
-    applySwipeOffset(
-      Math.max(-containerWidth * 0.92, Math.min(containerWidth * 0.92, deltaX)),
-      { immediate: true }
-    )
-  }
-
-  function handleContentTouchEnd() {
-    const start = swipeStartRef.current
-    const current = swipeCurrentRef.current
-    const finalOffset = dragOffsetRef.current
-
-    swipeStartRef.current = null
-    swipeCurrentRef.current = null
-    setIsDraggingDay(false)
-
-    if (!start || !current) {
-      applySwipeOffset(0, { immediate: true })
-      return
-    }
-
-    const deltaX = finalOffset || current.x - start.x
-    const deltaY = current.y - start.y
-    const containerWidth = swipeContainerRef.current?.offsetWidth ?? 320
-    const activationThreshold = Math.min(120, Math.max(72, containerWidth * 0.22))
-
-    if (
-      Math.abs(deltaX) < activationThreshold ||
-      Math.abs(deltaX) <= Math.abs(deltaY) + 12
-    ) {
-      applySwipeOffset(0)
-      setSettlingSwipe("reset")
-      return
-    }
-
-    applySwipeOffset(deltaX < 0 ? -containerWidth : containerWidth)
-    setSettlingSwipe(deltaX < 0 ? "next" : "prev")
-  }
-
-  const swipeLocked =
-    isDraggingDay || settlingSwipe !== null || isAwaitingSelectedDateData
 
   return (
     <div className="flex min-h-svh justify-center bg-muted/35 text-foreground dark:bg-[#0b0d11]">
@@ -772,8 +699,8 @@ export function DayScreen() {
             days={days}
             dateStripRef={dateStripRef}
             dictionary={dictionary}
-            isDraggingDay={isDraggingDay}
-            motion={contentMotion}
+            isDraggingDay={isDayCarouselMoving}
+            motion={null}
             selectedDate={selectedDate}
             selectedDateState={selectedDateState}
             today={today}
@@ -858,61 +785,31 @@ export function DayScreen() {
         </div>
 
         <div
-          ref={swipeContainerRef}
-          className="relative w-full [touch-action:pan-y]"
-          onTouchStart={(event) =>
-            handleContentTouchStart(
-              event.changedTouches[0].clientX,
-              event.changedTouches[0].clientY
-            )
-          }
-          onTouchMove={(event) =>
-            handleContentTouchMove(
-              event.changedTouches[0].clientX,
-              event.changedTouches[0].clientY
-            )
-          }
-          onTouchCancel={() => handleContentTouchEnd()}
-          onTouchEnd={() => handleContentTouchEnd()}
+          ref={carouselRef}
+          className="flex flex-1 overflow-x-auto overscroll-x-contain snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          onScroll={handleCarouselScroll}
         >
-          <div className="overflow-hidden">
-            <div
-              ref={swipeTrackRef}
-              className="flex w-[300%] will-change-transform"
-              style={{ transform: "translateX(-33.333%)" }}
-            >
-              <div className="w-full shrink-0 basis-full pointer-events-none">
-                <SwipePreviewDayPane
-                  dictionary={dictionary}
-                  exerciseEntries={previousDay.exerciseEntries}
-                  exercisesById={exercisesById}
-                  locale={locale}
-                  unit={unit}
-                />
-              </div>
+          {carouselDates.map((paneDate, paneIndex) => {
+            const snapshot = daySnapshots[paneDate] ?? {
+              date: paneDate,
+              workoutDay: null,
+              exerciseEntries: [],
+            }
+            const isCenterPane = paneIndex === 2
+
+            return (
               <div
-                className={`w-full shrink-0 basis-full ${
-                  swipeLocked ? "pointer-events-none" : "pointer-events-auto"
-                }`}
+                key={paneDate}
+                className="w-full shrink-0 snap-center [scroll-snap-stop:always]"
               >
-                <div
-                  className={`relative z-10 ${
-                    swipeLocked
-                      ? ""
-                      : contentMotion === "left"
-                        ? "animate-[day-slide-left_220ms_ease-out]"
-                        : contentMotion === "right"
-                          ? "animate-[day-slide-right_220ms_ease-out]"
-                          : ""
-                  }`}
-                >
+                {isCenterPane ? (
                   <ExerciseList
                     dictionary={dictionary}
-                    exerciseEntries={displayedExerciseEntries}
+                    exerciseEntries={currentDaySnapshot.exerciseEntries}
                     exercisesById={exercisesById}
                     highlightedExerciseEntryId={highlightedExerciseEntryId}
-                    loadError={displayedLoadError}
-                    loading={displayedLoading}
+                    loadError={loadError}
+                    loading={currentDayIsResolving}
                     locale={locale}
                     onOpenExercisePicker={() => setExercisePickerOpen(true)}
                     repsStep={repsStep}
@@ -923,19 +820,18 @@ export function DayScreen() {
                     onDeleteSet={deleteSet}
                     onUpdateSet={updateSet}
                   />
-                </div>
+                ) : (
+                  <SwipePreviewDayPane
+                    dictionary={dictionary}
+                    exerciseEntries={snapshot.exerciseEntries}
+                    exercisesById={exercisesById}
+                    locale={locale}
+                    unit={unit}
+                  />
+                )}
               </div>
-              <div className="w-full shrink-0 basis-full pointer-events-none">
-                <SwipePreviewDayPane
-                  dictionary={dictionary}
-                  exerciseEntries={nextDay.exerciseEntries}
-                  exercisesById={exercisesById}
-                  locale={locale}
-                  unit={unit}
-                />
-              </div>
-            </div>
-          </div>
+            )
+          })}
         </div>
 
       </main>
