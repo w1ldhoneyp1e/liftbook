@@ -4,7 +4,7 @@ import { createPortal } from "react-dom"
 import type { ReactNode } from "react"
 
 import { cn } from "@/lib/utils"
-import { layers } from "./layers"
+import { useOverlayLayerContainer } from "./layers"
 
 type ModalPopupProps = {
   children: ReactNode
@@ -19,7 +19,9 @@ export function ModalPopup({
   open,
   onOpenChange,
 }: ModalPopupProps) {
-  if (!open || typeof document === "undefined") {
+  const container = useOverlayLayerContainer("popup")
+
+  if (!open || typeof document === "undefined" || !container) {
     return null
   }
 
@@ -27,8 +29,7 @@ export function ModalPopup({
     <div className="fixed inset-0 isolate">
       <button
         className={cn(
-          "absolute inset-0 block h-full w-full bg-black/10 supports-backdrop-filter:backdrop-blur-xs",
-          layers.popupBackdrop
+          "pointer-events-auto absolute inset-0 block h-full w-full bg-black/10 supports-backdrop-filter:backdrop-blur-xs"
         )}
         type="button"
         aria-label="Close popup"
@@ -36,8 +37,7 @@ export function ModalPopup({
       />
       <div
         className={cn(
-          "pointer-events-none relative flex min-h-full items-center justify-center p-4",
-          layers.popupContent
+          "pointer-events-none relative flex min-h-full items-center justify-center p-4"
         )}
       >
         <div
@@ -50,6 +50,6 @@ export function ModalPopup({
         </div>
       </div>
     </div>,
-    document.body
+    container
   )
 }

@@ -4,7 +4,7 @@ import * as React from "react"
 import { Popover as PopoverPrimitive } from "@base-ui/react/popover"
 
 import { cn } from "@/lib/utils"
-import { layers } from "./layers"
+import { useOverlayLayerContainer } from "./layers"
 
 type PopoverProps = PopoverPrimitive.Root.Props & {
   backdropClassName?: string
@@ -52,19 +52,24 @@ function PopoverPositioner({
   const { backdropClassName, withBackdrop } = React.useContext(
     PopoverBackdropContext
   )
+  const container = useOverlayLayerContainer("popover")
+
+  if (!container) {
+    return null
+  }
 
   return (
-    <PopoverPrimitive.Portal>
+    <PopoverPrimitive.Portal container={container}>
       {withBackdrop ? (
         <PopoverPrimitive.Backdrop
           className={cn(
-            `fixed inset-0 ${layers.popoverBackdrop} bg-background/10 backdrop-blur-[5px]`,
+            "pointer-events-auto fixed inset-0 bg-background/10 backdrop-blur-[5px]",
             backdropClassName
           )}
         />
       ) : null}
       <PopoverPrimitive.Positioner
-        className={cn(`${layers.popoverContent} outline-none`, className)}
+        className={cn("pointer-events-none outline-none", className)}
         {...props}
       />
     </PopoverPrimitive.Portal>
@@ -78,7 +83,7 @@ function PopoverPopup({
   return (
     <PopoverPrimitive.Popup
       className={cn(
-        "max-h-[var(--available-height)] overflow-auto rounded-2xl border border-border/50 bg-background/96 p-3 shadow-lg outline-none",
+        "pointer-events-auto max-h-[var(--available-height)] overflow-auto rounded-2xl border border-border/50 bg-background/96 p-3 shadow-lg outline-none",
         className
       )}
       {...props}
