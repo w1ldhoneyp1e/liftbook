@@ -64,6 +64,7 @@ export function DayScreen() {
   const ssrToday = useMemo(() => new Date().toISOString().slice(0, 10), [])
   const [today, setToday] = useState(ssrToday)
   const [selectedDate, setSelectedDate] = useState(ssrToday)
+  const [visualDate, setVisualDate] = useState(ssrToday)
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [exercisePickerOpen, setExercisePickerOpen] = useState(false)
   const [highlightedExerciseEntryId, setHighlightedExerciseEntryId] =
@@ -143,8 +144,9 @@ export function DayScreen() {
     workoutDay: null,
     exerciseEntries: [],
   }
-  const currentDayIsResolving =
-    loading || resolvedDate !== selectedDate || !daySnapshots[selectedDate]
+  const currentDayIsResolving = !daySnapshots[selectedDate] && (
+    loading || resolvedDate !== selectedDate
+  )
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -157,6 +159,9 @@ export function DayScreen() {
       }
 
       setSelectedDate((currentDate) =>
+        currentDate === ssrToday ? localToday : currentDate
+      )
+      setVisualDate((currentDate) =>
         currentDate === ssrToday ? localToday : currentDate
       )
     }, 0)
@@ -565,6 +570,11 @@ export function DayScreen() {
     await runSync("manual")
   }
 
+  function handleSelectDate(dateKey: string) {
+    setSelectedDate(dateKey)
+    setVisualDate(dateKey)
+  }
+
   function resetDateStripTransform() {
     if (!dateStripRef.current) {
       return
@@ -629,12 +639,16 @@ export function DayScreen() {
     setIsDayCarouselMoving(false)
 
     if (deltaFromCenter === 0) {
+      setVisualDate(selectedDate)
       scrollCarouselToCenter("smooth")
       return
     }
 
     const clampedDelta = deltaFromCenter > 0 ? 1 : -1
-    setSelectedDate((currentDate) => shiftDateKey(currentDate, clampedDelta))
+    const nextDate = shiftDateKey(selectedDate, clampedDelta)
+
+    setVisualDate(nextDate)
+    setSelectedDate(nextDate)
   }
 
   function handleCarouselScroll() {
@@ -650,8 +664,18 @@ export function DayScreen() {
 
     const centerOffset = carouselRef.current.scrollLeft - carouselWidth * 2
     const isMoving = Math.abs(centerOffset) > 4
+    const progress = centerOffset / carouselWidth
+    const nextVisualDate =
+      progress > 0.35
+        ? shiftDateKey(selectedDate, 1)
+        : progress < -0.35
+          ? shiftDateKey(selectedDate, -1)
+          : selectedDate
 
     setIsDayCarouselMoving(isMoving)
+    setVisualDate((currentDate) =>
+      currentDate === nextVisualDate ? currentDate : nextVisualDate
+    )
 
     if (dateStripRef.current) {
       dateStripRef.current.style.transition = "none"
@@ -681,6 +705,7 @@ export function DayScreen() {
     }
 
     setSelectedDate(toDateKey(date))
+    setVisualDate(toDateKey(date))
     setCalendarOpen(false)
   }
 
@@ -702,6 +727,7 @@ export function DayScreen() {
             isDraggingDay={isDayCarouselMoving}
             motion={null}
             selectedDate={selectedDate}
+            visualDate={visualDate}
             selectedDateState={selectedDateState}
             today={today}
             dateMuscleGroups={dateMuscleGroups}
@@ -714,7 +740,7 @@ export function DayScreen() {
             onOpenSettings={() => setSettingsOpen(true)}
             onRegisterAccount={handleRegisterAccount}
             onResendVerificationEmail={handleResendVerificationEmail}
-            onSelectDate={setSelectedDate}
+            onSelectDate={handleSelectDate}
           />
 
           <RestTimerRow

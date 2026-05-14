@@ -183,20 +183,31 @@ export function useDayScreenData(date: string) {
         {}
       )
 
-      setState({
-        accountSession: accountSession ?? null,
-        resolvedDate: date,
-        settings: normalizedSettings ?? null,
-        workoutDay: daySnapshots[date]?.workoutDay ?? null,
-        exerciseEntries: daySnapshots[date]?.exerciseEntries ?? [],
-        exercisesById,
-        daySnapshots,
-        loading: false,
-        loadError: null,
-        syncSummary,
-        previousDay: daySnapshots[previousDate] ?? createEmptyDaySnapshot(previousDate),
-        nextDay: daySnapshots[nextDate] ?? createEmptyDaySnapshot(nextDate),
-        dateMuscleGroups,
+      setState((currentState) => {
+        const nextDaySnapshots = {
+          ...currentState.daySnapshots,
+          ...daySnapshots,
+        }
+        const currentSnapshot =
+          nextDaySnapshots[date] ?? createEmptyDaySnapshot(date)
+
+        return {
+          accountSession: accountSession ?? null,
+          resolvedDate: date,
+          settings: normalizedSettings ?? null,
+          workoutDay: currentSnapshot.workoutDay,
+          exerciseEntries: currentSnapshot.exerciseEntries,
+          exercisesById,
+          daySnapshots: nextDaySnapshots,
+          loading: false,
+          loadError: null,
+          syncSummary,
+          previousDay:
+            nextDaySnapshots[previousDate] ?? createEmptyDaySnapshot(previousDate),
+          nextDay:
+            nextDaySnapshots[nextDate] ?? createEmptyDaySnapshot(nextDate),
+          dateMuscleGroups,
+        }
       })
     } catch (error) {
       console.error("Failed to load day screen", error)

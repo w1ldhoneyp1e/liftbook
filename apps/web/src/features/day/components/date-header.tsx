@@ -41,6 +41,7 @@ type DateHeaderProps = {
   selectedDate: string
   selectedDateState: DateState
   today: string
+  visualDate: string
   onCreateGuestAccount: () => void
   onLoginAccount: (email: string, password: string) => Promise<void> | void
   onLogoutAccount: () => Promise<void> | void
@@ -68,6 +69,7 @@ export function DateHeader({
   selectedDate,
   selectedDateState,
   today,
+  visualDate,
   onCreateGuestAccount,
   onLoginAccount,
   onLogoutAccount,
@@ -86,7 +88,7 @@ export function DateHeader({
       block: "nearest",
       inline: "center",
     })
-  }, [selectedDate])
+  }, [visualDate])
 
   return (
     <header className={`px-4 pb-3 pt-4 ${dateTone.headerClassName}`}>
@@ -156,10 +158,10 @@ export function DateHeader({
         {days.map((item) => (
           <button
             key={item.dateKey}
-            ref={item.selected ? selectedDateRef : null}
+            ref={item.dateKey === visualDate ? selectedDateRef : null}
             className={`min-w-14 rounded-lg px-2 py-2 text-center text-sm ${getDateButtonClassName(
               item.state,
-              item.selected
+              item.dateKey === visualDate
             )}`}
             type="button"
             onClick={() => onSelectDate(item.dateKey)}
