@@ -66,11 +66,17 @@ export function ExercisePickerDrawer({
   function openCreateModal() {
     setCreateName(query.trim())
     setCreateMuscleGroups(selectedMuscleGroup ? [selectedMuscleGroup] : ["other"])
+    onOpenChange(false)
     setCreateModalOpen(true)
   }
 
   function closeCreateModal() {
     setCreateModalOpen(false)
+  }
+
+  function cancelCreateModal() {
+    setCreateModalOpen(false)
+    onOpenChange(true)
   }
 
   function toggleCreateMuscleGroup(muscleGroupId: MuscleGroupId) {
@@ -309,7 +315,17 @@ export function ExercisePickerDrawer({
           </div>
         </DrawerContent>
       </Drawer>
-      <ModalPopup open={createModalOpen} onOpenChange={setCreateModalOpen}>
+      <ModalPopup
+        open={createModalOpen}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            cancelCreateModal()
+            return
+          }
+
+          setCreateModalOpen(true)
+        }}
+      >
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <p className="text-base font-semibold">
@@ -320,7 +336,7 @@ export function ExercisePickerDrawer({
             variant="ghost"
             size="icon-sm"
             aria-label={dictionary.actions.cancel}
-            onClick={closeCreateModal}
+            onClick={cancelCreateModal}
           >
             <X />
           </Button>
@@ -366,7 +382,7 @@ export function ExercisePickerDrawer({
           </div>
 
           <div className="grid grid-cols-2 gap-2">
-            <Button variant="outline" onClick={closeCreateModal}>
+            <Button variant="outline" onClick={cancelCreateModal}>
               {dictionary.actions.cancel}
             </Button>
             <Button

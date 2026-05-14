@@ -10,7 +10,15 @@ import {
 } from "react"
 
 import { Button } from "@/components/ui/button"
-import type { MuscleGroupId } from "@/shared/domain/types"
+import type {
+  Dictionary,
+} from "@/shared/i18n/dictionaries"
+import type {
+  Exercise,
+  ExerciseEntry,
+  MuscleGroupId,
+  WeightUnit,
+} from "@/shared/domain/types"
 import {
   applyThemeMode,
   persistThemeMode,
@@ -29,6 +37,12 @@ import {
   shiftDateKey,
   toDateKey,
 } from "./lib/date-utils"
+import {
+  formatTimer,
+  formatWeightValue,
+  getWeightUnitLabel,
+} from "./lib/format"
+import { getMuscleGroupColor } from "./lib/muscle-group-colors"
 import { useDayScreenData } from "./use-day-screen-data"
 
 type WakeLockHandle = {
@@ -38,12 +52,17 @@ type WakeLockHandle = {
 export function DayScreen() {
   const autoSyncSignatureRef = useRef<string | null>(null)
   const initialDateRef = useRef<string | null>(null)
+  const suppressNextMotionRef = useRef(false)
   const wakeLockRef = useRef<WakeLockHandle | null>(null)
   const silentAudioRef = useRef<HTMLAudioElement | null>(null)
+  const swipeContainerRef = useRef<HTMLDivElement | null>(null)
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null)
   const swipeCurrentRef = useRef<{ x: number; y: number } | null>(null)
   const [dragOffset, setDragOffset] = useState(0)
   const [isDraggingDay, setIsDraggingDay] = useState(false)
+  const [settlingSwipe, setSettlingSwipe] = useState<
+    "next" | "prev" | "reset" | null
+  >(null)
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator === "undefined" ? true : navigator.onLine
   )
@@ -96,6 +115,8 @@ export function DayScreen() {
     syncPendingChanges,
     updateSettings,
     updateSet,
+    previousDay,
+    nextDay,
   } = useDayScreenData(selectedDate)
 
   const unit = settings?.weightUnit ?? "kg"
@@ -148,6 +169,13 @@ export function DayScreen() {
       return
     }
 
+    if (suppressNextMotionRef.current) {
+      initialDateRef.current = selectedDate
+      suppressNextMotionRef.current = false
+      setContentMotion(null)
+      return
+    }
+
     const previousDate = initialDateRef.current
     if (previousDate === selectedDate) {
       return
@@ -162,6 +190,26 @@ export function DayScreen() {
 
     return () => window.clearTimeout(timeoutId)
   }, [selectedDate])
+
+  useEffect(() => {
+    if (settlingSwipe === null) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      if (settlingSwipe === "next" || settlingSwipe === "prev") {
+        suppressNextMotionRef.current = true
+        setSelectedDate((currentDate) =>
+          shiftDateKey(currentDate, settlingSwipe === "next" ? 1 : -1)
+        )
+      }
+
+      setDragOffset(0)
+      setSettlingSwipe(null)
+    }, 220)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [settlingSwipe])
 
   useEffect(() => {
     if (!restTimerRunning) {
@@ -599,9 +647,13 @@ export function DayScreen() {
       return
     }
 
+    const containerWidth = swipeContainerRef.current?.offsetWidth ?? 320
+
     setIsDraggingDay(true)
     setContentMotion(null)
-    setDragOffset(Math.max(-96, Math.min(96, deltaX)))
+    setDragOffset(
+      Math.max(-containerWidth * 0.92, Math.min(containerWidth * 0.92, deltaX))
+    )
   }
 
   function handleContentTouchEnd() {
@@ -612,21 +664,31 @@ export function DayScreen() {
     swipeStartRef.current = null
     swipeCurrentRef.current = null
     setIsDraggingDay(false)
-    setDragOffset(0)
 
     if (!start || !current) {
+      setDragOffset(0)
       return
     }
 
     const deltaX = finalOffset || current.x - start.x
     const deltaY = current.y - start.y
+    const containerWidth = swipeContainerRef.current?.offsetWidth ?? 320
+    const activationThreshold = Math.min(120, Math.max(72, containerWidth * 0.22))
 
-    if (Math.abs(deltaX) < 72 || Math.abs(deltaX) <= Math.abs(deltaY) + 12) {
+    if (
+      Math.abs(deltaX) < activationThreshold ||
+      Math.abs(deltaX) <= Math.abs(deltaY) + 12
+    ) {
+      setDragOffset(0)
+      setSettlingSwipe("reset")
       return
     }
 
-    setSelectedDate((currentDate) => shiftDateKey(currentDate, deltaX < 0 ? 1 : -1))
+    setDragOffset(deltaX < 0 ? -containerWidth : containerWidth)
+    setSettlingSwipe(deltaX < 0 ? "next" : "prev")
   }
+
+  const showSwipeTrack = isDraggingDay || settlingSwipe !== null
 
   return (
     <div className="flex min-h-svh justify-center bg-muted/35 text-foreground dark:bg-[#0b0d11]">
@@ -728,63 +790,104 @@ export function DayScreen() {
           />
         </div>
 
-        <div className="relative w-full">
-          <div
-            className={`relative z-10 ${
-              isDraggingDay
-                ? ""
-                : contentMotion === "left"
-                ? "animate-[day-slide-left_220ms_ease-out]"
-                : contentMotion === "right"
-                  ? "animate-[day-slide-right_220ms_ease-out]"
-                  : ""
-            }`}
-            style={{
-              transform:
-                dragOffset !== 0
-                  ? `translateX(${dragOffset * 0.72}px)`
-                  : undefined,
-              opacity:
-                dragOffset !== 0
-                  ? 1 - Math.min(Math.abs(dragOffset) / 480, 0.16)
-                  : undefined,
-              transition: isDraggingDay
-                ? "none"
-                : "transform 180ms ease-out, opacity 180ms ease-out",
-            }}
-            onTouchStart={(event) =>
-              handleContentTouchStart(
-                event.changedTouches[0].clientX,
-                event.changedTouches[0].clientY
-              )
-            }
-            onTouchMove={(event) =>
-              handleContentTouchMove(
-                event.changedTouches[0].clientX,
-                event.changedTouches[0].clientY
-              )
-            }
-            onTouchCancel={() => handleContentTouchEnd()}
-            onTouchEnd={() => handleContentTouchEnd()}
-          >
-            <ExerciseList
-              dictionary={dictionary}
-              exerciseEntries={exerciseEntries}
-              exercisesById={exercisesById}
-              highlightedExerciseEntryId={highlightedExerciseEntryId}
-              loadError={loadError}
-              loading={loading}
-              locale={locale}
-              onOpenExercisePicker={() => setExercisePickerOpen(true)}
-              repsStep={repsStep}
-              settings={settings}
-              unit={unit}
-              onAddSet={handleAddSet}
-              onDeleteExercise={deleteExercise}
-              onDeleteSet={deleteSet}
-              onUpdateSet={updateSet}
-            />
-          </div>
+        <div
+          ref={swipeContainerRef}
+          className="relative w-full"
+          onTouchStart={(event) =>
+            handleContentTouchStart(
+              event.changedTouches[0].clientX,
+              event.changedTouches[0].clientY
+            )
+          }
+          onTouchMove={(event) =>
+            handleContentTouchMove(
+              event.changedTouches[0].clientX,
+              event.changedTouches[0].clientY
+            )
+          }
+          onTouchCancel={() => handleContentTouchEnd()}
+          onTouchEnd={() => handleContentTouchEnd()}
+        >
+          {showSwipeTrack ? (
+            <div className="overflow-hidden">
+              <div
+                className="flex w-[300%]"
+                style={{
+                  transform: `translateX(calc(-33.333% + ${dragOffset}px))`,
+                  transition: isDraggingDay
+                    ? "none"
+                    : "transform 220ms cubic-bezier(0.22, 1, 0.36, 1)",
+                }}
+              >
+                <div className="w-full shrink-0 basis-full">
+                  <SwipePreviewDayPane
+                    dictionary={dictionary}
+                    exerciseEntries={previousDay.exerciseEntries}
+                    exercisesById={exercisesById}
+                    locale={locale}
+                    unit={unit}
+                  />
+                </div>
+                <div className="w-full shrink-0 basis-full">
+                  <SwipePreviewDayPane
+                    dictionary={dictionary}
+                    exerciseEntries={exerciseEntries}
+                    exercisesById={exercisesById}
+                    highlightedExerciseEntryId={highlightedExerciseEntryId}
+                    interactive
+                    loadError={loadError}
+                    loading={loading}
+                    locale={locale}
+                    onAddSet={handleAddSet}
+                    onDeleteExercise={deleteExercise}
+                    onDeleteSet={deleteSet}
+                    onOpenExercisePicker={() => setExercisePickerOpen(true)}
+                    onUpdateSet={updateSet}
+                    repsStep={repsStep}
+                    settings={settings}
+                    unit={unit}
+                  />
+                </div>
+                <div className="w-full shrink-0 basis-full">
+                  <SwipePreviewDayPane
+                    dictionary={dictionary}
+                    exerciseEntries={nextDay.exerciseEntries}
+                    exercisesById={exercisesById}
+                    locale={locale}
+                    unit={unit}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div
+              className={`relative z-10 ${
+                contentMotion === "left"
+                  ? "animate-[day-slide-left_220ms_ease-out]"
+                  : contentMotion === "right"
+                    ? "animate-[day-slide-right_220ms_ease-out]"
+                    : ""
+              }`}
+            >
+              <ExerciseList
+                dictionary={dictionary}
+                exerciseEntries={exerciseEntries}
+                exercisesById={exercisesById}
+                highlightedExerciseEntryId={highlightedExerciseEntryId}
+                loadError={loadError}
+                loading={loading}
+                locale={locale}
+                onOpenExercisePicker={() => setExercisePickerOpen(true)}
+                repsStep={repsStep}
+                settings={settings}
+                unit={unit}
+                onAddSet={handleAddSet}
+                onDeleteExercise={deleteExercise}
+                onDeleteSet={deleteSet}
+                onUpdateSet={updateSet}
+              />
+            </div>
+          )}
         </div>
 
       </main>
@@ -842,4 +945,159 @@ export function DayScreen() {
       ) : null}
     </div>
   )
+}
+
+type SwipePreviewDayPaneProps = {
+  dictionary: Dictionary
+  exerciseEntries: ExerciseEntry[]
+  exercisesById: Record<string, Exercise>
+  highlightedExerciseEntryId?: string | null
+  interactive?: boolean
+  loadError?: string | null
+  loading?: boolean
+  locale: "en" | "ru"
+  onAddSet?: (exerciseEntryId: string) => Promise<string | null>
+  onDeleteExercise?: (exerciseEntryId: string) => void
+  onDeleteSet?: (
+    exerciseEntryId: string,
+    setEntryId: string
+  ) => Promise<void> | void
+  onOpenExercisePicker?: () => void
+  onUpdateSet?: (
+    exerciseEntryId: string,
+    setEntryId: string,
+    patch: Partial<{ reps: number; weight: number }>
+  ) => Promise<void> | void
+  repsStep?: number
+  settings?: Parameters<typeof ExerciseList>[0]["settings"]
+  unit: WeightUnit
+}
+
+function SwipePreviewDayPane({
+  dictionary,
+  exerciseEntries,
+  exercisesById,
+  highlightedExerciseEntryId = null,
+  interactive = false,
+  loadError = null,
+  loading = false,
+  locale,
+  onAddSet,
+  onDeleteExercise,
+  onDeleteSet,
+  onOpenExercisePicker,
+  onUpdateSet,
+  repsStep = 1,
+  settings = null,
+  unit,
+}: SwipePreviewDayPaneProps) {
+  if (interactive) {
+    return (
+      <ExerciseList
+        dictionary={dictionary}
+        exerciseEntries={exerciseEntries}
+        exercisesById={exercisesById}
+        highlightedExerciseEntryId={highlightedExerciseEntryId}
+        loadError={loadError}
+        loading={loading}
+        locale={locale}
+        onOpenExercisePicker={onOpenExercisePicker ?? (() => {})}
+        repsStep={repsStep}
+        settings={settings}
+        unit={unit}
+        onAddSet={onAddSet ?? (async () => null)}
+        onDeleteExercise={onDeleteExercise ?? (() => {})}
+        onDeleteSet={onDeleteSet ?? (() => {})}
+        onUpdateSet={onUpdateSet ?? (() => {})}
+      />
+    )
+  }
+
+  return (
+    <section className="flex min-h-full flex-col gap-4 px-4 py-4">
+      {exerciseEntries.length === 0 ? (
+        <div className="flex min-h-[52svh] items-center justify-center px-5 py-8 text-center text-sm text-muted-foreground">
+          {dictionary.labels.emptyDayMessage}
+        </div>
+      ) : (
+        exerciseEntries.map((entry) => {
+          const exercise = exercisesById[entry.exerciseId]
+          const exerciseName = exercise?.name[locale] ?? entry.exerciseId
+          const primaryMuscleGroup = exercise?.muscleGroupIds[0]
+          const primaryMuscleGroupColor = primaryMuscleGroup
+            ? getMuscleGroupColor(primaryMuscleGroup)
+            : null
+
+          return (
+            <article
+              key={entry.id}
+              className="rounded-2xl bg-card px-4 py-4"
+            >
+              <div className="min-w-0">
+                <h3 className="truncate text-base font-semibold leading-tight">
+                  {exerciseName}
+                </h3>
+                {primaryMuscleGroup ? (
+                  <p
+                    className={`mt-1 inline-flex max-w-full items-center gap-1.5 truncate rounded-full px-2 py-0.5 text-xs ${primaryMuscleGroupColor?.badgeClassName}`}
+                  >
+                    <span
+                      className={`size-1.5 shrink-0 rounded-full ${primaryMuscleGroupColor?.dotClassName}`}
+                    />
+                    <span className="truncate">
+                      {dictionary.muscleGroups[primaryMuscleGroup]}
+                    </span>
+                  </p>
+                ) : null}
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2.5">
+                {entry.setEntries.map((setEntry, index) => (
+                  <span
+                    key={setEntry.id}
+                    className="inline-flex items-center rounded-full bg-muted px-3 py-1 text-xs text-foreground/90"
+                  >
+                    {formatSetPreview(setEntry, index + 1, dictionary, unit)}
+                  </span>
+                ))}
+              </div>
+            </article>
+          )
+        })
+      )}
+      <div className="h-16" />
+    </section>
+  )
+}
+
+function formatSetPreview(
+  setEntry: ExerciseEntry["setEntries"][number],
+  index: number,
+  dictionary: Dictionary,
+  unit: WeightUnit
+) {
+  if (typeof setEntry.weight === "number" || typeof setEntry.reps === "number") {
+    const parts: string[] = [`#${index}`]
+
+    if (typeof setEntry.weight === "number") {
+      parts.push(
+        `${formatWeightValue(setEntry.weight, unit)} ${getWeightUnitLabel(dictionary, unit)}`
+      )
+    }
+
+    if (typeof setEntry.reps === "number") {
+      parts.push(`${setEntry.reps} ${dictionary.units.reps}`)
+    }
+
+    return parts.join(" · ")
+  }
+
+  if (typeof setEntry.durationSeconds === "number") {
+    return `#${index} · ${formatTimer(setEntry.durationSeconds)}`
+  }
+
+  if (typeof setEntry.distanceMeters === "number") {
+    return `#${index} · ${setEntry.distanceMeters} м`
+  }
+
+  return `#${index}`
 }
