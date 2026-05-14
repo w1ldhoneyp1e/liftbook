@@ -4,6 +4,7 @@ import * as React from "react"
 import { Popover as PopoverPrimitive } from "@base-ui/react/popover"
 
 import { cn } from "@/lib/utils"
+import { layers } from "./layers"
 
 type PopoverProps = PopoverPrimitive.Root.Props & {
   backdropClassName?: string
@@ -57,13 +58,13 @@ function PopoverPositioner({
       {withBackdrop ? (
         <PopoverPrimitive.Backdrop
           className={cn(
-            "fixed inset-0 z-40 bg-background/10 backdrop-blur-[5px]",
+            `fixed inset-0 ${layers.popoverBackdrop} bg-background/10 backdrop-blur-[5px]`,
             backdropClassName
           )}
         />
       ) : null}
       <PopoverPrimitive.Positioner
-        className={cn("z-50 outline-none", className)}
+        className={cn(`${layers.popoverContent} outline-none`, className)}
         {...props}
       />
     </PopoverPrimitive.Portal>
