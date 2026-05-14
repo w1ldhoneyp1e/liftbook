@@ -7,12 +7,11 @@ import {
   useMemo,
   useRef,
   useState,
+  type TouchEvent,
 } from "react"
+import { flushSync } from "react-dom"
 
 import { Button } from "@/components/ui/button"
-import type {
-  Dictionary,
-} from "@/shared/i18n/dictionaries"
 import type {
   MuscleGroupId,
 } from "@/shared/domain/types"
@@ -46,10 +45,15 @@ export function DayScreen() {
   const silentAudioRef = useRef<HTMLAudioElement | null>(null)
   const carouselRef = useRef<HTMLDivElement | null>(null)
   const carouselIdleTimeoutRef = useRef<number | null>(null)
+  const carouselCommitTimeoutRef = useRef<number | null>(null)
   const isRecenteringRef = useRef(false)
+  const isSettlingCarouselRef = useRef(false)
   const isTouchingCarouselRef = useRef(false)
+  const touchStartXRef = useRef(0)
+  const touchStartTimeRef = useRef(0)
+  const touchLastXRef = useRef(0)
+  const touchLastTimeRef = useRef(0)
   const dateStripRef = useRef<HTMLDivElement | null>(null)
-  const dateStripTrackRef = useRef<HTMLDivElement | null>(null)
   const [isDayCarouselMoving, setIsDayCarouselMoving] = useState(false)
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator === "undefined" ? true : navigator.onLine
@@ -57,6 +61,7 @@ export function DayScreen() {
   const ssrToday = useMemo(() => new Date().toISOString().slice(0, 10), [])
   const [today, setToday] = useState(ssrToday)
   const [selectedDate, setSelectedDate] = useState(ssrToday)
+  const [carouselCenterDate, setCarouselCenterDate] = useState(ssrToday)
   const [visualDate, setVisualDate] = useState(ssrToday)
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [exercisePickerOpen, setExercisePickerOpen] = useState(false)
@@ -123,8 +128,11 @@ export function DayScreen() {
     [dateMuscleGroups, locale, selectedDate]
   )
   const carouselDates = useMemo(
-    () => [-2, -1, 0, 1, 2].map((offset) => shiftDateKey(selectedDate, offset)),
-    [selectedDate]
+    () =>
+      [-2, -1, 0, 1, 2].map((offset) =>
+        shiftDateKey(carouselCenterDate, offset)
+      ),
+    [carouselCenterDate]
   )
   const selectedDateState = getDateState(selectedDate, today)
   const dateStatusLabel = getDateStatusLabel(
@@ -152,6 +160,9 @@ export function DayScreen() {
       }
 
       setSelectedDate((currentDate) =>
+        currentDate === ssrToday ? localToday : currentDate
+      )
+      setCarouselCenterDate((currentDate) =>
         currentDate === ssrToday ? localToday : currentDate
       )
       setVisualDate((currentDate) =>
@@ -565,23 +576,21 @@ export function DayScreen() {
 
   function handleSelectDate(dateKey: string) {
     setSelectedDate(dateKey)
+    setCarouselCenterDate(dateKey)
     setVisualDate(dateKey)
-  }
-
-  function resetDateStripTransform() {
-    if (!dateStripTrackRef.current) {
-      return
-    }
-
-    dateStripTrackRef.current.style.transition =
-      "transform 220ms cubic-bezier(0.22, 1, 0.36, 1)"
-    dateStripTrackRef.current.style.transform = "translateX(0px)"
   }
 
   function clearCarouselIdleTimeout() {
     if (carouselIdleTimeoutRef.current !== null) {
       window.clearTimeout(carouselIdleTimeoutRef.current)
       carouselIdleTimeoutRef.current = null
+    }
+  }
+
+  function clearCarouselCommitTimeout() {
+    if (carouselCommitTimeoutRef.current !== null) {
+      window.clearTimeout(carouselCommitTimeoutRef.current)
+      carouselCommitTimeoutRef.current = null
     }
   }
 
@@ -604,7 +613,6 @@ export function DayScreen() {
         left: carouselWidth * 2,
         behavior,
       })
-      resetDateStripTransform()
     },
     []
   )
@@ -614,18 +622,82 @@ export function DayScreen() {
       return
     }
 
+    if (isRecenteringRef.current) {
+      return
+    }
+
     isRecenteringRef.current = true
 
     const frameId = window.requestAnimationFrame(() => {
       scrollCarouselToCenter("auto")
 
-      window.setTimeout(() => {
+      window.requestAnimationFrame(() => {
         isRecenteringRef.current = false
-      }, 40)
+      })
     })
 
     return () => window.cancelAnimationFrame(frameId)
-  }, [scrollCarouselToCenter, selectedDate])
+  }, [carouselCenterDate, scrollCarouselToCenter])
+
+  const commitCarouselDate = useCallback(
+    (dateKey: string) => {
+      clearCarouselCommitTimeout()
+      isRecenteringRef.current = true
+
+      flushSync(() => {
+        setVisualDate(dateKey)
+        setSelectedDate(dateKey)
+        setCarouselCenterDate(dateKey)
+        setIsDayCarouselMoving(false)
+      })
+
+      scrollCarouselToCenter("auto")
+
+      window.requestAnimationFrame(() => {
+        isRecenteringRef.current = false
+        isSettlingCarouselRef.current = false
+      })
+    },
+    [scrollCarouselToCenter]
+  )
+
+  function animateAndCommitCarousel(delta: -1 | 0 | 1) {
+    if (!carouselRef.current) {
+      return
+    }
+
+    const carouselWidth = carouselRef.current.clientWidth
+
+    if (carouselWidth === 0) {
+      return
+    }
+
+    clearCarouselCommitTimeout()
+    isSettlingCarouselRef.current = true
+
+    if (delta === 0) {
+      setVisualDate(carouselCenterDate)
+      setIsDayCarouselMoving(false)
+      scrollCarouselToCenter("smooth")
+      carouselCommitTimeoutRef.current = window.setTimeout(() => {
+        isSettlingCarouselRef.current = false
+      }, 180)
+      return
+    }
+
+    const nextDate = shiftDateKey(carouselCenterDate, delta)
+
+    setVisualDate(nextDate)
+    setIsDayCarouselMoving(true)
+    carouselRef.current.scrollTo({
+      left: carouselWidth * (2 + delta),
+      behavior: "smooth",
+    })
+
+    carouselCommitTimeoutRef.current = window.setTimeout(() => {
+      commitCarouselDate(nextDate)
+    }, 230)
+  }
 
   function settleCarousel() {
     if (!carouselRef.current) {
@@ -638,28 +710,20 @@ export function DayScreen() {
       return
     }
 
-    const rawIndex = carouselRef.current.scrollLeft / carouselWidth
-    const nearestIndex = Math.round(rawIndex)
-    const deltaFromCenter = nearestIndex - 2
+    const centerOffset = carouselRef.current.scrollLeft - carouselWidth * 2
+    const progress = centerOffset / carouselWidth
+    const delta =
+      progress > 0.5 ? 1 : progress < -0.5 ? -1 : 0
 
-    resetDateStripTransform()
-    setIsDayCarouselMoving(false)
-
-    if (deltaFromCenter === 0) {
-      setVisualDate(selectedDate)
-      scrollCarouselToCenter("smooth")
-      return
-    }
-
-    const clampedDelta = deltaFromCenter > 0 ? 1 : -1
-    const nextDate = shiftDateKey(selectedDate, clampedDelta)
-
-    setVisualDate(nextDate)
-    setSelectedDate(nextDate)
+    animateAndCommitCarousel(delta)
   }
 
   function handleCarouselScroll() {
-    if (!carouselRef.current || isRecenteringRef.current) {
+    if (
+      !carouselRef.current ||
+      isRecenteringRef.current ||
+      isSettlingCarouselRef.current
+    ) {
       return
     }
 
@@ -674,20 +738,15 @@ export function DayScreen() {
     const progress = centerOffset / carouselWidth
     const nextVisualDate =
       progress > 0.35
-        ? shiftDateKey(selectedDate, 1)
+        ? shiftDateKey(carouselCenterDate, 1)
         : progress < -0.35
-          ? shiftDateKey(selectedDate, -1)
-          : selectedDate
+          ? shiftDateKey(carouselCenterDate, -1)
+          : carouselCenterDate
 
     setIsDayCarouselMoving(isMoving)
     setVisualDate((currentDate) =>
       currentDate === nextVisualDate ? currentDate : nextVisualDate
     )
-
-    if (dateStripTrackRef.current) {
-      dateStripTrackRef.current.style.transition = "none"
-      dateStripTrackRef.current.style.transform = `translateX(${centerOffset * -0.22}px)`
-    }
 
     if (isTouchingCarouselRef.current) {
       clearCarouselIdleTimeout()
@@ -697,14 +756,66 @@ export function DayScreen() {
     scheduleCarouselSettle()
   }
 
-  function handleCarouselTouchStart() {
+  function handleCarouselTouchStart(event: TouchEvent<HTMLDivElement>) {
+    if (carouselCommitTimeoutRef.current !== null && visualDate !== carouselCenterDate) {
+      commitCarouselDate(visualDate)
+    }
+
     isTouchingCarouselRef.current = true
     clearCarouselIdleTimeout()
+    clearCarouselCommitTimeout()
+    isSettlingCarouselRef.current = false
+
+    const touch = event.touches[0]
+    const now = performance.now()
+
+    touchStartXRef.current = touch.clientX
+    touchLastXRef.current = touch.clientX
+
+    touchStartTimeRef.current = now
+    touchLastTimeRef.current = now
+  }
+
+  function handleCarouselTouchMove(event: TouchEvent<HTMLDivElement>) {
+    const touch = event.touches[0]
+
+    touchLastXRef.current = touch.clientX
+    touchLastTimeRef.current = performance.now()
   }
 
   function handleCarouselTouchEnd() {
     isTouchingCarouselRef.current = false
-    scheduleCarouselSettle(40)
+
+    if (!carouselRef.current) {
+      return
+    }
+
+    const carouselWidth = carouselRef.current.clientWidth
+
+    if (carouselWidth === 0) {
+      return
+    }
+
+    const scrollProgress =
+      (carouselRef.current.scrollLeft - carouselWidth * 2) / carouselWidth
+    const dragDistance = touchLastXRef.current - touchStartXRef.current
+    const dragDuration = Math.max(
+      touchLastTimeRef.current - touchStartTimeRef.current,
+      1
+    )
+    const velocity = dragDistance / dragDuration
+    const swipeDelta =
+      dragDistance < -carouselWidth * 0.16 || velocity < -0.35
+        ? 1
+        : dragDistance > carouselWidth * 0.16 || velocity > 0.35
+          ? -1
+          : scrollProgress > 0.32
+            ? 1
+            : scrollProgress < -0.32
+              ? -1
+              : 0
+
+    window.requestAnimationFrame(() => animateAndCommitCarousel(swipeDelta))
   }
 
   useEffect(() => {
@@ -712,6 +823,7 @@ export function DayScreen() {
       if (carouselIdleTimeoutRef.current !== null) {
         clearCarouselIdleTimeout()
       }
+      clearCarouselCommitTimeout()
     }
   }, [])
 
@@ -720,8 +832,11 @@ export function DayScreen() {
       return
     }
 
-    setSelectedDate(toDateKey(date))
-    setVisualDate(toDateKey(date))
+    const dateKey = toDateKey(date)
+
+    setSelectedDate(dateKey)
+    setCarouselCenterDate(dateKey)
+    setVisualDate(dateKey)
     setCalendarOpen(false)
   }
 
@@ -739,7 +854,6 @@ export function DayScreen() {
             dateStatusLabel={dateStatusLabel}
             days={days}
             dateStripRef={dateStripRef}
-            dateStripTrackRef={dateStripTrackRef}
             dictionary={dictionary}
             isDraggingDay={isDayCarouselMoving}
             motion={null}
@@ -832,6 +946,7 @@ export function DayScreen() {
           className="flex flex-1 overflow-x-auto overscroll-x-contain snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           onScroll={handleCarouselScroll}
           onTouchStart={handleCarouselTouchStart}
+          onTouchMove={handleCarouselTouchMove}
           onTouchEnd={handleCarouselTouchEnd}
           onTouchCancel={handleCarouselTouchEnd}
         >
@@ -842,39 +957,37 @@ export function DayScreen() {
               exerciseEntries: [],
             }
             const isCenterPane = paneIndex === 2
+            const paneExerciseEntries = isCenterPane
+              ? currentDaySnapshot.exerciseEntries
+              : snapshot.exerciseEntries
 
             return (
               <div
                 key={paneIndex}
                 className="w-full shrink-0 snap-center [scroll-snap-stop:always]"
               >
-                {isCenterPane ? (
+                <div className={isCenterPane ? "" : "pointer-events-none"}>
                   <ExerciseList
                     dictionary={dictionary}
-                    exerciseEntries={currentDaySnapshot.exerciseEntries}
+                    exerciseEntries={paneExerciseEntries}
                     exercisesById={exercisesById}
-                    highlightedExerciseEntryId={highlightedExerciseEntryId}
-                    loadError={loadError}
-                    loading={currentDayIsResolving}
+                    highlightedExerciseEntryId={
+                      isCenterPane ? highlightedExerciseEntryId : null
+                    }
+                    loadError={isCenterPane ? loadError : null}
+                    loading={isCenterPane ? currentDayIsResolving : false}
                     locale={locale}
                     onOpenExercisePicker={() => setExercisePickerOpen(true)}
+                    previewMode={!isCenterPane}
                     repsStep={repsStep}
                     settings={settings}
                     unit={unit}
-                    onAddSet={handleAddSet}
-                    onDeleteExercise={deleteExercise}
-                    onDeleteSet={deleteSet}
-                    onUpdateSet={updateSet}
+                    onAddSet={isCenterPane ? handleAddSet : async () => null}
+                    onDeleteExercise={isCenterPane ? deleteExercise : () => {}}
+                    onDeleteSet={isCenterPane ? deleteSet : () => {}}
+                    onUpdateSet={isCenterPane ? updateSet : () => {}}
                   />
-                ) : (
-                  <SwipePreviewDayPane
-                    dictionary={dictionary}
-                    exerciseEntries={snapshot.exerciseEntries}
-                    exercisesById={exercisesById}
-                    locale={locale}
-                    unit={unit}
-                  />
-                )}
+                </div>
               </div>
             )
           })}
@@ -933,45 +1046,6 @@ export function DayScreen() {
           onUpdateSettings={updateSettings}
         />
       ) : null}
-    </div>
-  )
-}
-
-type SwipePreviewDayPaneProps = {
-  dictionary: Dictionary
-  exerciseEntries: Parameters<typeof ExerciseList>[0]["exerciseEntries"]
-  exercisesById: Parameters<typeof ExerciseList>[0]["exercisesById"]
-  locale: "en" | "ru"
-  unit: Parameters<typeof ExerciseList>[0]["unit"]
-}
-
-function SwipePreviewDayPane({
-  dictionary,
-  exerciseEntries,
-  exercisesById,
-  locale,
-  unit,
-}: SwipePreviewDayPaneProps) {
-  return (
-    <div className="pointer-events-none">
-      <ExerciseList
-        dictionary={dictionary}
-        exerciseEntries={exerciseEntries}
-        exercisesById={exercisesById}
-        highlightedExerciseEntryId={null}
-        loadError={null}
-        loading={false}
-        locale={locale}
-        onOpenExercisePicker={() => {}}
-        previewMode
-        repsStep={1}
-        settings={null}
-        unit={unit}
-        onAddSet={async () => null}
-        onDeleteExercise={() => {}}
-        onDeleteSet={() => {}}
-        onUpdateSet={() => {}}
-      />
     </div>
   )
 }

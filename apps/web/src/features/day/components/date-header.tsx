@@ -35,7 +35,6 @@ type DateHeaderProps = {
   dateMuscleGroups: Record<string, MuscleGroupId[]>
   days: DateStripItem[]
   dateStripRef?: RefObject<HTMLDivElement | null>
-  dateStripTrackRef?: RefObject<HTMLDivElement | null>
   dictionary: Dictionary
   isDraggingDay: boolean
   motion: "left" | "right" | null
@@ -63,7 +62,6 @@ export function DateHeader({
   dateStatusLabel,
   dateMuscleGroups,
   dateStripRef,
-  dateStripTrackRef,
   days,
   dictionary,
   isDraggingDay,
@@ -83,24 +81,24 @@ export function DateHeader({
 }: DateHeaderProps) {
   const dateTone = getDateTone(selectedDateState)
   const selectedDateRef = useRef<HTMLButtonElement | null>(null)
-  const lastScrolledVisualDateRef = useRef<string | null>(null)
+  const lastScrolledSelectedDateRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (isDraggingDay) {
       return
     }
 
-    if (lastScrolledVisualDateRef.current === visualDate) {
+    if (lastScrolledSelectedDateRef.current === selectedDate) {
       return
     }
 
-    lastScrolledVisualDateRef.current = visualDate
+    lastScrolledSelectedDateRef.current = selectedDate
     selectedDateRef.current?.scrollIntoView({
       behavior: "smooth",
       block: "nearest",
       inline: "center",
     })
-  }, [isDraggingDay, visualDate])
+  }, [isDraggingDay, selectedDate])
 
   return (
     <header className={`px-4 pb-3 pt-4 ${dateTone.headerClassName}`}>
@@ -167,11 +165,11 @@ export function DateHeader({
                 : "transition-transform duration-200 ease-out"
         }`}
       >
-        <div ref={dateStripTrackRef} className="flex gap-2">
+        <div className="flex gap-2">
           {days.map((item) => (
             <button
               key={item.dateKey}
-              ref={item.dateKey === visualDate ? selectedDateRef : null}
+              ref={item.dateKey === selectedDate ? selectedDateRef : null}
               className={`min-w-14 rounded-lg px-2 py-2 text-center text-sm ${getDateButtonClassName(
                 item.state,
                 item.dateKey === visualDate
