@@ -6,7 +6,7 @@ import {
   CalendarDays,
   Settings,
 } from "lucide-react"
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, type RefObject } from "react"
 
 import { Button } from "@/components/ui/button"
 import type {
@@ -32,9 +32,9 @@ type DateHeaderProps = {
   authNotice: string | null
   authSubmitting: boolean
   dateStatusLabel: string
-  dragOffset: number
   dateMuscleGroups: Record<string, MuscleGroupId[]>
   days: DateStripItem[]
+  dateStripRef?: RefObject<HTMLDivElement | null>
   dictionary: Dictionary
   isDraggingDay: boolean
   motion: "left" | "right" | null
@@ -59,8 +59,8 @@ export function DateHeader({
   authNotice,
   authSubmitting,
   dateStatusLabel,
-  dragOffset,
   dateMuscleGroups,
+  dateStripRef,
   days,
   dictionary,
   isDraggingDay,
@@ -142,6 +142,7 @@ export function DateHeader({
       </div>
 
       <div
+        ref={dateStripRef}
         className={`mt-4 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
           isDraggingDay
             ? ""
@@ -151,13 +152,6 @@ export function DateHeader({
                 ? "animate-[date-strip-slide-right_180ms_ease-out]"
                 : "transition-transform duration-200 ease-out"
         }`}
-        style={
-          dragOffset !== 0
-            ? {
-                transform: `translateX(${dragOffset * 0.35}px)`,
-              }
-            : undefined
-        }
       >
         {days.map((item) => (
           <button

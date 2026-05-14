@@ -56,9 +56,11 @@ export function DayScreen() {
   const wakeLockRef = useRef<WakeLockHandle | null>(null)
   const silentAudioRef = useRef<HTMLAudioElement | null>(null)
   const swipeContainerRef = useRef<HTMLDivElement | null>(null)
+  const swipeTrackRef = useRef<HTMLDivElement | null>(null)
+  const dateStripRef = useRef<HTMLDivElement | null>(null)
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null)
   const swipeCurrentRef = useRef<{ x: number; y: number } | null>(null)
-  const [dragOffset, setDragOffset] = useState(0)
+  const dragOffsetRef = useRef(0)
   const [isDraggingDay, setIsDraggingDay] = useState(false)
   const [settlingSwipe, setSettlingSwipe] = useState<
     "next" | "prev" | "reset" | null
@@ -144,6 +146,32 @@ export function DayScreen() {
     selectedDate
   )
 
+  const applySwipeOffset = useCallback(
+    (
+      offset: number,
+      options: {
+        immediate?: boolean
+      } = {}
+    ) => {
+      dragOffsetRef.current = offset
+
+      if (swipeTrackRef.current) {
+        swipeTrackRef.current.style.transition = options.immediate
+          ? "none"
+          : "transform 220ms cubic-bezier(0.22, 1, 0.36, 1)"
+        swipeTrackRef.current.style.transform = `translateX(calc(-33.333% + ${offset}px))`
+      }
+
+      if (dateStripRef.current) {
+        dateStripRef.current.style.transition = options.immediate
+          ? "none"
+          : "transform 220ms cubic-bezier(0.22, 1, 0.36, 1)"
+        dateStripRef.current.style.transform = `translateX(${offset * 0.35}px)`
+      }
+    },
+    []
+  )
+
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
       const localToday = toDateKey(new Date())
@@ -197,6 +225,8 @@ export function DayScreen() {
     }
 
     const timeoutId = window.setTimeout(() => {
+      applySwipeOffset(0, { immediate: true })
+
       if (settlingSwipe === "next" || settlingSwipe === "prev") {
         suppressNextMotionRef.current = true
         setSelectedDate((currentDate) =>
@@ -204,12 +234,15 @@ export function DayScreen() {
         )
       }
 
-      setDragOffset(0)
       setSettlingSwipe(null)
     }, 220)
 
     return () => window.clearTimeout(timeoutId)
-  }, [settlingSwipe])
+  }, [applySwipeOffset, settlingSwipe])
+
+  useEffect(() => {
+    applySwipeOffset(dragOffsetRef.current, { immediate: true })
+  }, [applySwipeOffset, isDraggingDay, settlingSwipe])
 
   useEffect(() => {
     if (!restTimerRunning) {
@@ -625,6 +658,7 @@ export function DayScreen() {
     swipeStartRef.current = { x: clientX, y: clientY }
     swipeCurrentRef.current = { x: clientX, y: clientY }
     setIsDraggingDay(false)
+    applySwipeOffset(0, { immediate: true })
   }
 
   function handleContentTouchMove(clientX: number, clientY: number) {
@@ -643,7 +677,7 @@ export function DayScreen() {
       }
 
       setIsDraggingDay(false)
-      setDragOffset(0)
+      applySwipeOffset(0, { immediate: true })
       return
     }
 
@@ -651,22 +685,23 @@ export function DayScreen() {
 
     setIsDraggingDay(true)
     setContentMotion(null)
-    setDragOffset(
-      Math.max(-containerWidth * 0.92, Math.min(containerWidth * 0.92, deltaX))
+    applySwipeOffset(
+      Math.max(-containerWidth * 0.92, Math.min(containerWidth * 0.92, deltaX)),
+      { immediate: true }
     )
   }
 
   function handleContentTouchEnd() {
     const start = swipeStartRef.current
     const current = swipeCurrentRef.current
-    const finalOffset = dragOffset
+    const finalOffset = dragOffsetRef.current
 
     swipeStartRef.current = null
     swipeCurrentRef.current = null
     setIsDraggingDay(false)
 
     if (!start || !current) {
-      setDragOffset(0)
+      applySwipeOffset(0, { immediate: true })
       return
     }
 
@@ -679,12 +714,12 @@ export function DayScreen() {
       Math.abs(deltaX) < activationThreshold ||
       Math.abs(deltaX) <= Math.abs(deltaY) + 12
     ) {
-      setDragOffset(0)
+      applySwipeOffset(0)
       setSettlingSwipe("reset")
       return
     }
 
-    setDragOffset(deltaX < 0 ? -containerWidth : containerWidth)
+    applySwipeOffset(deltaX < 0 ? -containerWidth : containerWidth)
     setSettlingSwipe(deltaX < 0 ? "next" : "prev")
   }
 
@@ -702,8 +737,8 @@ export function DayScreen() {
             authNotice={authNotice}
             authSubmitting={authSubmitting}
             dateStatusLabel={dateStatusLabel}
-            dragOffset={dragOffset}
             days={days}
+            dateStripRef={dateStripRef}
             dictionary={dictionary}
             isDraggingDay={isDraggingDay}
             motion={contentMotion}
@@ -792,7 +827,7 @@ export function DayScreen() {
 
         <div
           ref={swipeContainerRef}
-          className="relative w-full"
+          className="relative w-full [touch-action:pan-y]"
           onTouchStart={(event) =>
             handleContentTouchStart(
               event.changedTouches[0].clientX,
@@ -811,13 +846,9 @@ export function DayScreen() {
           {showSwipeTrack ? (
             <div className="overflow-hidden">
               <div
-                className="flex w-[300%]"
-                style={{
-                  transform: `translateX(calc(-33.333% + ${dragOffset}px))`,
-                  transition: isDraggingDay
-                    ? "none"
-                    : "transform 220ms cubic-bezier(0.22, 1, 0.36, 1)",
-                }}
+                ref={swipeTrackRef}
+                className="flex w-[300%] will-change-transform"
+                style={{ transform: "translateX(-33.333%)" }}
               >
                 <div className="w-full shrink-0 basis-full">
                   <SwipePreviewDayPane
