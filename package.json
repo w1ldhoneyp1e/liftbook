@@ -15,6 +15,22 @@
     "vps:migrate": "docker compose --env-file .env.vps -f docker-compose.vps.yml build migrate && docker compose --env-file .env.vps -f docker-compose.vps.yml run --rm migrate",
     "vps:release": "bash scripts/release-vps.sh",
     "build": "pnpm --filter web build && pnpm --filter api build",
-    "lint": "pnpm --filter web lint && pnpm --filter api lint"
+    "lint": "eslint apps/web apps/api --ext .ts,.tsx,.js,.jsx,.mjs --fix"
+  },
+  "devDependencies": {
+    "@eslint/compat": "^1.2.4",
+    "@stylistic/eslint-plugin": "^2.12.1",
+    "@typescript-eslint/eslint-plugin": "^8.38.0",
+    "@typescript-eslint/parser": "^8.38.0",
+    "eslint": "^9",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-import-newlines": "^1.4.0",
+    "eslint-plugin-jsonc": "^2.18.1",
+    "eslint-plugin-react": "^7.37.2",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-sort-exports": "^0.9.1",
+    "eslint-plugin-yml": "^1.15.0",
+    "globals": "^14.0.0",
+    "typescript": "^5"
   }
 }
