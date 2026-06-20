@@ -775,7 +775,7 @@ export default [
 			'yml/indent': ['error',
 				2],
 			'jsonc/indent': ['error',
-				2],
+				4],
 			'jsonc/no-useless-escape': 'off',
 			'jsonc/key-spacing': 'off',
 			'jsonc/array-element-newline': 'off',
