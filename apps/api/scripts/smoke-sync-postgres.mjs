@@ -1,4 +1,4 @@
-const apiBaseUrl = process.env.LIFTBOOK_API_URL ?? "http://localhost:4000"
+const apiBaseUrl = process.env.LIFTBOOK_API_URL ?? 'http://localhost:4000'
 
 const userAClientId = `smoke-user-a-${Date.now()}`
 const userBClientId = `smoke-user-b-${Date.now()}`
@@ -10,264 +10,268 @@ const firstUpdatedAt = new Date().toISOString()
 const secondUpdatedAt = new Date(Date.now() + 1000).toISOString()
 const thirdUpdatedAt = new Date(Date.now() + 2000).toISOString()
 
-const userA = await createGuestAccount(userAClientId, "en")
-const userB = await createGuestAccount(userBClientId, "ru")
+const userA = await createGuestAccount(userAClientId, 'en')
+const userB = await createGuestAccount(userBClientId, 'ru')
 
 const pushA = await pushSyncChange({
-  accessToken: userA.session.accessToken,
-  clientId: userAClientId,
-  localId: sharedLocalId,
-  date: "2026-04-30",
-  updatedAt: firstUpdatedAt,
+	accessToken: userA.session.accessToken,
+	clientId: userAClientId,
+	localId: sharedLocalId,
+	date: '2026-04-30',
+	updatedAt: firstUpdatedAt,
 })
 const duplicatePushA = await pushSyncChange({
-  accessToken: userA.session.accessToken,
-  clientId: userAClientId,
-  localId: sharedLocalId,
-  date: "2026-04-30",
-  updatedAt: firstUpdatedAt,
+	accessToken: userA.session.accessToken,
+	clientId: userAClientId,
+	localId: sharedLocalId,
+	date: '2026-04-30',
+	updatedAt: firstUpdatedAt,
 })
 const pushASecond = await pushSyncChange({
-  accessToken: userA.session.accessToken,
-  clientId: userAClientId,
-  localId: secondLocalId,
-  date: "2026-05-02",
-  updatedAt: secondUpdatedAt,
+	accessToken: userA.session.accessToken,
+	clientId: userAClientId,
+	localId: secondLocalId,
+	date: '2026-05-02',
+	updatedAt: secondUpdatedAt,
 })
 
 const pushB = await pushSyncChange({
-  accessToken: userB.session.accessToken,
-  clientId: userBClientId,
-  localId: sharedLocalId,
-  date: "2026-05-01",
-  updatedAt: thirdUpdatedAt,
+	accessToken: userB.session.accessToken,
+	clientId: userBClientId,
+	localId: sharedLocalId,
+	date: '2026-05-01',
+	updatedAt: thirdUpdatedAt,
 })
 
 const emptyBatchResponse = await pushRawSyncChange({
-  accessToken: userA.session.accessToken,
-  clientId: userAClientId,
-  changes: [],
+	accessToken: userA.session.accessToken,
+	clientId: userAClientId,
+	changes: [],
 })
 assert(
-  emptyBatchResponse.status === 400,
-  "empty push batch should be rejected with 400"
+	emptyBatchResponse.status === 400,
+	'empty push batch should be rejected with 400',
 )
 
 const invalidTimestampResponse = await pushRawSyncChange({
-  accessToken: userA.session.accessToken,
-  clientId: userAClientId,
-  changes: [
-    {
-      localId: `invalid_${Date.now()}`,
-      entityType: "workoutDay",
-      operation: "upsert",
-      updatedAt: "not-a-timestamp",
-      payload: {
-        id: `invalid_${Date.now()}`,
-        date: "2026-05-03",
-      },
-    },
-  ],
+	accessToken: userA.session.accessToken,
+	clientId: userAClientId,
+	changes: [
+		{
+			localId: `invalid_${Date.now()}`,
+			entityType: 'workoutDay',
+			operation: 'upsert',
+			updatedAt: 'not-a-timestamp',
+			payload: {
+				id: `invalid_${Date.now()}`,
+				date: '2026-05-03',
+			},
+		},
+	],
 })
 assert(
-  invalidTimestampResponse.status === 400,
-  "invalid updatedAt should be rejected with 400"
+	invalidTimestampResponse.status === 400,
+	'invalid updatedAt should be rejected with 400',
 )
 
-assert(isSequenceCursor(pushA.nextCursor), "user A push cursor should be sequence-based")
+assert(isSequenceCursor(pushA.nextCursor), 'user A push cursor should be sequence-based')
 assert(
-  duplicatePushA.nextCursor === pushA.nextCursor,
-  "duplicate user A push should reuse the original cursor"
+	duplicatePushA.nextCursor === pushA.nextCursor,
+	'duplicate user A push should reuse the original cursor',
 )
 assert(
-  isSequenceCursor(pushASecond.nextCursor),
-  "user A second push cursor should be sequence-based"
+	isSequenceCursor(pushASecond.nextCursor),
+	'user A second push cursor should be sequence-based',
 )
-assert(isSequenceCursor(pushB.nextCursor), "user B push cursor should be sequence-based")
+assert(isSequenceCursor(pushB.nextCursor), 'user B push cursor should be sequence-based')
 
 const initialPullA = await pullSyncChanges({
-  accessToken: userA.session.accessToken,
-  clientId: pullClientA,
+	accessToken: userA.session.accessToken,
+	clientId: pullClientA,
 })
 const initialPullB = await pullSyncChanges({
-  accessToken: userB.session.accessToken,
-  clientId: pullClientB,
+	accessToken: userB.session.accessToken,
+	clientId: pullClientB,
 })
 
 assert(
-  initialPullA.changes.length === 1,
-  "user A should receive exactly one change on the first paged pull"
+	initialPullA.changes.length === 1,
+	'user A should receive exactly one change on the first paged pull',
 )
 assert(
-  initialPullB.changes.length === 1,
-  "user B should receive exactly one remote change"
+	initialPullB.changes.length === 1,
+	'user B should receive exactly one remote change',
 )
-assert(initialPullA.hasMore === true, "user A first pull should report hasMore")
+assert(initialPullA.hasMore === true, 'user A first pull should report hasMore')
 assert(
-  initialPullB.hasMore === false,
-  "user B first pull should not report hasMore for a single event"
-)
-assert(
-  initialPullA.changes[0].payload?.date === "2026-04-30",
-  "user A first pull should receive the oldest synced payload first"
+	initialPullB.hasMore === false,
+	'user B first pull should not report hasMore for a single event',
 )
 assert(
-  initialPullB.changes[0].payload?.date === "2026-05-01",
-  "user B should receive only its own synced payload"
+	initialPullA.changes[0].payload?.date === '2026-04-30',
+	'user A first pull should receive the oldest synced payload first',
 )
 assert(
-  initialPullA.nextCursor === initialPullA.changes[0].cursor,
-  "user A pull cursor should advance to the event cursor"
+	initialPullB.changes[0].payload?.date === '2026-05-01',
+	'user B should receive only its own synced payload',
 )
 assert(
-  initialPullB.nextCursor === initialPullB.changes[0].cursor,
-  "user B pull cursor should advance to the event cursor"
+	initialPullA.nextCursor === initialPullA.changes[0].cursor,
+	'user A pull cursor should advance to the event cursor',
+)
+assert(
+	initialPullB.nextCursor === initialPullB.changes[0].cursor,
+	'user B pull cursor should advance to the event cursor',
 )
 
 const repeatPullA = await pullSyncChanges({
-  accessToken: userA.session.accessToken,
-  clientId: pullClientA,
-  cursor: initialPullA.nextCursor,
+	accessToken: userA.session.accessToken,
+	clientId: pullClientA,
+	cursor: initialPullA.nextCursor,
 })
 const repeatPullB = await pullSyncChanges({
-  accessToken: userB.session.accessToken,
-  clientId: pullClientB,
-  cursor: initialPullB.nextCursor,
+	accessToken: userB.session.accessToken,
+	clientId: pullClientB,
+	cursor: initialPullB.nextCursor,
 })
 
 assert(
-  repeatPullA.changes.length === 1,
-  "user A second paged pull should return the remaining change"
+	repeatPullA.changes.length === 1,
+	'user A second paged pull should return the remaining change',
 )
 assert(
-  repeatPullB.changes.length === 0,
-  "user B repeat pull should have no new changes"
+	repeatPullB.changes.length === 0,
+	'user B repeat pull should have no new changes',
 )
 assert(
-  repeatPullA.changes[0].payload?.date === "2026-05-02",
-  "user A second paged pull should return the newer payload"
+	repeatPullA.changes[0].payload?.date === '2026-05-02',
+	'user A second paged pull should return the newer payload',
 )
 assert(
-  repeatPullA.hasMore === false,
-  "user A second paged pull should finish pagination"
+	repeatPullA.hasMore === false,
+	'user A second paged pull should finish pagination',
 )
 assert(
-  repeatPullB.nextCursor === initialPullB.nextCursor,
-  "user B repeat pull should preserve cursor"
+	repeatPullB.nextCursor === initialPullB.nextCursor,
+	'user B repeat pull should preserve cursor',
 )
 assert(
-  repeatPullB.hasMore === false,
-  "user B repeat pull should report no further pages"
+	repeatPullB.hasMore === false,
+	'user B repeat pull should report no further pages',
 )
 
 const finalPullA = await pullSyncChanges({
-  accessToken: userA.session.accessToken,
-  clientId: pullClientA,
-  cursor: repeatPullA.nextCursor,
+	accessToken: userA.session.accessToken,
+	clientId: pullClientA,
+	cursor: repeatPullA.nextCursor,
 })
 
 assert(
-  finalPullA.changes.length === 0,
-  "user A final pull should have no new changes"
+	finalPullA.changes.length === 0,
+	'user A final pull should have no new changes',
 )
 assert(
-  finalPullA.nextCursor === repeatPullA.nextCursor,
-  "user A final pull should preserve cursor"
+	finalPullA.nextCursor === repeatPullA.nextCursor,
+	'user A final pull should preserve cursor',
 )
 assert(
-  finalPullA.hasMore === false,
-  "user A final pull should report no further pages"
+	finalPullA.hasMore === false,
+	'user A final pull should report no further pages',
 )
 
-console.log("Postgres sync smoke test passed.")
+console.log('Postgres sync smoke test passed.')
 
 async function createGuestAccount(clientId, locale) {
-  const response = await fetch(`${apiBaseUrl}/v1/auth/guest`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      clientId,
-      locale,
-    }),
-  })
+	const response = await fetch(`${apiBaseUrl}/v1/auth/guest`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify({
+			clientId,
+			locale,
+		}),
+	})
 
-  assert(response.ok, `guest auth failed with status ${response.status}`)
-  return response.json()
+	assert(response.ok, `guest auth failed with status ${response.status}`)
+	return response.json()
 }
 
 async function pushSyncChange({
-  accessToken,
-  clientId,
-  localId,
-  date,
-  updatedAt,
+	accessToken,
+	clientId,
+	localId,
+	date,
+	updatedAt,
 }) {
-  const response = await pushRawSyncChange({
-    accessToken,
-    clientId,
-    changes: [
-      {
-        localId,
-        entityType: "workoutDay",
-        operation: "upsert",
-        updatedAt,
-        payload: {
-          id: localId,
-          date,
-        },
-      },
-    ],
-  })
+	const response = await pushRawSyncChange({
+		accessToken,
+		clientId,
+		changes: [
+			{
+				localId,
+				entityType: 'workoutDay',
+				operation: 'upsert',
+				updatedAt,
+				payload: {
+					id: localId,
+					date,
+				},
+			},
+		],
+	})
 
-  assert(response.ok, `sync push failed with status ${response.status}`)
-  return response.json()
+	assert(response.ok, `sync push failed with status ${response.status}`)
+	return response.json()
 }
 
-async function pushRawSyncChange({ accessToken, clientId, changes }) {
-  return fetch(`${apiBaseUrl}/v1/sync/push`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      clientId,
-      cursor: null,
-      changes,
-    }),
-  })
+async function pushRawSyncChange({
+	accessToken, clientId, changes,
+}) {
+	return fetch(`${apiBaseUrl}/v1/sync/push`, {
+		method: 'POST',
+		headers: {
+			Authorization: `Bearer ${accessToken}`,
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify({
+			clientId,
+			cursor: null,
+			changes,
+		}),
+	})
 }
 
-async function pullSyncChanges({ accessToken, clientId, cursor }) {
-  const searchParams = new URLSearchParams({
-    clientId,
-  })
+async function pullSyncChanges({
+	accessToken, clientId, cursor,
+}) {
+	const searchParams = new URLSearchParams({
+		clientId,
+	})
 
-  if (cursor) {
-    searchParams.set("cursor", cursor)
-  }
+	if (cursor) {
+		searchParams.set('cursor', cursor)
+	}
 
-  const response = await fetch(
+	const response = await fetch(
     `${apiBaseUrl}/v1/sync/pull?${searchParams.toString()}`,
     {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    }
-  )
+    	headers: {
+    		Authorization: `Bearer ${accessToken}`,
+    	},
+    },
+	)
 
-  assert(response.ok, `sync pull failed with status ${response.status}`)
-  return response.json()
+	assert(response.ok, `sync pull failed with status ${response.status}`)
+	return response.json()
 }
 
 function assert(condition, message) {
-  if (!condition) {
-    throw new Error(message)
-  }
+	if (!condition) {
+		throw new Error(message)
+	}
 }
 
 function isSequenceCursor(cursor) {
-  return typeof cursor === "string" && /^[1-9]\d*$/.test(cursor)
+	return typeof cursor === 'string' && /^[1-9]\d*$/.test(cursor)
 }

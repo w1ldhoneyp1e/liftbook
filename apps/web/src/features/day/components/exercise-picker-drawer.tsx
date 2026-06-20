@@ -1,402 +1,416 @@
-"use client"
+'use client'
 
-import { Check, Pencil, Plus, Search, Trash2, X } from "lucide-react"
-import { useState } from "react"
-
-import { Button } from "@/components/ui/button"
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHandle,
-  DrawerHandleSection,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { ModalPopup } from "@/components/ui/modal-popup"
-import { muscleGroups } from "@/shared/domain/exercise-catalog"
-import type { Exercise, Locale, MuscleGroupId } from "@/shared/domain/types"
-import type { Dictionary } from "@/shared/i18n/dictionaries"
-
-import { getMuscleGroupColor } from "../lib/muscle-group-colors"
+	Check,
+	Pencil,
+	Plus,
+	Search,
+	Trash2,
+	X,
+} from 'lucide-react'
+import {useState} from 'react'
+import {getMuscleGroupColor} from '../lib/muscle-group-colors'
+import {Button} from '@/components/ui/button'
+import {
+	Drawer,
+	DrawerContent,
+	DrawerHandle,
+	DrawerHandleSection,
+	DrawerHeader,
+	DrawerTitle,
+} from '@/components/ui/drawer'
+import {Input} from '@/components/ui/input'
+import {Label} from '@/components/ui/label'
+import {ModalPopup} from '@/components/ui/modal-popup'
+import {muscleGroups} from '@/shared/domain/exercise-catalog'
+import {
+	type Exercise,
+	type Locale,
+	type MuscleGroupId,
+} from '@/shared/domain/types'
+import {type Dictionary} from '@/shared/i18n/dictionaries'
 
 type ExercisePickerDrawerProps = {
-  dictionary: Dictionary
-  exercises: Exercise[]
-  locale: Locale
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onCreateCustomExercise: (
-    name: string,
-    muscleGroupIds: MuscleGroupId[]
-  ) => void
-  onDeleteCustomExercise: (exerciseId: string) => void
-  onRenameCustomExercise: (exerciseId: string, name: string) => void
-  onSelectExercise: (exerciseId: string) => void
+	dictionary: Dictionary,
+	exercises: Exercise[],
+	locale: Locale,
+	open: boolean,
+	onOpenChange: (open: boolean) => void,
+	onCreateCustomExercise: (
+		name: string,
+		muscleGroupIds: MuscleGroupId[]
+	) => void,
+	onDeleteCustomExercise: (exerciseId: string) => void,
+	onRenameCustomExercise: (exerciseId: string, name: string) => void,
+	onSelectExercise: (exerciseId: string) => void,
 }
 
 export function ExercisePickerDrawer({
-  dictionary,
-  exercises,
-  locale,
-  open,
-  onOpenChange,
-  onCreateCustomExercise,
-  onDeleteCustomExercise,
-  onRenameCustomExercise,
-  onSelectExercise,
+	dictionary,
+	exercises,
+	locale,
+	open,
+	onOpenChange,
+	onCreateCustomExercise,
+	onDeleteCustomExercise,
+	onRenameCustomExercise,
+	onSelectExercise,
 }: ExercisePickerDrawerProps) {
-  const [selectedMuscleGroup, setSelectedMuscleGroup] =
-    useState<MuscleGroupId | null>(null)
-  const [query, setQuery] = useState("")
-  const [editingExerciseId, setEditingExerciseId] = useState<string | null>(null)
-  const [editingName, setEditingName] = useState("")
-  const [createModalOpen, setCreateModalOpen] = useState(false)
-  const [createName, setCreateName] = useState("")
-  const [createMuscleGroups, setCreateMuscleGroups] = useState<MuscleGroupId[]>([])
+	const [selectedMuscleGroup, setSelectedMuscleGroup]
+    = useState<MuscleGroupId | null>(null)
+	const [query, setQuery] = useState('')
+	const [editingExerciseId, setEditingExerciseId] = useState<string | null>(null)
+	const [editingName, setEditingName] = useState('')
+	const [createModalOpen, setCreateModalOpen] = useState(false)
+	const [createName, setCreateName] = useState('')
+	const [createMuscleGroups, setCreateMuscleGroups] = useState<MuscleGroupId[]>([])
 
-  function resetFilters() {
-    setSelectedMuscleGroup(null)
-    setQuery("")
-    setEditingExerciseId(null)
-    setEditingName("")
-  }
+	function resetFilters() {
+		setSelectedMuscleGroup(null)
+		setQuery('')
+		setEditingExerciseId(null)
+		setEditingName('')
+	}
 
-  function openCreateModal() {
-    setCreateName(query.trim())
-    setCreateMuscleGroups(selectedMuscleGroup ? [selectedMuscleGroup] : ["other"])
-    onOpenChange(false)
-    setCreateModalOpen(true)
-  }
+	function openCreateModal() {
+		setCreateName(query.trim())
+		setCreateMuscleGroups(selectedMuscleGroup
+			? [selectedMuscleGroup]
+			: ['other'])
+		onOpenChange(false)
+		setCreateModalOpen(true)
+	}
 
-  function closeCreateModal() {
-    setCreateModalOpen(false)
-  }
+	function closeCreateModal() {
+		setCreateModalOpen(false)
+	}
 
-  function cancelCreateModal() {
-    setCreateModalOpen(false)
-    onOpenChange(true)
-  }
+	function cancelCreateModal() {
+		setCreateModalOpen(false)
+		onOpenChange(true)
+	}
 
-  function toggleCreateMuscleGroup(muscleGroupId: MuscleGroupId) {
-    setCreateMuscleGroups((currentGroups) =>
-      currentGroups.includes(muscleGroupId)
-        ? currentGroups.filter((groupId) => groupId !== muscleGroupId)
-        : [...currentGroups, muscleGroupId]
-    )
-  }
+	function toggleCreateMuscleGroup(muscleGroupId: MuscleGroupId) {
+		setCreateMuscleGroups(currentGroups =>
+			currentGroups.includes(muscleGroupId)
+				? currentGroups.filter(groupId => groupId !== muscleGroupId)
+				: [...currentGroups, muscleGroupId],
+		)
+	}
 
-  const filteredExercises = exercises
-    .filter((exercise) => !exercise.deletedAt)
-    .filter((exercise) => {
-      const normalizedQuery = query.trim().toLowerCase()
-      const matchesQuery =
-        normalizedQuery.length === 0 ||
-        exercise.name[locale].toLowerCase().includes(normalizedQuery)
-      const matchesMuscleGroup =
-        normalizedQuery.length > 0 ||
-        !selectedMuscleGroup ||
-        exercise.muscleGroupIds.includes(selectedMuscleGroup)
+	const filteredExercises = exercises
+		.filter(exercise => !exercise.deletedAt)
+		.filter(exercise => {
+			const normalizedQuery = query.trim().toLowerCase()
+			const matchesQuery
+        = normalizedQuery.length === 0
+        || exercise.name[locale].toLowerCase().includes(normalizedQuery)
+			const matchesMuscleGroup
+        = normalizedQuery.length > 0
+        || !selectedMuscleGroup
+        || exercise.muscleGroupIds.includes(selectedMuscleGroup)
 
-      return matchesQuery && matchesMuscleGroup
-    })
-    .sort((a, b) => a.name[locale].localeCompare(b.name[locale]))
-  const canSubmitCustomExercise = createName.trim().length > 0
+			return matchesQuery && matchesMuscleGroup
+		})
+		.sort((a, b) => a.name[locale].localeCompare(b.name[locale]))
+	const canSubmitCustomExercise = createName.trim().length > 0
 
-  function startRename(exercise: Exercise) {
-    setEditingExerciseId(exercise.id)
-    setEditingName(exercise.name[locale])
-  }
+	function startRename(exercise: Exercise) {
+		setEditingExerciseId(exercise.id)
+		setEditingName(exercise.name[locale])
+	}
 
-  function cancelRename() {
-    setEditingExerciseId(null)
-    setEditingName("")
-  }
+	function cancelRename() {
+		setEditingExerciseId(null)
+		setEditingName('')
+	}
 
-  function saveRename(exerciseId: string) {
-    onRenameCustomExercise(exerciseId, editingName)
-    cancelRename()
-  }
+	function saveRename(exerciseId: string) {
+		onRenameCustomExercise(exerciseId, editingName)
+		cancelRename()
+	}
 
-  return (
-    <>
-      <Drawer
-        open={open}
-        repositionInputs={false}
-        onOpenChange={(nextOpen) => {
-          if (nextOpen) {
-            resetFilters()
-          }
+	return (
+		<>
+			<Drawer
+				open={open}
+				repositionInputs={false}
+				onOpenChange={nextOpen => {
+					if (nextOpen) {
+						resetFilters()
+					}
 
-          onOpenChange(nextOpen)
-        }}
-      >
-        <DrawerContent className="mx-auto max-h-[92svh] max-w-md overflow-hidden rounded-t-xl bg-background/98 backdrop-blur supports-[height:100dvh]:max-h-[92dvh]">
-          <DrawerHandleSection placement="top">
-            <DrawerHandle className="flex h-8 w-full max-w-[120px] items-center justify-center bg-transparent" />
-          </DrawerHandleSection>
-          <DrawerHeader className="text-left">
-            <DrawerTitle>{dictionary.actions.chooseExercise}</DrawerTitle>
-          </DrawerHeader>
-
-          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-4 pb-4">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              className="h-10 border-border/60 pl-9 pr-9 focus-visible:ring-2 focus-visible:ring-ring/30"
-              placeholder={dictionary.labels.searchExercise}
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-            />
-            {query.length > 0 ? (
-              <button
-                className="absolute right-3 top-1/2 inline-flex size-5 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
-                type="button"
-                aria-label={dictionary.actions.cancel}
-                onClick={() => setQuery("")}
-              >
-                <X className="size-4" />
-              </button>
-            ) : null}
-          </div>
-
-          <div className="-mx-1 min-h-11 overflow-x-auto px-1 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <div className="flex min-h-9 items-center gap-2">
-              <button
-                className={`min-h-9 shrink-0 whitespace-nowrap rounded-lg px-3 py-2 text-sm leading-none ${
+					onOpenChange(nextOpen)
+				}}
+			>
+				<DrawerContent className="mx-auto max-h-[92svh] max-w-md overflow-hidden rounded-t-xl bg-background/98 backdrop-blur supports-[height:100dvh]:max-h-[92dvh]">
+					<DrawerHandleSection placement="top">
+						<DrawerHandle className="flex h-8 w-full max-w-[120px] items-center justify-center bg-transparent" />
+					</DrawerHandleSection>
+					<DrawerHeader className="text-left">
+						<DrawerTitle>{dictionary.actions.chooseExercise}</DrawerTitle>
+					</DrawerHeader>
+					<div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-4 pb-4">
+						<div className="relative">
+							<Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+							<Input
+								className="h-10 border-border/60 pl-9 pr-9 focus-visible:ring-2 focus-visible:ring-ring/30"
+								placeholder={dictionary.labels.searchExercise}
+								value={query}
+								onChange={event => setQuery(event.target.value)}
+							/>
+							{query.length > 0
+								? (
+									<button
+										className="absolute right-3 top-1/2 inline-flex size-5 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
+										type="button"
+										aria-label={dictionary.actions.cancel}
+										onClick={() => setQuery('')}
+									>
+										<X className="size-4" />
+									</button>
+								)
+								: null}
+						</div>
+						<div className="-mx-1 min-h-11 overflow-x-auto px-1 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+							<div className="flex min-h-9 items-center gap-2">
+								<button
+									className={`min-h-9 shrink-0 whitespace-nowrap rounded-lg px-3 py-2 text-sm leading-none ${
                   selectedMuscleGroup === null
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-foreground"
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-foreground'
                 }`}
-                type="button"
-                onClick={() => setSelectedMuscleGroup(null)}
-              >
-                {dictionary.labels.allMuscleGroups}
-              </button>
-              {muscleGroups.map((muscleGroup) => {
-                const color = getMuscleGroupColor(muscleGroup)
-                const selected = selectedMuscleGroup === muscleGroup
+									type="button"
+									onClick={() => setSelectedMuscleGroup(null)}
+								>
+									{dictionary.labels.allMuscleGroups}
+								</button>
+								{muscleGroups.map(muscleGroup => {
+									const color = getMuscleGroupColor(muscleGroup)
+									const selected = selectedMuscleGroup === muscleGroup
 
-                return (
-                  <button
-                    key={muscleGroup}
-                    className={`min-h-9 shrink-0 whitespace-nowrap rounded-lg px-3 py-2 text-sm leading-none transition-colors ${
+									return (
+										<button
+											key={muscleGroup}
+											className={`min-h-9 shrink-0 whitespace-nowrap rounded-lg px-3 py-2 text-sm leading-none transition-colors ${
                       selected
                         ? color.badgeClassName
                         : `${color.badgeClassName} opacity-80`
                     }`}
-                    type="button"
-                    onClick={() => setSelectedMuscleGroup(muscleGroup)}
-                  >
-                    {dictionary.muscleGroups[muscleGroup]}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
+											type="button"
+											onClick={() => setSelectedMuscleGroup(muscleGroup)}
+										>
+											{dictionary.muscleGroups[muscleGroup]}
+										</button>
+									)
+								})}
+							</div>
+						</div>
+						<div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pb-[max(1rem,env(safe-area-inset-bottom))] pr-1">
+							{filteredExercises.length === 0
+								? (
+									<div className="rounded-xl border border-border/70 bg-card/92 p-4 text-sm text-muted-foreground dark:bg-card/80">
+										{dictionary.labels.noExercisesFound}
+									</div>
+								)
+								: null}
+							{filteredExercises.map(exercise => {
+								const editing = editingExerciseId === exercise.id
 
-          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pb-[max(1rem,env(safe-area-inset-bottom))] pr-1">
-            {filteredExercises.length === 0 ? (
-              <div className="rounded-xl border border-border/70 bg-card/92 p-4 text-sm text-muted-foreground dark:bg-card/80">
-                {dictionary.labels.noExercisesFound}
-              </div>
-            ) : null}
+								return (
+									<div
+										key={exercise.id}
+										className="rounded-xl border border-border/70 bg-card/92 px-3 py-3 dark:bg-card/80"
+									>
+										{editing
+											? (
+												<div className="flex items-center gap-2">
+													<Input
+														className="h-9"
+														aria-label={dictionary.actions.renameCustomExercise}
+														value={editingName}
+														onChange={event => setEditingName(event.target.value)}
+														onKeyDown={event => {
+															if (event.key === 'Enter') {
+																saveRename(exercise.id)
+															}
 
-            {filteredExercises.map((exercise) => {
-              const editing = editingExerciseId === exercise.id
+															if (event.key === 'Escape') {
+																cancelRename()
+															}
+														}}
+													/>
+													<Button
+														variant="ghost"
+														size="icon-sm"
+														aria-label={dictionary.actions.save}
+														onClick={() => saveRename(exercise.id)}
+													>
+														<Check />
+													</Button>
+													<Button
+														variant="ghost"
+														size="icon-sm"
+														aria-label={dictionary.actions.cancel}
+														onClick={cancelRename}
+													>
+														<X />
+													</Button>
+												</div>
+											)
+											: (
+												<div className="flex w-full items-center justify-between gap-2">
+													<button
+														className="min-w-0 flex-1 text-left"
+														type="button"
+														onClick={() => onSelectExercise(exercise.id)}
+													>
+														<span className="block text-sm font-medium">
+															{exercise.name[locale]}
+														</span>
+														<span className="block text-xs text-muted-foreground">
+															{exercise.muscleGroupIds
+																.map(
+																	muscleGroup =>
+																		dictionary.muscleGroups[muscleGroup],
+																)
+																.join(', ')}
+														</span>
+													</button>
+													<span className="flex items-center gap-1">
+														{!exercise.builtIn
+															? (
+																<>
+																	<Button
+																		variant="ghost"
+																		size="icon-sm"
+																		aria-label={
+																			dictionary.actions.renameCustomExercise
+																		}
+																		onClick={event => {
+																			event.stopPropagation()
+																			startRename(exercise)
+																		}}
+																	>
+																		<Pencil />
+																	</Button>
+																	<Button
+																		variant="ghost"
+																		size="icon-sm"
+																		aria-label={
+																			dictionary.actions.deleteCustomExercise
+																		}
+																		onClick={event => {
+																			event.stopPropagation()
+																			onDeleteCustomExercise(exercise.id)
+																		}}
+																	>
+																		<Trash2 />
+																	</Button>
+																</>
+															)
+															: null}
+														<Plus className="size-4 text-muted-foreground" />
+													</span>
+												</div>
+											)}
+									</div>
+								)
+							})}
+						</div>
+						<Button
+							variant="outline"
+							className="w-full"
+							onClick={openCreateModal}
+						>
+							<Plus />
+							{dictionary.actions.createCustomExercise}
+						</Button>
+					</div>
+				</DrawerContent>
+			</Drawer>
+			<ModalPopup
+				open={createModalOpen}
+				onOpenChange={nextOpen => {
+					if (!nextOpen) {
+						cancelCreateModal()
+						return
+					}
 
-              return (
-                <div
-                  key={exercise.id}
-                  className="rounded-xl border border-border/70 bg-card/92 px-3 py-3 dark:bg-card/80"
-                >
-                  {editing ? (
-                    <div className="flex items-center gap-2">
-                      <Input
-                        className="h-9"
-                        aria-label={dictionary.actions.renameCustomExercise}
-                        value={editingName}
-                        onChange={(event) => setEditingName(event.target.value)}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter") {
-                            saveRename(exercise.id)
-                          }
+					setCreateModalOpen(true)
+				}}
+			>
+				<div className="mb-4 flex items-start justify-between gap-3">
+					<div>
+						<p className="text-base font-semibold">
+							{dictionary.actions.createCustomExercise}
+						</p>
+					</div>
+					<Button
+						variant="ghost"
+						size="icon-sm"
+						aria-label={dictionary.actions.cancel}
+						onClick={cancelCreateModal}
+					>
+						<X />
+					</Button>
+				</div>
+				<div className="space-y-4">
+					<div className="space-y-1.5">
+						<Label className="text-xs text-muted-foreground">
+							{dictionary.labels.customExerciseName}
+						</Label>
+						<Input
+							autoFocus={true}
+							value={createName}
+							onChange={event => setCreateName(event.target.value)}
+						/>
+					</div>
+					<div className="space-y-2">
+						<Label className="text-xs text-muted-foreground">
+							{dictionary.labels.customExerciseCategories}
+						</Label>
+						<div className="flex flex-wrap gap-2">
+							{muscleGroups.map(muscleGroup => {
+								const color = getMuscleGroupColor(muscleGroup)
+								const selected = createMuscleGroups.includes(muscleGroup)
 
-                          if (event.key === "Escape") {
-                            cancelRename()
-                          }
-                        }}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={dictionary.actions.save}
-                        onClick={() => saveRename(exercise.id)}
-                      >
-                        <Check />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={dictionary.actions.cancel}
-                        onClick={cancelRename}
-                      >
-                        <X />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex w-full items-center justify-between gap-2">
-                      <button
-                        className="min-w-0 flex-1 text-left"
-                        type="button"
-                        onClick={() => onSelectExercise(exercise.id)}
-                      >
-                        <span className="block text-sm font-medium">
-                          {exercise.name[locale]}
-                        </span>
-                        <span className="block text-xs text-muted-foreground">
-                          {exercise.muscleGroupIds
-                            .map(
-                              (muscleGroup) =>
-                                dictionary.muscleGroups[muscleGroup]
-                            )
-                            .join(", ")}
-                        </span>
-                      </button>
-                      <span className="flex items-center gap-1">
-                        {!exercise.builtIn ? (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              aria-label={
-                                dictionary.actions.renameCustomExercise
-                              }
-                              onClick={(event) => {
-                                event.stopPropagation()
-                                startRename(exercise)
-                              }}
-                            >
-                              <Pencil />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              aria-label={
-                                dictionary.actions.deleteCustomExercise
-                              }
-                              onClick={(event) => {
-                                event.stopPropagation()
-                                onDeleteCustomExercise(exercise.id)
-                              }}
-                            >
-                              <Trash2 />
-                            </Button>
-                          </>
-                        ) : null}
-                        <Plus className="size-4 text-muted-foreground" />
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={openCreateModal}
-            >
-              <Plus />
-              {dictionary.actions.createCustomExercise}
-            </Button>
-          </div>
-        </DrawerContent>
-      </Drawer>
-      <ModalPopup
-        open={createModalOpen}
-        onOpenChange={(nextOpen) => {
-          if (!nextOpen) {
-            cancelCreateModal()
-            return
-          }
-
-          setCreateModalOpen(true)
-        }}
-      >
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <div>
-            <p className="text-base font-semibold">
-              {dictionary.actions.createCustomExercise}
-            </p>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label={dictionary.actions.cancel}
-            onClick={cancelCreateModal}
-          >
-            <X />
-          </Button>
-        </div>
-
-        <div className="space-y-4">
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">
-              {dictionary.labels.customExerciseName}
-            </Label>
-            <Input
-              autoFocus
-              value={createName}
-              onChange={(event) => setCreateName(event.target.value)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">
-              {dictionary.labels.customExerciseCategories}
-            </Label>
-            <div className="flex flex-wrap gap-2">
-              {muscleGroups.map((muscleGroup) => {
-                const color = getMuscleGroupColor(muscleGroup)
-                const selected = createMuscleGroups.includes(muscleGroup)
-
-                return (
-                  <button
-                    key={muscleGroup}
-                    className={`min-h-9 rounded-lg px-3 py-2 text-sm leading-none transition-colors ${
+								return (
+									<button
+										key={muscleGroup}
+										className={`min-h-9 rounded-lg px-3 py-2 text-sm leading-none transition-colors ${
                       selected
                         ? color.badgeClassName
                         : `${color.badgeClassName} opacity-55`
                     }`}
-                    type="button"
-                    onClick={() => toggleCreateMuscleGroup(muscleGroup)}
-                  >
-                    {dictionary.muscleGroups[muscleGroup]}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <Button variant="outline" onClick={cancelCreateModal}>
-              {dictionary.actions.cancel}
-            </Button>
-            <Button
-              disabled={!canSubmitCustomExercise}
-              onClick={() => {
-                onCreateCustomExercise(createName.trim(), createMuscleGroups)
-                closeCreateModal()
-              }}
-            >
-              {dictionary.actions.createCustomExerciseConfirm}
-            </Button>
-          </div>
-        </div>
-      </ModalPopup>
-    </>
-  )
+										type="button"
+										onClick={() => toggleCreateMuscleGroup(muscleGroup)}
+									>
+										{dictionary.muscleGroups[muscleGroup]}
+									</button>
+								)
+							})}
+						</div>
+					</div>
+					<div className="grid grid-cols-2 gap-2">
+						<Button
+							variant="outline"
+							onClick={cancelCreateModal}
+						>
+							{dictionary.actions.cancel}
+						</Button>
+						<Button
+							disabled={!canSubmitCustomExercise}
+							onClick={() => {
+								onCreateCustomExercise(createName.trim(), createMuscleGroups)
+								closeCreateModal()
+							}}
+						>
+							{dictionary.actions.createCustomExerciseConfirm}
+						</Button>
+					</div>
+				</div>
+			</ModalPopup>
+		</>
+	)
 }

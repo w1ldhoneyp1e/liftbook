@@ -1,125 +1,125 @@
-import type { Locale, MuscleGroupId } from "@/shared/domain/types"
 
-import { en } from "./locales/en"
-import { ru } from "./locales/ru"
+import {en} from './locales/en'
+import {ru} from './locales/ru'
+import {type Locale, type MuscleGroupId} from '@/shared/domain/types'
 
 export type Dictionary = {
-  actions: {
-    add: string
-    addExercise: string
-    addSet: string
-    calendar: string
-    cancel: string
-    createGuestAccount: string
-    keepLocalVersion: string
-    chooseExercise: string
-    createCustomExercise: string
-    createCustomExerciseConfirm: string
-    collapse: string
-    collapseAll: string
-    deleteExercise: string
-    deleteCustomExercise: string
-    decrease: string
-    deleteSet: string
-    expand: string
-    expandAll: string
-    goToToday: string
-    increase: string
-    login: string
-    logout: string
-    pause: string
-    reset: string
-    register: string
-    resendVerificationEmail: string
-    renameCustomExercise: string
-    save: string
-    search: string
-    settings: string
-    stopwatch: string
-    start: string
-    syncNow: string
-    timer: string
-  }
-  labels: {
-    account: string
-    accountConnected: string
-    accountGuestConnected: string
-    accountLocalOnly: string
-    authEmail: string
-    authPassword: string
-    authRegisteredHint: string
-    authRegisterHint: string
-    authVerificationHint: string
-    authVerificationPending: string
-    authVerificationSent: string
-    allMuscleGroups: string
-    customExerciseCategories: string
-    customExerciseName: string
-    autoRestTimer: string
-    autoRestTimerHelp: string
-    connectionError: string
-    emptyDayMessage: string
-    emptyDayOnDate: string
-    emptyDayToday: string
-    exercises: string
-    language: string
-    loading: string
-    noExercisesFound: string
-    futureDate: string
-    pastDate: string
-    previousResultDefaults: string
-    previousResultDefaultsHelp: string
-    restTimer: string
-    restTimerDuration: string
-    restTimerMode: string
-    restTimerModeHelp: string
-    restTimerSettings: string
-    restTimerSound: string
-    restTimerSoundHelp: string
-    restTimerVibration: string
-    restTimerVibrationHelp: string
-    restTimerNotifications: string
-    restTimerNotificationsHelp: string
-    restTimerWakeLock: string
-    restTimerWakeLockHelp: string
-    restTimerLockScreen: string
-    restTimerLockScreenHelp: string
-    searchExercise: string
-    syncFailed: string
-    syncConflicts: string
-    syncConflictsHelp: string
-    syncExercise: string
-    syncInProgress: string
-    syncOffline: string
-    syncPending: string
-    syncRecords: string
-    syncReady: string
-    syncSettings: string
-    syncSynced: string
-    syncStatus: string
-    syncSuccess: string
-    syncTrainingDay: string
-    syncTrainingEntry: string
-    theme: string
-    themeDark: string
-    themeLight: string
-    themeSystem: string
-    today: string
-    weightUnit: string
-  }
-  units: {
-    kg: string
-    lb: string
-    reps: string
-  }
-  muscleGroups: Record<MuscleGroupId, string>
+	actions: {
+		add: string,
+		addExercise: string,
+		addSet: string,
+		calendar: string,
+		cancel: string,
+		createGuestAccount: string,
+		keepLocalVersion: string,
+		chooseExercise: string,
+		createCustomExercise: string,
+		createCustomExerciseConfirm: string,
+		collapse: string,
+		collapseAll: string,
+		deleteExercise: string,
+		deleteCustomExercise: string,
+		decrease: string,
+		deleteSet: string,
+		expand: string,
+		expandAll: string,
+		goToToday: string,
+		increase: string,
+		login: string,
+		logout: string,
+		pause: string,
+		reset: string,
+		register: string,
+		resendVerificationEmail: string,
+		renameCustomExercise: string,
+		save: string,
+		search: string,
+		settings: string,
+		stopwatch: string,
+		start: string,
+		syncNow: string,
+		timer: string,
+	},
+	labels: {
+		account: string,
+		accountConnected: string,
+		accountGuestConnected: string,
+		accountLocalOnly: string,
+		authEmail: string,
+		authPassword: string,
+		authRegisteredHint: string,
+		authRegisterHint: string,
+		authVerificationHint: string,
+		authVerificationPending: string,
+		authVerificationSent: string,
+		allMuscleGroups: string,
+		customExerciseCategories: string,
+		customExerciseName: string,
+		autoRestTimer: string,
+		autoRestTimerHelp: string,
+		connectionError: string,
+		emptyDayMessage: string,
+		emptyDayOnDate: string,
+		emptyDayToday: string,
+		exercises: string,
+		language: string,
+		loading: string,
+		noExercisesFound: string,
+		futureDate: string,
+		pastDate: string,
+		previousResultDefaults: string,
+		previousResultDefaultsHelp: string,
+		restTimer: string,
+		restTimerDuration: string,
+		restTimerMode: string,
+		restTimerModeHelp: string,
+		restTimerSettings: string,
+		restTimerSound: string,
+		restTimerSoundHelp: string,
+		restTimerVibration: string,
+		restTimerVibrationHelp: string,
+		restTimerNotifications: string,
+		restTimerNotificationsHelp: string,
+		restTimerWakeLock: string,
+		restTimerWakeLockHelp: string,
+		restTimerLockScreen: string,
+		restTimerLockScreenHelp: string,
+		searchExercise: string,
+		syncFailed: string,
+		syncConflicts: string,
+		syncConflictsHelp: string,
+		syncExercise: string,
+		syncInProgress: string,
+		syncOffline: string,
+		syncPending: string,
+		syncRecords: string,
+		syncReady: string,
+		syncSettings: string,
+		syncSynced: string,
+		syncStatus: string,
+		syncSuccess: string,
+		syncTrainingDay: string,
+		syncTrainingEntry: string,
+		theme: string,
+		themeDark: string,
+		themeLight: string,
+		themeSystem: string,
+		today: string,
+		weightUnit: string,
+	},
+	units: {
+		kg: string,
+		lb: string,
+		reps: string,
+	},
+	muscleGroups: Record<MuscleGroupId, string>,
 }
 
 export const dictionaries: Record<Locale, Dictionary> = {
-  en,
-  ru,
+	en,
+	ru,
 }
 
 export function getDictionary(locale: Locale) {
-  return dictionaries[locale]
+	return dictionaries[locale]
 }

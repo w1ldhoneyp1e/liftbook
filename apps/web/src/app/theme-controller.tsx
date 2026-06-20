@@ -1,36 +1,32 @@
-"use client"
+'use client'
 
-import { useEffect } from "react"
-
-import {
-  applyThemeMode,
-  getStoredThemeMode,
-} from "@/shared/theme/theme-mode"
+import {useEffect} from 'react'
+import {applyThemeMode, getStoredThemeMode} from '@/shared/theme/theme-mode'
 
 export function ThemeController() {
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
+	useEffect(() => {
+		const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
 
-    function syncThemeFromStorage() {
-      applyThemeMode(getStoredThemeMode())
-    }
+		function syncThemeFromStorage() {
+			applyThemeMode(getStoredThemeMode())
+		}
 
-    syncThemeFromStorage()
+		syncThemeFromStorage()
 
-    const handleSystemChange = () => {
-      if (getStoredThemeMode() === "system") {
-        syncThemeFromStorage()
-      }
-    }
+		const handleSystemChange = () => {
+			if (getStoredThemeMode() === 'system') {
+				syncThemeFromStorage()
+			}
+		}
 
-    mediaQuery.addEventListener("change", handleSystemChange)
-    window.addEventListener("storage", syncThemeFromStorage)
+		mediaQuery.addEventListener('change', handleSystemChange)
+		window.addEventListener('storage', syncThemeFromStorage)
 
-    return () => {
-      mediaQuery.removeEventListener("change", handleSystemChange)
-      window.removeEventListener("storage", syncThemeFromStorage)
-    }
-  }, [])
+		return () => {
+			mediaQuery.removeEventListener('change', handleSystemChange)
+			window.removeEventListener('storage', syncThemeFromStorage)
+		}
+	}, [])
 
-  return null
+	return null
 }

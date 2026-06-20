@@ -1,43 +1,46 @@
-import type { Metadata, Viewport } from "next"
-import "./globals.css"
-import { PwaRegistrar } from "./pwa-registrar"
-import { ThemeController } from "./theme-controller"
+import {type Metadata, type Viewport} from 'next'
+import './globals.css'
+import {PwaRegistrar} from './pwa-registrar'
+import {ThemeController} from './theme-controller'
 
 export const metadata: Metadata = {
-  applicationName: "Liftbook",
-  title: "Liftbook",
-  description: "Mobile-first offline workout journal",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "Liftbook",
-  },
-  icons: {
-    icon: "/icon.png",
-    apple: "/apple-icon.png",
-    shortcut: "/favicon.png",
-  },
+	applicationName: 'Liftbook',
+	title: 'Liftbook',
+	description: 'Mobile-first offline workout journal',
+	appleWebApp: {
+		capable: true,
+		statusBarStyle: 'default',
+		title: 'Liftbook',
+	},
+	icons: {
+		icon: '/icon.png',
+		apple: '/apple-icon.png',
+		shortcut: '/favicon.png',
+	},
 }
 
 export const viewport: Viewport = {
-  themeColor: "#ecfdf5",
-  width: "device-width",
-  initialScale: 1,
-  viewportFit: "cover",
+	themeColor: '#ecfdf5',
+	width: 'device-width',
+	initialScale: 1,
+	viewportFit: 'cover',
 }
 
 export default function RootLayout({
-  children,
+	children,
 }: Readonly<{
-  children: React.ReactNode
+	children: React.ReactNode,
 }>) {
-  return (
-    <html lang="en" className="h-full antialiased">
-      <body className="flex min-h-full flex-col">
-        <ThemeController />
-        {children}
-        <PwaRegistrar />
-      </body>
-    </html>
-  )
+	return (
+		<html
+			lang="en"
+			className="h-full antialiased"
+		>
+			<body className="flex min-h-full flex-col">
+				<ThemeController />
+				{children}
+				<PwaRegistrar />
+			</body>
+		</html>
+	)
 }

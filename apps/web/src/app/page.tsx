@@ -1,5 +1,5 @@
-import { DayScreen } from "@/features/day/day-screen"
+import {DayScreen} from '@/features/day/day-screen'
 
 export default function Home() {
-  return <DayScreen />
+	return <DayScreen />
 }

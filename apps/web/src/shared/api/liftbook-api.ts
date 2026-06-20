@@ -1,284 +1,286 @@
-import type { Locale } from "@/shared/domain/types"
+import {type Locale} from '@/shared/domain/types'
 
 export type SyncEntityType =
-  | "exercise"
-  | "workoutDay"
-  | "exerciseEntry"
-  | "userSettings"
+  | 'exercise'
+  | 'workoutDay'
+  | 'exerciseEntry'
+  | 'userSettings'
 
-export type SyncOperation = "upsert" | "delete"
+export type SyncOperation = 'upsert' | 'delete'
 
 export type SyncChange = {
-  localId: string
-  entityType: SyncEntityType
-  operation: SyncOperation
-  updatedAt: string
-  payload: unknown
+	localId: string,
+	entityType: SyncEntityType,
+	operation: SyncOperation,
+	updatedAt: string,
+	payload: unknown,
 }
 
 type GuestAccountResponse = {
-  user: {
-    id: string
-    kind: "guest" | "account"
-    email?: string
-    emailVerified: boolean
-    createdAt: string
-  }
-  session: {
-    accessToken: string
-    tokenType: "Bearer"
-    expiresAt: string
-  }
-  sync: {
-    cursor: string | null
-  }
+	user: {
+		id: string,
+		kind: 'guest' | 'account',
+		email?: string,
+		emailVerified: boolean,
+		createdAt: string,
+	},
+	session: {
+		accessToken: string,
+		tokenType: 'Bearer',
+		expiresAt: string,
+	},
+	sync: {
+		cursor: string | null,
+	},
 }
 
 type AuthAccountResponse = GuestAccountResponse
   & {
-    verificationEmailSent?: boolean
+  	verificationEmailSent?: boolean,
   }
 
 type VerifyEmailResponse = {
-  verified: boolean
-  user: {
-    id: string
-    kind: "guest" | "account"
-    email?: string
-    emailVerified: boolean
-    createdAt: string
-  }
+	verified: boolean,
+	user: {
+		id: string,
+		kind: 'guest' | 'account',
+		email?: string,
+		emailVerified: boolean,
+		createdAt: string,
+	},
 }
 
 type PushSyncResponse = {
-  accepted: Array<{
-    localId: string
-    entityType: SyncEntityType
-    operation: SyncOperation
-    serverVersion: string
-    status: "accepted"
-  }>
-  conflicts: unknown[]
-  nextCursor: string
-  serverTime: string
+	accepted: {
+		localId: string,
+		entityType: SyncEntityType,
+		operation: SyncOperation,
+		serverVersion: string,
+		status: 'accepted',
+	}[],
+	conflicts: unknown[],
+	nextCursor: string,
+	serverTime: string,
 }
 
 type PullSyncResponse = {
-  changes: Array<
-    SyncChange & {
-      id: string
-      clientId: string
-      serverTime: string
-      serverVersion: string
-    }
-  >
-  cursor: string | null
-  nextCursor: string
-  hasMore: boolean
-  serverTime: string
+	changes: (SyncChange & {
+		id: string,
+		clientId: string,
+		serverTime: string,
+		serverVersion: string,
+	})[],
+	cursor: string | null,
+	nextCursor: string,
+	hasMore: boolean,
+	serverTime: string,
 }
 
-const apiBaseUrl =
-  process.env.NEXT_PUBLIC_LIFTBOOK_API_URL ?? "http://localhost:4000"
+const apiBaseUrl
+  = process.env.NEXT_PUBLIC_LIFTBOOK_API_URL ?? 'http://localhost:4000'
 
 export async function createGuestAccount(locale: Locale) {
-  const response = await fetch(`${apiBaseUrl}/v1/auth/guest`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      clientId: getClientId(),
-      locale,
-    }),
-  })
+	const response = await fetch(`${apiBaseUrl}/v1/auth/guest`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify({
+			clientId: getClientId(),
+			locale,
+		}),
+	})
 
-  if (!response.ok) {
-    throw new Error(`Guest account request failed: ${response.status}`)
-  }
+	if (!response.ok) {
+		throw new Error(`Guest account request failed: ${response.status}`)
+	}
 
-  return (await response.json()) as GuestAccountResponse
+	return (await response.json()) as GuestAccountResponse
 }
 
 export async function registerAccount({
-  accessToken,
-  email,
-  locale,
-  password,
+	accessToken,
+	email,
+	locale,
+	password,
 }: {
-  accessToken?: string | null
-  email: string
-  locale: Locale
-  password: string
+	accessToken?: string | null,
+	email: string,
+	locale: Locale,
+	password: string,
 }) {
-  const response = await fetch(`${apiBaseUrl}/v1/auth/register`, {
-    method: "POST",
-    headers: {
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      clientId: getClientId(),
-      email,
-      locale,
-      password,
-    }),
-  })
+	const response = await fetch(`${apiBaseUrl}/v1/auth/register`, {
+		method: 'POST',
+		headers: {
+			...(accessToken
+				? {Authorization: `Bearer ${accessToken}`}
+				: {}),
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify({
+			clientId: getClientId(),
+			email,
+			locale,
+			password,
+		}),
+	})
 
-  if (!response.ok) {
-    throw new Error(await getRequestErrorMessage(response, "Registration failed"))
-  }
+	if (!response.ok) {
+		throw new Error(await getRequestErrorMessage(response, 'Registration failed'))
+	}
 
-  return (await response.json()) as AuthAccountResponse
+	return (await response.json()) as AuthAccountResponse
 }
 
 export async function loginAccount({
-  email,
-  password,
+	email,
+	password,
 }: {
-  email: string
-  password: string
+	email: string,
+	password: string,
 }) {
-  const response = await fetch(`${apiBaseUrl}/v1/auth/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      clientId: getClientId(),
-      email,
-      password,
-    }),
-  })
+	const response = await fetch(`${apiBaseUrl}/v1/auth/login`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify({
+			clientId: getClientId(),
+			email,
+			password,
+		}),
+	})
 
-  if (!response.ok) {
-    throw new Error(await getRequestErrorMessage(response, "Login failed"))
-  }
+	if (!response.ok) {
+		throw new Error(await getRequestErrorMessage(response, 'Login failed'))
+	}
 
-  return (await response.json()) as AuthAccountResponse
+	return (await response.json()) as AuthAccountResponse
 }
 
 export async function resendVerificationEmail(accessToken: string) {
-  const response = await fetch(`${apiBaseUrl}/v1/auth/verify-email/resend`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-  })
+	const response = await fetch(`${apiBaseUrl}/v1/auth/verify-email/resend`, {
+		method: 'POST',
+		headers: {
+			Authorization: `Bearer ${accessToken}`,
+			'Content-Type': 'application/json',
+		},
+	})
 
-  if (!response.ok) {
-    throw new Error(
-      await getRequestErrorMessage(response, "Failed to resend verification email")
-    )
-  }
+	if (!response.ok) {
+		throw new Error(
+			await getRequestErrorMessage(response, 'Failed to resend verification email'),
+		)
+	}
 
-  return (await response.json()) as {
-    sent: boolean
-    alreadyVerified: boolean
-  }
+	return (await response.json()) as {
+		sent: boolean,
+		alreadyVerified: boolean,
+	}
 }
 
 export async function verifyEmailToken(token: string) {
-  const response = await fetch(`${apiBaseUrl}/v1/auth/verify-email`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ token }),
-  })
+	const response = await fetch(`${apiBaseUrl}/v1/auth/verify-email`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify({token}),
+	})
 
-  if (!response.ok) {
-    throw new Error(
-      await getRequestErrorMessage(response, "Email verification failed")
-    )
-  }
+	if (!response.ok) {
+		throw new Error(
+			await getRequestErrorMessage(response, 'Email verification failed'),
+		)
+	}
 
-  return (await response.json()) as VerifyEmailResponse
+	return (await response.json()) as VerifyEmailResponse
 }
 
 export async function pushSyncChanges({
-  accessToken,
-  changes,
-  cursor,
+	accessToken,
+	changes,
+	cursor,
 }: {
-  accessToken: string
-  changes: SyncChange[]
-  cursor?: string | null
+	accessToken: string,
+	changes: SyncChange[],
+	cursor?: string | null,
 }) {
-  const response = await fetch(`${apiBaseUrl}/v1/sync/push`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      changes,
-      clientId: getClientId(),
-      cursor: cursor ?? null,
-    }),
-  })
+	const response = await fetch(`${apiBaseUrl}/v1/sync/push`, {
+		method: 'POST',
+		headers: {
+			Authorization: `Bearer ${accessToken}`,
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify({
+			changes,
+			clientId: getClientId(),
+			cursor: cursor ?? null,
+		}),
+	})
 
-  if (!response.ok) {
-    throw new Error(`Sync push request failed: ${response.status}`)
-  }
+	if (!response.ok) {
+		throw new Error(`Sync push request failed: ${response.status}`)
+	}
 
-  return (await response.json()) as PushSyncResponse
+	return (await response.json()) as PushSyncResponse
 }
 
 export async function pullSyncChanges({
-  accessToken,
-  cursor,
+	accessToken,
+	cursor,
 }: {
-  accessToken: string
-  cursor?: string | null
+	accessToken: string,
+	cursor?: string | null,
 }) {
-  const searchParams = new URLSearchParams({
-    clientId: getClientId(),
-  })
+	const searchParams = new URLSearchParams({
+		clientId: getClientId(),
+	})
 
-  if (cursor) {
-    searchParams.set("cursor", cursor)
-  }
+	if (cursor) {
+		searchParams.set('cursor', cursor)
+	}
 
-  const response = await fetch(
+	const response = await fetch(
     `${apiBaseUrl}/v1/sync/pull?${searchParams.toString()}`,
     {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    }
-  )
+    	headers: {
+    		Authorization: `Bearer ${accessToken}`,
+    	},
+    },
+	)
 
-  if (!response.ok) {
-    throw new Error(`Sync pull request failed: ${response.status}`)
-  }
+	if (!response.ok) {
+		throw new Error(`Sync pull request failed: ${response.status}`)
+	}
 
-  return (await response.json()) as PullSyncResponse
+	return (await response.json()) as PullSyncResponse
 }
 
 function getClientId() {
-  const storageKey = "liftbook.clientId"
-  const existingClientId = window.localStorage.getItem(storageKey)
+	const storageKey = 'liftbook.clientId'
+	const existingClientId = window.localStorage.getItem(storageKey)
 
-  if (existingClientId) {
-    return existingClientId
-  }
+	if (existingClientId) {
+		return existingClientId
+	}
 
-  const clientId =
-    typeof crypto !== "undefined" && "randomUUID" in crypto
-      ? `client_${crypto.randomUUID()}`
-      : `client_${Date.now()}_${Math.random().toString(36).slice(2)}`
+	const clientId
+    = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    	? `client_${crypto.randomUUID()}`
+    	: `client_${Date.now()}_${Math.random().toString(36)
+.slice(2)}`
 
-  window.localStorage.setItem(storageKey, clientId)
-  return clientId
+	window.localStorage.setItem(storageKey, clientId)
+	return clientId
 }
 
 async function getRequestErrorMessage(response: Response, fallback: string) {
-  try {
-    const payload = (await response.json()) as { error?: string }
-    return payload.error || `${fallback}: ${response.status}`
-  } catch {
-    return `${fallback}: ${response.status}`
-  }
+	try {
+		const payload = (await response.json()) as {error?: string}
+		return payload.error || `${fallback}: ${response.status}`
+	}
+	catch {
+		return `${fallback}: ${response.status}`
+	}
 }

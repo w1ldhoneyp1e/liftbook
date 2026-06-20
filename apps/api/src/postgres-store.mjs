@@ -1,147 +1,147 @@
-import pg from "pg"
-import { randomUUID } from "node:crypto"
+import {randomUUID} from 'node:crypto'
+import pg from 'pg'
 
-const { Pool } = pg
+const {Pool} = pg
 
 export async function createPostgresStore(options) {
-  const databaseUrl = options?.databaseUrl ?? null
+	const databaseUrl = options?.databaseUrl ?? null
 
-  if (!databaseUrl) {
-    throw new Error(
-      "DATABASE_URL is required when LIFTBOOK_STORAGE_DRIVER=postgres"
-    )
-  }
+	if (!databaseUrl) {
+		throw new Error(
+			'DATABASE_URL is required when LIFTBOOK_STORAGE_DRIVER=postgres',
+		)
+	}
 
-  const pool = new Pool({
-    connectionString: databaseUrl,
-  })
+	const pool = new Pool({
+		connectionString: databaseUrl,
+	})
 
-  await pool.query("select 1")
+	await pool.query('select 1')
 
-  return {
-    async getHealthSummary() {
-      const [users, devices, sessions, syncEvents, syncRecords] = await Promise.all([
-        countRows(pool, "users"),
-        countRows(pool, "devices"),
-        countRows(pool, "sessions"),
-        countRows(pool, "sync_events"),
-        countRows(pool, "sync_records"),
-      ])
+	return {
+		async getHealthSummary() {
+			const [users, devices, sessions, syncEvents, syncRecords] = await Promise.all([
+				countRows(pool, 'users'),
+				countRows(pool, 'devices'),
+				countRows(pool, 'sessions'),
+				countRows(pool, 'sync_events'),
+				countRows(pool, 'sync_records'),
+			])
 
-      return {
-        storage: "postgres",
-        users,
-        devices,
-        sessions,
-        syncEvents,
-        syncRecords,
-      }
-    },
-    async createGuestSession({
-      clientId,
-      locale,
-      now,
-      userId,
-      accessToken,
-      expiresAt,
-    }) {
-      const session = {
-        id: `session_${randomUUID()}`,
-        userId,
-        accessToken,
-        tokenType: "Bearer",
-        expiresAt,
-        createdAt: now,
-        updatedAt: now,
-      }
-      const user = {
-        id: userId,
-        kind: "guest",
-        clientId,
-        locale,
-        createdAt: now,
-        updatedAt: now,
-      }
+			return {
+				storage: 'postgres',
+				users,
+				devices,
+				sessions,
+				syncEvents,
+				syncRecords,
+			}
+		},
+		async createGuestSession({
+			clientId,
+			locale,
+			now,
+			userId,
+			accessToken,
+			expiresAt,
+		}) {
+			const session = {
+				id: `session_${randomUUID()}`,
+				userId,
+				accessToken,
+				tokenType: 'Bearer',
+				expiresAt,
+				createdAt: now,
+				updatedAt: now,
+			}
+			const user = {
+				id: userId,
+				kind: 'guest',
+				clientId,
+				locale,
+				createdAt: now,
+				updatedAt: now,
+			}
 
-      await withTransaction(pool, async (client) => {
-        await client.query(
+			await withTransaction(pool, async client => {
+				await client.query(
           `insert into users (id, kind, locale, created_at, updated_at)
            values ($1, $2, $3, $4, $5)`,
-          [user.id, user.kind, user.locale, user.createdAt, user.updatedAt]
-        )
+          [user.id, user.kind, user.locale, user.createdAt, user.updatedAt],
+				)
 
-        if (clientId) {
-          await client.query(
+				if (clientId) {
+					await client.query(
             `insert into devices (user_id, client_id, created_at, updated_at)
              values ($1, $2, $3, $4)
              on conflict (user_id, client_id)
              do update set updated_at = excluded.updated_at`,
-            [user.id, clientId, now, now]
-          )
-        }
+            [user.id, clientId, now, now],
+					)
+				}
 
-        await client.query(
+				await client.query(
           `insert into sessions (id, user_id, access_token, token_type, expires_at, created_at, updated_at)
            values ($1, $2, $3, $4, $5, $6, $7)`,
           [
-            session.id,
-            session.userId,
-            session.accessToken,
-            session.tokenType,
-            session.expiresAt,
-            session.createdAt,
-            session.updatedAt,
-          ]
-        )
-      })
+          	session.id,
+          	session.userId,
+          	session.accessToken,
+          	session.tokenType,
+          	session.expiresAt,
+          	session.createdAt,
+          	session.updatedAt,
+          ],
+				)
+			})
 
-      return {
-        user,
-        session,
-      }
-    },
-    async registerAccount({
-      accessToken,
-      clientId,
-      email,
-      existingUserId,
-      expiresAt,
-      locale,
-      now,
-      passwordHash,
-      passwordSalt,
-      userId,
-    }) {
-      const normalizedEmail = email.toLowerCase()
-      const session = {
-        id: `session_${randomUUID()}`,
-        userId: existingUserId ?? userId,
-        accessToken,
-        tokenType: "Bearer",
-        expiresAt,
-        createdAt: now,
-        updatedAt: now,
-      }
+			return {
+				user,
+				session,
+			}
+		},
+		async registerAccount({
+			accessToken,
+			clientId,
+			email,
+			existingUserId,
+			expiresAt,
+			locale,
+			now,
+			passwordHash,
+			passwordSalt,
+			userId,
+		}) {
+			const normalizedEmail = email.toLowerCase()
+			const session = {
+				id: `session_${randomUUID()}`,
+				userId: existingUserId ?? userId,
+				accessToken,
+				tokenType: 'Bearer',
+				expiresAt,
+				createdAt: now,
+				updatedAt: now,
+			}
 
-      await withTransaction(pool, async (client) => {
-        if (existingUserId) {
-          const existingUserResult = await client.query(
+			await withTransaction(pool, async client => {
+				if (existingUserId) {
+					const existingUserResult = await client.query(
             `select id, email
              from users
              where id = $1
              limit 1`,
-            [existingUserId]
-          )
+            [existingUserId],
+					)
 
-          if (existingUserResult.rows.length === 0) {
-            throw new Error("User not found")
-          }
+					if (existingUserResult.rows.length === 0) {
+						throw new Error('User not found')
+					}
 
-          if (existingUserResult.rows[0].email) {
-            throw new Error("Current account is already registered")
-          }
+					if (existingUserResult.rows[0].email) {
+						throw new Error('Current account is already registered')
+					}
 
-          await client.query(
+					await client.query(
             `update users
              set kind = 'account',
                  email = $2,
@@ -152,16 +152,17 @@ export async function createPostgresStore(options) {
                  updated_at = $6
              where id = $1`,
             [
-              existingUserId,
-              normalizedEmail,
-              passwordHash,
-              passwordSalt,
-              locale,
-              now,
-            ]
-          )
-        } else {
-          await client.query(
+            	existingUserId,
+            	normalizedEmail,
+            	passwordHash,
+            	passwordSalt,
+            	locale,
+            	now,
+            ],
+					)
+				}
+				else {
+					await client.query(
             `insert into users (
                id,
                kind,
@@ -173,62 +174,62 @@ export async function createPostgresStore(options) {
                created_at,
                updated_at
              ) values ($1, 'account', $2, $3, null, $4, $5, $6, $7)`,
-            [userId, locale, normalizedEmail, passwordHash, passwordSalt, now, now]
-          )
-        }
+            [userId, locale, normalizedEmail, passwordHash, passwordSalt, now, now],
+					)
+				}
 
-        if (clientId) {
-          await client.query(
+				if (clientId) {
+					await client.query(
             `insert into devices (user_id, client_id, created_at, updated_at)
              values ($1, $2, $3, $4)
              on conflict (user_id, client_id)
              do update set updated_at = excluded.updated_at`,
-            [session.userId, clientId, now, now]
-          )
-        }
+            [session.userId, clientId, now, now],
+					)
+				}
 
-        await client.query(
+				await client.query(
           `insert into sessions (id, user_id, access_token, token_type, expires_at, created_at, updated_at)
            values ($1, $2, $3, $4, $5, $6, $7)`,
           [
-            session.id,
-            session.userId,
-            session.accessToken,
-            session.tokenType,
-            session.expiresAt,
-            session.createdAt,
-            session.updatedAt,
-          ]
-        )
-      })
+          	session.id,
+          	session.userId,
+          	session.accessToken,
+          	session.tokenType,
+          	session.expiresAt,
+          	session.createdAt,
+          	session.updatedAt,
+          ],
+				)
+			})
 
-      const user = await getUserById(pool, session.userId)
+			const user = await getUserById(pool, session.userId)
 
-      return {
-        user,
-        session,
-      }
-    },
-    async getUserById(userId) {
-      return getUserById(pool, userId)
-    },
-    async getAccountByEmail(email) {
-      const result = await pool.query(
+			return {
+				user,
+				session,
+			}
+		},
+		async getUserById(userId) {
+			return getUserById(pool, userId)
+		},
+		async getAccountByEmail(email) {
+			const result = await pool.query(
         `select id, kind, locale, email, email_verified_at, password_hash, password_salt, created_at, updated_at
          from users
          where lower(email) = lower($1)
          limit 1`,
-        [email]
-      )
+        [email],
+			)
 
-      if (result.rows.length === 0) {
-        return null
-      }
+			if (result.rows.length === 0) {
+				return null
+			}
 
-      return mapUserRow(result.rows[0])
-    },
-    async createEmailVerificationToken(token) {
-      await pool.query(
+			return mapUserRow(result.rows[0])
+		},
+		async createEmailVerificationToken(token) {
+			await pool.query(
         `insert into email_verification_tokens (
            id,
            user_id,
@@ -239,192 +240,199 @@ export async function createPostgresStore(options) {
            created_at
          ) values ($1, $2, $3, $4, $5, $6, $7)`,
         [
-          token.id,
-          token.userId,
-          token.tokenHash,
-          token.email,
-          token.expiresAt,
-          token.usedAt ?? null,
-          token.createdAt,
-        ]
-      )
-    },
-    async getLatestEmailVerificationTokenForUser(userId) {
-      const result = await pool.query(
+        	token.id,
+        	token.userId,
+        	token.tokenHash,
+        	token.email,
+        	token.expiresAt,
+        	token.usedAt ?? null,
+        	token.createdAt,
+        ],
+			)
+		},
+		async getLatestEmailVerificationTokenForUser(userId) {
+			const result = await pool.query(
         `select id, user_id, token_hash, email, expires_at, used_at, created_at
          from email_verification_tokens
          where user_id = $1
          order by created_at desc
          limit 1`,
-        [userId]
-      )
+        [userId],
+			)
 
-      if (result.rows.length === 0) {
-        return null
-      }
+			if (result.rows.length === 0) {
+				return null
+			}
 
-      return mapEmailVerificationTokenRow(result.rows[0])
-    },
-    async verifyEmailByTokenHash({ tokenHash, now }) {
-      return withTransaction(pool, async (client) => {
-        const tokenResult = await client.query(
+			return mapEmailVerificationTokenRow(result.rows[0])
+		},
+		async verifyEmailByTokenHash({tokenHash, now}) {
+			return withTransaction(pool, async client => {
+				const tokenResult = await client.query(
           `select id, user_id, token_hash, email, expires_at, used_at, created_at
            from email_verification_tokens
            where token_hash = $1
            limit 1`,
-          [tokenHash]
-        )
+          [tokenHash],
+				)
 
-        if (tokenResult.rows.length === 0) {
-          return null
-        }
+				if (tokenResult.rows.length === 0) {
+					return null
+				}
 
-        const token = mapEmailVerificationTokenRow(tokenResult.rows[0])
+				const token = mapEmailVerificationTokenRow(tokenResult.rows[0])
 
-        if (token.usedAt || token.expiresAt <= now) {
-          return null
-        }
+				if (token.usedAt || token.expiresAt <= now) {
+					return null
+				}
 
-        await client.query(
+				await client.query(
           `update users
            set email_verified_at = $2,
                updated_at = $2
            where id = $1`,
-          [token.userId, now]
-        )
+          [token.userId, now],
+				)
 
-        await client.query(
+				await client.query(
           `update email_verification_tokens
            set used_at = coalesce(used_at, $2)
            where user_id = $1`,
-          [token.userId, now]
-        )
+          [token.userId, now],
+				)
 
-        return getUserById(client, token.userId)
-      })
-    },
-    async getSessionByAccessToken(accessToken) {
-      const result = await pool.query(
+				return getUserById(client, token.userId)
+			})
+		},
+		async getSessionByAccessToken(accessToken) {
+			const result = await pool.query(
         `select id, user_id, access_token, token_type, expires_at, created_at, updated_at
          from sessions
          where access_token = $1
          limit 1`,
-        [accessToken]
-      )
+        [accessToken],
+			)
 
-      if (result.rows.length === 0) {
-        return null
-      }
+			if (result.rows.length === 0) {
+				return null
+			}
 
-      return mapSessionRow(result.rows[0])
-    },
-    async touchSession({ accessToken, now }) {
-      await pool.query(
+			return mapSessionRow(result.rows[0])
+		},
+		async touchSession({accessToken, now}) {
+			await pool.query(
         `update sessions
          set updated_at = $2
          where access_token = $1`,
-        [accessToken, now]
-      )
-    },
-    async touchDevice({ userId, clientId, now }) {
-      if (!clientId) {
-        return
-      }
+        [accessToken, now],
+			)
+		},
+		async touchDevice({
+			userId, clientId, now,
+		}) {
+			if (!clientId) {
+				return
+			}
 
-      await pool.query(
+			await pool.query(
         `insert into devices (user_id, client_id, created_at, updated_at)
          values ($1, $2, $3, $4)
          on conflict (user_id, client_id)
          do update set updated_at = excluded.updated_at`,
-        [userId, clientId, now, now]
-      )
-    },
-    async createSessionForUser({
-      accessToken,
-      clientId,
-      expiresAt,
-      now,
-      userId,
-    }) {
-      const user = await getUserById(pool, userId)
+        [userId, clientId, now, now],
+			)
+		},
+		async createSessionForUser({
+			accessToken,
+			clientId,
+			expiresAt,
+			now,
+			userId,
+		}) {
+			const user = await getUserById(pool, userId)
 
-      if (!user) {
-        throw new Error("User not found")
-      }
+			if (!user) {
+				throw new Error('User not found')
+			}
 
-      const session = {
-        id: `session_${randomUUID()}`,
-        userId,
-        accessToken,
-        tokenType: "Bearer",
-        expiresAt,
-        createdAt: now,
-        updatedAt: now,
-      }
+			const session = {
+				id: `session_${randomUUID()}`,
+				userId,
+				accessToken,
+				tokenType: 'Bearer',
+				expiresAt,
+				createdAt: now,
+				updatedAt: now,
+			}
 
-      await withTransaction(pool, async (client) => {
-        await client.query(
+			await withTransaction(pool, async client => {
+				await client.query(
           `update users
            set updated_at = $2
            where id = $1`,
-          [userId, now]
-        )
+          [userId, now],
+				)
 
-        if (clientId) {
-          await client.query(
+				if (clientId) {
+					await client.query(
             `insert into devices (user_id, client_id, created_at, updated_at)
              values ($1, $2, $3, $4)
              on conflict (user_id, client_id)
              do update set updated_at = excluded.updated_at`,
-            [userId, clientId, now, now]
-          )
-        }
+            [userId, clientId, now, now],
+					)
+				}
 
-        await client.query(
+				await client.query(
           `insert into sessions (id, user_id, access_token, token_type, expires_at, created_at, updated_at)
            values ($1, $2, $3, $4, $5, $6, $7)`,
           [
-            session.id,
-            session.userId,
-            session.accessToken,
-            session.tokenType,
-            session.expiresAt,
-            session.createdAt,
-            session.updatedAt,
-          ]
-        )
-      })
+          	session.id,
+          	session.userId,
+          	session.accessToken,
+          	session.tokenType,
+          	session.expiresAt,
+          	session.createdAt,
+          	session.updatedAt,
+          ],
+				)
+			})
 
-      return {
-        user,
-        session,
-      }
-    },
-    async acceptSyncChanges({
-      userId,
-      clientId,
-      changes,
-      serverTime,
-      buildAcceptedChange,
-    }) {
-      const accepted = changes.map((change) =>
-        buildAcceptedChange({ userId, clientId, change, serverTime })
-      )
-      const persistedEvents = []
+			return {
+				user,
+				session,
+			}
+		},
+		async acceptSyncChanges({
+			userId,
+			clientId,
+			changes,
+			serverTime,
+			buildAcceptedChange,
+		}) {
+			const accepted = changes.map(change =>
+				buildAcceptedChange({
+					userId,
+					clientId,
+					change,
+					serverTime,
+				}),
+			)
+			const persistedEvents = []
 
-      await withTransaction(pool, async (client) => {
-        if (clientId) {
-          await client.query(
+			await withTransaction(pool, async client => {
+				if (clientId) {
+					await client.query(
             `insert into devices (user_id, client_id, created_at, updated_at)
              values ($1, $2, $3, $4)
              on conflict (user_id, client_id)
              do update set updated_at = excluded.updated_at`,
-            [userId, clientId, serverTime, serverTime]
-          )
-        }
+            [userId, clientId, serverTime, serverTime],
+					)
+				}
 
-        for (const event of accepted) {
-          const insertEventResult = await client.query(
+				for (const event of accepted) {
+					const insertEventResult = await client.query(
             `insert into sync_events (
                id,
                sequence,
@@ -446,33 +454,33 @@ export async function createPostgresStore(options) {
              do update set sync_key = excluded.sync_key
              returning id, sequence, sync_key, record_key, user_id, client_id, entity_type, local_id, operation, payload, server_time, server_version, updated_at`,
             [
-              event.id,
-              event.syncKey,
-              event.recordKey,
-              event.userId,
-              event.clientId,
-              event.entityType,
-              event.localId,
-              event.operation,
-              JSON.stringify(event.payload),
-              event.serverTime,
-              event.serverVersion,
-              event.updatedAt,
-            ]
-          )
-          const persistedEventWithCursor = mapSyncEventRow(insertEventResult.rows[0])
-          persistedEvents.push(persistedEventWithCursor)
+            	event.id,
+            	event.syncKey,
+            	event.recordKey,
+            	event.userId,
+            	event.clientId,
+            	event.entityType,
+            	event.localId,
+            	event.operation,
+            	JSON.stringify(event.payload),
+            	event.serverTime,
+            	event.serverVersion,
+            	event.updatedAt,
+            ],
+					)
+					const persistedEventWithCursor = mapSyncEventRow(insertEventResult.rows[0])
+					persistedEvents.push(persistedEventWithCursor)
 
-          if (persistedEventWithCursor.operation === "delete") {
-            await client.query(
+					if (persistedEventWithCursor.operation === 'delete') {
+						await client.query(
               `delete from sync_records
                where record_key = $1 and user_id = $2`,
-              [persistedEventWithCursor.recordKey, persistedEventWithCursor.userId]
-            )
-            continue
-          }
+              [persistedEventWithCursor.recordKey, persistedEventWithCursor.userId],
+						)
+						continue
+					}
 
-          await client.query(
+					await client.query(
             `insert into sync_records (
                storage_key,
                record_key,
@@ -501,45 +509,48 @@ export async function createPostgresStore(options) {
                server_version = excluded.server_version,
                updated_at = excluded.updated_at`,
             [
-              persistedEventWithCursor.storageKey,
-              persistedEventWithCursor.recordKey,
-              persistedEventWithCursor.userId,
-              persistedEventWithCursor.clientId,
-              persistedEventWithCursor.entityType,
-              persistedEventWithCursor.localId,
-              persistedEventWithCursor.operation,
-              JSON.stringify(persistedEventWithCursor.payload),
-              persistedEventWithCursor.serverTime,
-              persistedEventWithCursor.serverVersion,
-              persistedEventWithCursor.updatedAt,
-            ]
-          )
-        }
-      })
+            	persistedEventWithCursor.storageKey,
+            	persistedEventWithCursor.recordKey,
+            	persistedEventWithCursor.userId,
+            	persistedEventWithCursor.clientId,
+            	persistedEventWithCursor.entityType,
+            	persistedEventWithCursor.localId,
+            	persistedEventWithCursor.operation,
+            	JSON.stringify(persistedEventWithCursor.payload),
+            	persistedEventWithCursor.serverTime,
+            	persistedEventWithCursor.serverVersion,
+            	persistedEventWithCursor.updatedAt,
+            ],
+					)
+				}
+			})
 
-      return persistedEvents
-    },
-    async listSyncEvents({ userId, cursor, clientId, limit }) {
-      const conditions = ["user_id = $1"]
-      const values = [userId]
-      const parsedCursor = parseCursor(cursor)
-      const pageSize = normalizeLimit(limit)
+			return persistedEvents
+		},
+		async listSyncEvents({
+			userId, cursor, clientId, limit,
+		}) {
+			const conditions = ['user_id = $1']
+			const values = [userId]
+			const parsedCursor = parseCursor(cursor)
+			const pageSize = normalizeLimit(limit)
 
-      if (parsedCursor !== null) {
-        values.push(parsedCursor)
-        conditions.push(`sequence > $${values.length}`)
-      } else if (cursor) {
-        values.push(cursor)
-        conditions.push(`server_time > $${values.length}`)
-      }
+			if (parsedCursor !== null) {
+				values.push(parsedCursor)
+				conditions.push(`sequence > $${values.length}`)
+			}
+			else if (cursor) {
+				values.push(cursor)
+				conditions.push(`server_time > $${values.length}`)
+			}
 
-      if (clientId) {
-        values.push(clientId)
-        conditions.push(`client_id <> $${values.length}`)
-      }
+			if (clientId) {
+				values.push(clientId)
+				conditions.push(`client_id <> $${values.length}`)
+			}
 
-      values.push(pageSize + 1)
-      const pagedResult = await pool.query(
+			values.push(pageSize + 1)
+			const pagedResult = await pool.query(
         `select
            id,
            sequence,
@@ -554,169 +565,181 @@ export async function createPostgresStore(options) {
            server_version,
            updated_at
          from sync_events
-         where ${conditions.join(" and ")}
+         where ${conditions.join(' and ')}
          order by sequence asc nulls last, server_time asc
          limit $${values.length}`,
-        values
-      )
-      const rows = pagedResult.rows
-      const hasMore = rows.length > pageSize
-      const changes = rows.slice(0, pageSize).map(mapSyncEventRow)
+        values,
+			)
+			const rows = pagedResult.rows
+			const hasMore = rows.length > pageSize
+			const changes = rows.slice(0, pageSize).map(mapSyncEventRow)
 
-      return {
-        changes,
-        hasMore,
-      }
-    },
-    async cleanupLifecycle({ now, sessionRetentionDays, syncRetentionDays }) {
-      const sessionCutoff = toCutoff(now, sessionRetentionDays)
-      const syncCutoff = toCutoff(now, syncRetentionDays)
+			return {
+				changes,
+				hasMore,
+			}
+		},
+		async cleanupLifecycle({
+			now, sessionRetentionDays, syncRetentionDays,
+		}) {
+			const sessionCutoff = toCutoff(now, sessionRetentionDays)
+			const syncCutoff = toCutoff(now, syncRetentionDays)
 
-      const removedSessions = await pool.query(
+			const removedSessions = await pool.query(
         `delete from sessions
          where expires_at <= $1`,
-        [sessionCutoff]
-      )
-      const removedSyncEvents = await pool.query(
+        [sessionCutoff],
+			)
+			const removedSyncEvents = await pool.query(
         `delete from sync_events
          where server_time < $1`,
-        [syncCutoff]
-      )
+        [syncCutoff],
+			)
 
-      return {
-        storage: "postgres",
-        removedSessions: removedSessions.rowCount ?? 0,
-        removedSyncEvents: removedSyncEvents.rowCount ?? 0,
-        removedDevices: 0,
-      }
-    },
-  }
+			return {
+				storage: 'postgres',
+				removedSessions: removedSessions.rowCount ?? 0,
+				removedSyncEvents: removedSyncEvents.rowCount ?? 0,
+				removedDevices: 0,
+			}
+		},
+	}
 }
 
 async function countRows(pool, tableName) {
-  const result = await pool.query(`select count(*)::int as count from ${tableName}`)
-  return result.rows[0]?.count ?? 0
+	const result = await pool.query(`select count(*)::int as count from ${tableName}`)
+	return result.rows[0]?.count ?? 0
 }
 
 async function withTransaction(pool, callback) {
-  const client = await pool.connect()
+	const client = await pool.connect()
 
-  try {
-    await client.query("begin")
-    const result = await callback(client)
-    await client.query("commit")
-    return result
-  } catch (error) {
-    await client.query("rollback")
-    throw error
-  } finally {
-    client.release()
-  }
+	try {
+		await client.query('begin')
+		const result = await callback(client)
+		await client.query('commit')
+		return result
+	}
+	catch (error) {
+		await client.query('rollback')
+		throw error
+	}
+	finally {
+		client.release()
+	}
 }
 
 async function getUserById(pool, userId) {
-  const result = await pool.query(
+	const result = await pool.query(
     `select id, kind, locale, email, email_verified_at, password_hash, password_salt, created_at, updated_at
      from users
      where id = $1
      limit 1`,
-    [userId]
-  )
+    [userId],
+	)
 
-  if (result.rows.length === 0) {
-    return null
-  }
+	if (result.rows.length === 0) {
+		return null
+	}
 
-  return mapUserRow(result.rows[0])
+	return mapUserRow(result.rows[0])
 }
 
 function mapUserRow(row) {
-  return {
-    id: row.id,
-    kind: row.kind,
-    locale: row.locale,
-    email: row.email ?? undefined,
-    emailVerifiedAt: row.email_verified_at?.toISOString?.() ?? undefined,
-    passwordHash: row.password_hash ?? undefined,
-    passwordSalt: row.password_salt ?? undefined,
-    createdAt: row.created_at.toISOString(),
-    updatedAt: row.updated_at?.toISOString?.() ?? row.created_at.toISOString(),
-  }
+	return {
+		id: row.id,
+		kind: row.kind,
+		locale: row.locale,
+		email: row.email ?? undefined,
+		emailVerifiedAt: row.email_verified_at?.toISOString?.() ?? undefined,
+		passwordHash: row.password_hash ?? undefined,
+		passwordSalt: row.password_salt ?? undefined,
+		createdAt: row.created_at.toISOString(),
+		updatedAt: row.updated_at?.toISOString?.() ?? row.created_at.toISOString(),
+	}
 }
 
 function mapEmailVerificationTokenRow(row) {
-  return {
-    id: row.id,
-    userId: row.user_id,
-    tokenHash: row.token_hash,
-    email: row.email,
-    expiresAt: row.expires_at.toISOString(),
-    usedAt: row.used_at?.toISOString?.() ?? null,
-    createdAt: row.created_at.toISOString(),
-  }
+	return {
+		id: row.id,
+		userId: row.user_id,
+		tokenHash: row.token_hash,
+		email: row.email,
+		expiresAt: row.expires_at.toISOString(),
+		usedAt: row.used_at?.toISOString?.() ?? null,
+		createdAt: row.created_at.toISOString(),
+	}
 }
 
 function mapSessionRow(row) {
-  return {
-    id: row.id,
-    userId: row.user_id,
-    accessToken: row.access_token,
-    tokenType: row.token_type,
-    expiresAt: row.expires_at.toISOString(),
-    createdAt: row.created_at.toISOString(),
-    updatedAt: row.updated_at.toISOString(),
-  }
+	return {
+		id: row.id,
+		userId: row.user_id,
+		accessToken: row.access_token,
+		tokenType: row.token_type,
+		expiresAt: row.expires_at.toISOString(),
+		createdAt: row.created_at.toISOString(),
+		updatedAt: row.updated_at.toISOString(),
+	}
 }
 
 function mapSyncEventRow(row) {
-  const normalizedSequence = normalizeSequence(row.sequence)
+	const normalizedSequence = normalizeSequence(row.sequence)
 
-  return {
-    id: row.id,
-    syncKey: row.sync_key,
-    cursor:
+	return {
+		id: row.id,
+		syncKey: row.sync_key,
+		cursor:
       normalizedSequence !== null
-        ? String(normalizedSequence)
-        : row.server_time.toISOString(),
-    recordKey: row.record_key,
-    storageKey: `${row.user_id}:${row.record_key}`,
-    userId: row.user_id,
-    clientId: row.client_id,
-    entityType: row.entity_type,
-    localId: row.local_id,
-    operation: row.operation,
-    payload: row.payload,
-    serverTime: row.server_time.toISOString(),
-    serverVersion: row.server_version,
-    updatedAt: row.updated_at.toISOString(),
-  }
+      	? String(normalizedSequence)
+      	: row.server_time.toISOString(),
+		recordKey: row.record_key,
+		storageKey: `${row.user_id}:${row.record_key}`,
+		userId: row.user_id,
+		clientId: row.client_id,
+		entityType: row.entity_type,
+		localId: row.local_id,
+		operation: row.operation,
+		payload: row.payload,
+		serverTime: row.server_time.toISOString(),
+		serverVersion: row.server_version,
+		updatedAt: row.updated_at.toISOString(),
+	}
 }
 
 function parseCursor(cursor) {
-  if (!cursor) {
-    return null
-  }
+	if (!cursor) {
+		return null
+	}
 
-  const parsed = Number(cursor)
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+	const parsed = Number(cursor)
+	return Number.isInteger(parsed) && parsed > 0
+		? parsed
+		: null
 }
 
 function normalizeSequence(value) {
-  if (value === null || value === undefined) {
-    return null
-  }
+	if (value === null || value === undefined) {
+		return null
+	}
 
-  const parsed = Number(value)
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+	const parsed = Number(value)
+	return Number.isInteger(parsed) && parsed > 0
+		? parsed
+		: null
 }
 
 function normalizeLimit(limit) {
-  const parsed = Number(limit)
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : 100
+	const parsed = Number(limit)
+	return Number.isInteger(parsed) && parsed > 0
+		? parsed
+		: 100
 }
 
 function toCutoff(now, retentionDays) {
-  const parsedDays = Number(retentionDays)
-  const days = Number.isInteger(parsedDays) && parsedDays > 0 ? parsedDays : 30
-  return new Date(new Date(now).getTime() - days * 24 * 60 * 60 * 1000)
+	const parsedDays = Number(retentionDays)
+	const days = Number.isInteger(parsedDays) && parsedDays > 0
+		? parsedDays
+		: 30
+	return new Date(new Date(now).getTime() - days * 24 * 60 * 60 * 1000)
 }

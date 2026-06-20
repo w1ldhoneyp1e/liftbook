@@ -1,157 +1,164 @@
-import { createServer } from "node:http"
-
-import { createAuthService } from "./auth-service.mjs"
-import { loadConfig } from "./config.mjs"
-import { getRequestOrigin, readJsonBody, sendJson, setCorsHeaders } from "./http.mjs"
-import { createMailService } from "./mail-service.mjs"
-import { createStorage } from "./storage.mjs"
-import { createSyncService } from "./sync-service.mjs"
+import {createServer} from 'node:http'
+import {createAuthService} from './auth-service.mjs'
+import {loadConfig} from './config.mjs'
+import {
+	getRequestOrigin,
+	readJsonBody,
+	sendJson,
+	setCorsHeaders,
+} from './http.mjs'
+import {createMailService} from './mail-service.mjs'
+import {createStorage} from './storage.mjs'
+import {createSyncService} from './sync-service.mjs'
 
 const config = loadConfig()
 const storage = await createStorage(config)
 const mailService = createMailService(config)
 const authService = createAuthService(storage, {
-  appOrigin: config.appOrigin,
-  mailService,
+	appOrigin: config.appOrigin,
+	mailService,
 })
 const syncService = createSyncService(storage, config.sync)
 
 const server = createServer(async (request, response) => {
-  try {
-    setCorsHeaders(response)
+	try {
+		setCorsHeaders(response)
 
-    if (request.method === "OPTIONS") {
-      response.writeHead(204)
-      response.end()
-      return
-    }
+		if (request.method === 'OPTIONS') {
+			response.writeHead(204)
+			response.end()
+			return
+		}
 
-    const url = new URL(request.url ?? "/", getRequestOrigin(request))
+		const url = new URL(request.url ?? '/', getRequestOrigin(request))
 
-    if (request.method === "GET" && url.pathname === "/health") {
-      sendJson(response, 200, {
-        ok: true,
-        service: "liftbook-api",
-        time: new Date().toISOString(),
-        config: {
-          storageDriver: config.storage.driver,
-          syncPullPageSize: config.sync.pullPageSize,
-        },
-        store: await storage.getHealthSummary(),
-      })
-      return
-    }
+		if (request.method === 'GET' && url.pathname === '/health') {
+			sendJson(response, 200, {
+				ok: true,
+				service: 'liftbook-api',
+				time: new Date().toISOString(),
+				config: {
+					storageDriver: config.storage.driver,
+					syncPullPageSize: config.sync.pullPageSize,
+				},
+				store: await storage.getHealthSummary(),
+			})
+			return
+		}
 
-    if (request.method === "POST" && url.pathname === "/v1/auth/guest") {
-      const body = await readJsonBody(request)
-      sendJson(response, 201, await authService.createGuestAccount(body))
-      return
-    }
+		if (request.method === 'POST' && url.pathname === '/v1/auth/guest') {
+			const body = await readJsonBody(request)
+			sendJson(response, 201, await authService.createGuestAccount(body))
+			return
+		}
 
-    if (request.method === "POST" && url.pathname === "/v1/auth/register") {
-      const body = await readJsonBody(request)
-      const session = await authService.getSession(request)
-      sendJson(
-        response,
-        201,
-        await authService.registerAccount(body, session, getRequestOrigin(request))
-      )
-      return
-    }
+		if (request.method === 'POST' && url.pathname === '/v1/auth/register') {
+			const body = await readJsonBody(request)
+			const session = await authService.getSession(request)
+			sendJson(
+				response,
+				201,
+				await authService.registerAccount(body, session, getRequestOrigin(request)),
+			)
+			return
+		}
 
-    if (request.method === "POST" && url.pathname === "/v1/auth/login") {
-      const body = await readJsonBody(request)
-      sendJson(response, 200, await authService.loginAccount(body))
-      return
-    }
+		if (request.method === 'POST' && url.pathname === '/v1/auth/login') {
+			const body = await readJsonBody(request)
+			sendJson(response, 200, await authService.loginAccount(body))
+			return
+		}
 
-    if (request.method === "POST" && url.pathname === "/v1/auth/verify-email/resend") {
-      const session = await authService.requireSession(request)
+		if (request.method === 'POST' && url.pathname === '/v1/auth/verify-email/resend') {
+			const session = await authService.requireSession(request)
 
-      if (!session) {
-        sendJson(response, 401, { error: "Unauthorized" })
-        return
-      }
+			if (!session) {
+				sendJson(response, 401, {error: 'Unauthorized'})
+				return
+			}
 
-      sendJson(
-        response,
-        200,
-        await authService.resendVerificationEmail(
-          session,
-          getRequestOrigin(request)
-        )
-      )
-      return
-    }
+			sendJson(
+				response,
+				200,
+				await authService.resendVerificationEmail(
+					session,
+					getRequestOrigin(request),
+				),
+			)
+			return
+		}
 
-    if (request.method === "POST" && url.pathname === "/v1/auth/verify-email") {
-      const body = await readJsonBody(request)
-      sendJson(response, 200, await authService.verifyEmail(body))
-      return
-    }
+		if (request.method === 'POST' && url.pathname === '/v1/auth/verify-email') {
+			const body = await readJsonBody(request)
+			sendJson(response, 200, await authService.verifyEmail(body))
+			return
+		}
 
-    if (request.method === "POST" && url.pathname === "/v1/sync/push") {
-      const session = await authService.requireSession(request)
+		if (request.method === 'POST' && url.pathname === '/v1/sync/push') {
+			const session = await authService.requireSession(request)
 
-      if (!session) {
-        sendJson(response, 401, { error: "Unauthorized" })
-        return
-      }
+			if (!session) {
+				sendJson(response, 401, {error: 'Unauthorized'})
+				return
+			}
 
-      const body = await readJsonBody(request)
-      const validationError = syncService.validatePushBody(body)
+			const body = await readJsonBody(request)
+			const validationError = syncService.validatePushBody(body)
 
-      if (validationError) {
-        sendJson(response, 400, { error: validationError })
-        return
-      }
+			if (validationError) {
+				sendJson(response, 400, {error: validationError})
+				return
+			}
 
-      sendJson(response, 202, await syncService.pushChanges(body, session))
-      return
-    }
+			sendJson(response, 202, await syncService.pushChanges(body, session))
+			return
+		}
 
-    if (request.method === "GET" && url.pathname === "/v1/sync/pull") {
-      const session = await authService.requireSession(request)
+		if (request.method === 'GET' && url.pathname === '/v1/sync/pull') {
+			const session = await authService.requireSession(request)
 
-      if (!session) {
-        sendJson(response, 401, { error: "Unauthorized" })
-        return
-      }
+			if (!session) {
+				sendJson(response, 401, {error: 'Unauthorized'})
+				return
+			}
 
-      const cursor = url.searchParams.get("cursor")
-      const clientId = url.searchParams.get("clientId")
-      const validationError = syncService.validatePullParams(clientId)
+			const cursor = url.searchParams.get('cursor')
+			const clientId = url.searchParams.get('clientId')
+			const validationError = syncService.validatePullParams(clientId)
 
-      if (validationError) {
-        sendJson(response, 400, { error: validationError })
-        return
-      }
+			if (validationError) {
+				sendJson(response, 400, {error: validationError})
+				return
+			}
 
-      sendJson(
-        response,
-        200,
-        await syncService.pullChanges({
-          cursor,
-          clientId,
-          userId: session.userId,
-        })
-      )
-      return
-    }
+			sendJson(
+				response,
+				200,
+				await syncService.pullChanges({
+					cursor,
+					clientId,
+					userId: session.userId,
+				}),
+			)
+			return
+		}
 
-    sendJson(response, 404, { error: "Route not found" })
-  } catch (error) {
-    const statusCode =
-      error && typeof error === "object" && "statusCode" in error
-        ? Number(error.statusCode) || 500
-        : 500
+		sendJson(response, 404, {error: 'Route not found'})
+	}
+	catch (error) {
+		const statusCode
+      = error && typeof error === 'object' && 'statusCode' in error
+      	? Number(error.statusCode) || 500
+      	: 500
 
-    sendJson(response, statusCode, {
-      error: error instanceof Error ? error.message : "Unexpected server error",
-    })
-  }
+		sendJson(response, statusCode, {
+			error: error instanceof Error
+				? error.message
+				: 'Unexpected server error',
+		})
+	}
 })
 
 server.listen(config.port, () => {
-  console.log(`Liftbook API listening on http://localhost:${config.port}`)
+	console.log(`Liftbook API listening on http://localhost:${config.port}`)
 })

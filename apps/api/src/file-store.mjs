@@ -1,554 +1,589 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises"
-import { dirname, resolve } from "node:path"
-import { randomUUID } from "node:crypto"
+import {randomUUID} from 'node:crypto'
+import {
+	mkdir,
+	readFile,
+	writeFile,
+} from 'node:fs/promises'
+import {dirname, resolve} from 'node:path'
 
 const defaultStoreState = {
-  version: 1,
-  nextSequence: 1,
-  users: [],
-  devices: [],
-  sessions: [],
-  emailVerificationTokens: [],
-  syncEvents: [],
-  syncRecords: [],
+	version: 1,
+	nextSequence: 1,
+	users: [],
+	devices: [],
+	sessions: [],
+	emailVerificationTokens: [],
+	syncEvents: [],
+	syncRecords: [],
 }
 
 export async function createFileStore() {
-  return createFileStoreFromPath(
-    resolve(process.cwd(), process.env.LIFTBOOK_DATA_FILE ?? ".data/store.json")
-  )
+	return createFileStoreFromPath(
+		resolve(process.cwd(), process.env.LIFTBOOK_DATA_FILE ?? '.data/store.json'),
+	)
 }
 
 export async function createFileStoreFromPath(filePath) {
-  let state = await loadState(filePath)
-  let writeChain = Promise.resolve()
+	let state = await loadState(filePath)
+	let writeChain = Promise.resolve()
 
-  function queuePersist() {
-    writeChain = writeChain.then(async () => {
-      await mkdir(dirname(filePath), { recursive: true })
-      await writeFile(filePath, JSON.stringify(state, null, 2))
-    })
+	function queuePersist() {
+		writeChain = writeChain.then(async () => {
+			await mkdir(dirname(filePath), {recursive: true})
+			await writeFile(filePath, JSON.stringify(state, null, 2))
+		})
 
-    return writeChain
-  }
+		return writeChain
+	}
 
-  return {
-    async getHealthSummary() {
-      return {
-        storage: "file",
-        filePath,
-        users: state.users.length,
-        devices: state.devices.length,
-        sessions: state.sessions.length,
-        syncEvents: state.syncEvents.length,
-        syncRecords: state.syncRecords.length,
-      }
-    },
-    createGuestSession({ clientId, locale, now, userId, accessToken, expiresAt }) {
-      const user = {
-        id: userId,
-        kind: "guest",
-        clientId,
-        locale,
-        createdAt: now,
-        updatedAt: now,
-      }
-      const session = {
-        id: `session_${randomUUID()}`,
-        userId,
-        accessToken,
-        tokenType: "Bearer",
-        expiresAt,
-        createdAt: now,
-        updatedAt: now,
-      }
+	return {
+		async getHealthSummary() {
+			return {
+				storage: 'file',
+				filePath,
+				users: state.users.length,
+				devices: state.devices.length,
+				sessions: state.sessions.length,
+				syncEvents: state.syncEvents.length,
+				syncRecords: state.syncRecords.length,
+			}
+		},
+		createGuestSession({
+			clientId, locale, now, userId, accessToken, expiresAt,
+		}) {
+			const user = {
+				id: userId,
+				kind: 'guest',
+				clientId,
+				locale,
+				createdAt: now,
+				updatedAt: now,
+			}
+			const session = {
+				id: `session_${randomUUID()}`,
+				userId,
+				accessToken,
+				tokenType: 'Bearer',
+				expiresAt,
+				createdAt: now,
+				updatedAt: now,
+			}
 
-      state = {
-        ...state,
-        users: [...state.users, user],
-        devices: clientId
-          ? upsertDevice(state.devices, {
-              userId,
-              clientId,
-              createdAt: now,
-              updatedAt: now,
-            })
-          : state.devices,
-        sessions: [...state.sessions, session],
-      }
+			state = {
+				...state,
+				users: [...state.users, user],
+				devices: clientId
+					? upsertDevice(state.devices, {
+						userId,
+						clientId,
+						createdAt: now,
+						updatedAt: now,
+					})
+					: state.devices,
+				sessions: [...state.sessions, session],
+			}
 
-      return queuePersist().then(() => ({
-        user,
-        session,
-      }))
-    },
-    async registerAccount({
-      accessToken,
-      clientId,
-      email,
-      existingUserId,
-      expiresAt,
-      locale,
-      now,
-      passwordHash,
-      passwordSalt,
-      userId,
-    }) {
-      if (findUserByEmail(state.users, email)) {
-        throw new Error("Email is already registered")
-      }
+			return queuePersist().then(() => ({
+				user,
+				session,
+			}))
+		},
+		async registerAccount({
+			accessToken,
+			clientId,
+			email,
+			existingUserId,
+			expiresAt,
+			locale,
+			now,
+			passwordHash,
+			passwordSalt,
+			userId,
+		}) {
+			if (findUserByEmail(state.users, email)) {
+				throw new Error('Email is already registered')
+			}
 
-      const nextUser =
-        existingUserId
-          ? state.users.find((user) => user.id === existingUserId)
-          : null
+			const nextUser
+        = existingUserId
+        	? state.users.find(user => user.id === existingUserId)
+        	: null
 
-      const user = nextUser
-        ? {
-            ...nextUser,
-            kind: "account",
-            email,
-            locale,
-            passwordHash,
-            passwordSalt,
-            updatedAt: now,
-          }
-        : {
-            id: userId,
-            kind: "account",
-            email,
-            locale,
-            passwordHash,
-            passwordSalt,
-            createdAt: now,
-            updatedAt: now,
-          }
-      const session = {
-        id: `session_${randomUUID()}`,
-        userId: user.id,
-        accessToken,
-        tokenType: "Bearer",
-        expiresAt,
-        createdAt: now,
-        updatedAt: now,
-      }
+			const user = nextUser
+				? {
+					...nextUser,
+					kind: 'account',
+					email,
+					locale,
+					passwordHash,
+					passwordSalt,
+					updatedAt: now,
+				}
+				: {
+					id: userId,
+					kind: 'account',
+					email,
+					locale,
+					passwordHash,
+					passwordSalt,
+					createdAt: now,
+					updatedAt: now,
+				}
+			const session = {
+				id: `session_${randomUUID()}`,
+				userId: user.id,
+				accessToken,
+				tokenType: 'Bearer',
+				expiresAt,
+				createdAt: now,
+				updatedAt: now,
+			}
 
-      state = {
-        ...state,
-        users: nextUser
-          ? state.users.map((currentUser) =>
-              currentUser.id === user.id ? user : currentUser
-            )
-          : [...state.users, user],
-        devices: clientId
-          ? upsertDevice(state.devices, {
-              userId: user.id,
-              clientId,
-              createdAt: now,
-              updatedAt: now,
-            })
-          : state.devices,
-        sessions: [...state.sessions, session],
-      }
+			state = {
+				...state,
+				users: nextUser
+					? state.users.map(currentUser =>
+						currentUser.id === user.id
+							? user
+							: currentUser,
+					)
+					: [...state.users, user],
+				devices: clientId
+					? upsertDevice(state.devices, {
+						userId: user.id,
+						clientId,
+						createdAt: now,
+						updatedAt: now,
+					})
+					: state.devices,
+				sessions: [...state.sessions, session],
+			}
 
-      return queuePersist().then(() => ({
-        user: toPublicUser(user),
-        session,
-      }))
-    },
-    async getUserById(userId) {
-      const user = state.users.find((currentUser) => currentUser.id === userId)
-      return user ?? null
-    },
-    async getAccountByEmail(email) {
-      return findUserByEmail(state.users, email) ?? null
-    },
-    async getSessionByAccessToken(accessToken) {
-      return (
-        state.sessions.find((session) => session.accessToken === accessToken) ??
-        null
-      )
-    },
-    async createEmailVerificationToken(token) {
-      state = {
-        ...state,
-        emailVerificationTokens: [
-          ...state.emailVerificationTokens.filter(
-            (currentToken) => currentToken.id !== token.id
-          ),
-          token,
-        ],
-      }
+			return queuePersist().then(() => ({
+				user: toPublicUser(user),
+				session,
+			}))
+		},
+		async getUserById(userId) {
+			const user = state.users.find(currentUser => currentUser.id === userId)
+			return user ?? null
+		},
+		async getAccountByEmail(email) {
+			return findUserByEmail(state.users, email) ?? null
+		},
+		async getSessionByAccessToken(accessToken) {
+			return (
+				state.sessions.find(session => session.accessToken === accessToken)
+        ?? null
+			)
+		},
+		async createEmailVerificationToken(token) {
+			state = {
+				...state,
+				emailVerificationTokens: [
+					...state.emailVerificationTokens.filter(
+						currentToken => currentToken.id !== token.id,
+					),
+					token,
+				],
+			}
 
-      await queuePersist()
-    },
-    async getLatestEmailVerificationTokenForUser(userId) {
-      return (
-        [...state.emailVerificationTokens]
-          .filter((token) => token.userId === userId)
-          .sort((left, right) => right.createdAt.localeCompare(left.createdAt))[0] ??
-        null
-      )
-    },
-    async verifyEmailByTokenHash({ tokenHash, now }) {
-      const token = state.emailVerificationTokens.find(
-        (currentToken) => currentToken.tokenHash === tokenHash
-      )
+			await queuePersist()
+		},
+		async getLatestEmailVerificationTokenForUser(userId) {
+			return (
+				[...state.emailVerificationTokens]
+					.filter(token => token.userId === userId)
+					.sort((left, right) => right.createdAt.localeCompare(left.createdAt))[0]
+        ?? null
+			)
+		},
+		async verifyEmailByTokenHash({tokenHash, now}) {
+			const token = state.emailVerificationTokens.find(
+				currentToken => currentToken.tokenHash === tokenHash,
+			)
 
-      if (!token || token.usedAt || token.expiresAt <= now) {
-        return null
-      }
+			if (!token || token.usedAt || token.expiresAt <= now) {
+				return null
+			}
 
-      const user = state.users.find((currentUser) => currentUser.id === token.userId)
+			const user = state.users.find(currentUser => currentUser.id === token.userId)
 
-      if (!user) {
-        return null
-      }
+			if (!user) {
+				return null
+			}
 
-      const nextUser = {
-        ...user,
-        emailVerifiedAt: now,
-        updatedAt: now,
-      }
+			const nextUser = {
+				...user,
+				emailVerifiedAt: now,
+				updatedAt: now,
+			}
 
-      state = {
-        ...state,
-        users: state.users.map((currentUser) =>
-          currentUser.id === nextUser.id ? nextUser : currentUser
-        ),
-        emailVerificationTokens: state.emailVerificationTokens.map(
-          (currentToken) =>
-            currentToken.userId === token.userId
-              ? {
-                  ...currentToken,
-                  usedAt: currentToken.usedAt ?? now,
-                }
-              : currentToken
-        ),
-      }
+			state = {
+				...state,
+				users: state.users.map(currentUser =>
+					currentUser.id === nextUser.id
+						? nextUser
+						: currentUser,
+				),
+				emailVerificationTokens: state.emailVerificationTokens.map(
+					currentToken =>
+						currentToken.userId === token.userId
+							? {
+								...currentToken,
+								usedAt: currentToken.usedAt ?? now,
+							}
+							: currentToken,
+				),
+			}
 
-      await queuePersist()
+			await queuePersist()
 
-      return toPublicUser(nextUser)
-    },
-    async createSessionForUser({
-      accessToken,
-      clientId,
-      expiresAt,
-      now,
-      userId,
-    }) {
-      const user = state.users.find((currentUser) => currentUser.id === userId)
+			return toPublicUser(nextUser)
+		},
+		async createSessionForUser({
+			accessToken,
+			clientId,
+			expiresAt,
+			now,
+			userId,
+		}) {
+			const user = state.users.find(currentUser => currentUser.id === userId)
 
-      if (!user) {
-        throw new Error("User not found")
-      }
+			if (!user) {
+				throw new Error('User not found')
+			}
 
-      const session = {
-        id: `session_${randomUUID()}`,
-        userId: user.id,
-        accessToken,
-        tokenType: "Bearer",
-        expiresAt,
-        createdAt: now,
-        updatedAt: now,
-      }
+			const session = {
+				id: `session_${randomUUID()}`,
+				userId: user.id,
+				accessToken,
+				tokenType: 'Bearer',
+				expiresAt,
+				createdAt: now,
+				updatedAt: now,
+			}
 
-      state = {
-        ...state,
-        users: state.users.map((currentUser) =>
-          currentUser.id === user.id
-            ? {
-                ...currentUser,
-                updatedAt: now,
-              }
-            : currentUser
-        ),
-        devices: clientId
-          ? upsertDevice(state.devices, {
-              userId: user.id,
-              clientId,
-              createdAt: now,
-              updatedAt: now,
-            })
-          : state.devices,
-        sessions: [...state.sessions, session],
-      }
+			state = {
+				...state,
+				users: state.users.map(currentUser =>
+					currentUser.id === user.id
+						? {
+							...currentUser,
+							updatedAt: now,
+						}
+						: currentUser,
+				),
+				devices: clientId
+					? upsertDevice(state.devices, {
+						userId: user.id,
+						clientId,
+						createdAt: now,
+						updatedAt: now,
+					})
+					: state.devices,
+				sessions: [...state.sessions, session],
+			}
 
-      return queuePersist().then(() => ({
-        user: toPublicUser(user),
-        session,
-      }))
-    },
-    async touchSession({ accessToken, now }) {
-      const nextSessions = state.sessions.map((session) =>
-        session.accessToken === accessToken
-          ? {
-              ...session,
-              updatedAt: now,
-            }
-          : session
-      )
+			return queuePersist().then(() => ({
+				user: toPublicUser(user),
+				session,
+			}))
+		},
+		async touchSession({accessToken, now}) {
+			const nextSessions = state.sessions.map(session =>
+				session.accessToken === accessToken
+					? {
+						...session,
+						updatedAt: now,
+					}
+					: session,
+			)
 
-      state = {
-        ...state,
-        sessions: nextSessions,
-      }
+			state = {
+				...state,
+				sessions: nextSessions,
+			}
 
-      await queuePersist()
-    },
-    async touchDevice({ userId, clientId, now }) {
-      if (!clientId) {
-        return
-      }
+			await queuePersist()
+		},
+		async touchDevice({
+			userId, clientId, now,
+		}) {
+			if (!clientId) {
+				return
+			}
 
-      state = {
-        ...state,
-        devices: upsertDevice(state.devices, {
-          userId,
-          clientId,
-          createdAt: now,
-          updatedAt: now,
-        }),
-      }
+			state = {
+				...state,
+				devices: upsertDevice(state.devices, {
+					userId,
+					clientId,
+					createdAt: now,
+					updatedAt: now,
+				}),
+			}
 
-      await queuePersist()
-    },
-    acceptSyncChanges({
-      userId,
-      clientId,
-      changes,
-      serverTime,
-      buildAcceptedChange,
-    }) {
-      const existingEventsBySyncKey = new Map(
-        state.syncEvents
-          .filter((event) => typeof event.syncKey === "string")
-          .map((event) => [event.syncKey, event])
-      )
-      const accepted = []
-      let nextSequence = state.nextSequence
+			await queuePersist()
+		},
+		acceptSyncChanges({
+			userId,
+			clientId,
+			changes,
+			serverTime,
+			buildAcceptedChange,
+		}) {
+			const existingEventsBySyncKey = new Map(
+				state.syncEvents
+					.filter(event => typeof event.syncKey === 'string')
+					.map(event => [event.syncKey, event]),
+			)
+			const accepted = []
+			let nextSequence = state.nextSequence
 
-      for (const change of changes) {
-        const builtEvent = buildAcceptedChange({
-          userId,
-          clientId,
-          change,
-          serverTime,
-        })
-        const existingEvent = existingEventsBySyncKey.get(builtEvent.syncKey)
+			for (const change of changes) {
+				const builtEvent = buildAcceptedChange({
+					userId,
+					clientId,
+					change,
+					serverTime,
+				})
+				const existingEvent = existingEventsBySyncKey.get(builtEvent.syncKey)
 
-        if (existingEvent) {
-          accepted.push(existingEvent)
-          continue
-        }
+				if (existingEvent) {
+					accepted.push(existingEvent)
+					continue
+				}
 
-        const persistedEvent = {
-          ...builtEvent,
-          sequence: nextSequence,
-          cursor: String(nextSequence),
-        }
+				const persistedEvent = {
+					...builtEvent,
+					sequence: nextSequence,
+					cursor: String(nextSequence),
+				}
 
-        accepted.push(persistedEvent)
-        existingEventsBySyncKey.set(persistedEvent.syncKey, persistedEvent)
-        nextSequence += 1
-      }
+				accepted.push(persistedEvent)
+				existingEventsBySyncKey.set(persistedEvent.syncKey, persistedEvent)
+				nextSequence += 1
+			}
 
-      const nextRecords = new Map(
-        state.syncRecords.map((record) => [
-          getStorageKey(record),
-          withStorageKey(record),
-        ])
-      )
+			const nextRecords = new Map(
+				state.syncRecords.map(record => [
+					getStorageKey(record),
+					withStorageKey(record),
+				]),
+			)
 
-      for (const event of accepted) {
-        const storageKey = getStorageKey(event)
+			for (const event of accepted) {
+				const storageKey = getStorageKey(event)
 
-        if (event.operation === "delete") {
-          nextRecords.delete(storageKey)
-          continue
-        }
+				if (event.operation === 'delete') {
+					nextRecords.delete(storageKey)
+					continue
+				}
 
-        nextRecords.set(storageKey, withStorageKey(event))
-      }
+				nextRecords.set(storageKey, withStorageKey(event))
+			}
 
-      state = {
-        ...state,
-        devices: clientId
-          ? upsertDevice(state.devices, {
-              userId,
-              clientId,
-              createdAt: serverTime,
-              updatedAt: serverTime,
-            })
-          : state.devices,
-        nextSequence,
-        syncEvents: mergeSyncEvents(state.syncEvents, accepted),
-        syncRecords: Array.from(nextRecords.values()),
-      }
+			state = {
+				...state,
+				devices: clientId
+					? upsertDevice(state.devices, {
+						userId,
+						clientId,
+						createdAt: serverTime,
+						updatedAt: serverTime,
+					})
+					: state.devices,
+				nextSequence,
+				syncEvents: mergeSyncEvents(state.syncEvents, accepted),
+				syncRecords: Array.from(nextRecords.values()),
+			}
 
-      return queuePersist().then(() => accepted)
-    },
-    async listSyncEvents({ userId, cursor, clientId, limit }) {
-      const parsedCursor = parseCursor(cursor)
-      const pageSize = normalizeLimit(limit)
-      const matchingEvents = state.syncEvents
-        .filter((event) => event.userId === userId)
-        .filter((event) =>
-          parsedCursor === null
-            ? !cursor || event.serverTime > cursor
-            : (event.sequence ?? 0) > parsedCursor
-        )
-        .filter((event) => !clientId || event.clientId !== clientId)
-      const changes = matchingEvents.slice(0, pageSize)
+			return queuePersist().then(() => accepted)
+		},
+		async listSyncEvents({
+			userId, cursor, clientId, limit,
+		}) {
+			const parsedCursor = parseCursor(cursor)
+			const pageSize = normalizeLimit(limit)
+			const matchingEvents = state.syncEvents
+				.filter(event => event.userId === userId)
+				.filter(event =>
+					parsedCursor === null
+						? !cursor || event.serverTime > cursor
+						: (event.sequence ?? 0) > parsedCursor,
+				)
+				.filter(event => !clientId || event.clientId !== clientId)
+			const changes = matchingEvents.slice(0, pageSize)
 
-      return {
-        changes,
-        hasMore: matchingEvents.length > pageSize,
-      }
-    },
-    async cleanupLifecycle({
-      now,
-      sessionRetentionDays,
-      syncRetentionDays,
-    }) {
-      const sessionCutoff = toCutoff(now, sessionRetentionDays)
-      const syncCutoff = toCutoff(now, syncRetentionDays)
-      const previousSessionCount = state.sessions.length
-      const previousSyncEventCount = state.syncEvents.length
-      const previousDeviceCount = state.devices.length
+			return {
+				changes,
+				hasMore: matchingEvents.length > pageSize,
+			}
+		},
+		async cleanupLifecycle({
+			now,
+			sessionRetentionDays,
+			syncRetentionDays,
+		}) {
+			const sessionCutoff = toCutoff(now, sessionRetentionDays)
+			const syncCutoff = toCutoff(now, syncRetentionDays)
+			const previousSessionCount = state.sessions.length
+			const previousSyncEventCount = state.syncEvents.length
+			const previousDeviceCount = state.devices.length
 
-      state = {
-        ...state,
-        sessions: state.sessions.filter(
-          (session) => new Date(session.expiresAt).getTime() > sessionCutoff
-        ),
-        syncEvents: state.syncEvents.filter((event) => {
-          const eventTime = new Date(event.serverTime).getTime()
-          return Number.isNaN(eventTime) ? true : eventTime >= syncCutoff
-        }),
-      }
+			state = {
+				...state,
+				sessions: state.sessions.filter(
+					session => new Date(session.expiresAt).getTime() > sessionCutoff,
+				),
+				syncEvents: state.syncEvents.filter(event => {
+					const eventTime = new Date(event.serverTime).getTime()
+					return Number.isNaN(eventTime)
+						? true
+						: eventTime >= syncCutoff
+				}),
+			}
 
-      await queuePersist()
+			await queuePersist()
 
-      return {
-        storage: "file",
-        removedSessions: previousSessionCount - state.sessions.length,
-        removedSyncEvents: previousSyncEventCount - state.syncEvents.length,
-        removedDevices: previousDeviceCount - state.devices.length,
-      }
-    },
-  }
+			return {
+				storage: 'file',
+				removedSessions: previousSessionCount - state.sessions.length,
+				removedSyncEvents: previousSyncEventCount - state.syncEvents.length,
+				removedDevices: previousDeviceCount - state.devices.length,
+			}
+		},
+	}
 }
 
 async function loadState(filePath) {
-  try {
-    const content = await readFile(filePath, "utf8")
-    const parsed = JSON.parse(content)
+	try {
+		const content = await readFile(filePath, 'utf8')
+		const parsed = JSON.parse(content)
 
-    return {
-      ...defaultStoreState,
-      ...parsed,
-      nextSequence:
-        typeof parsed.nextSequence === "number" ? parsed.nextSequence : 1,
-      users: Array.isArray(parsed.users) ? parsed.users : [],
-      devices: Array.isArray(parsed.devices) ? parsed.devices : [],
-      sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
-      emailVerificationTokens: Array.isArray(parsed.emailVerificationTokens)
-        ? parsed.emailVerificationTokens
-        : [],
-      syncEvents: Array.isArray(parsed.syncEvents) ? parsed.syncEvents : [],
-      syncRecords: Array.isArray(parsed.syncRecords) ? parsed.syncRecords : [],
-    }
-  } catch (error) {
-    if (
-      error &&
-      typeof error === "object" &&
-      "code" in error &&
-      error.code === "ENOENT"
-    ) {
-      return defaultStoreState
-    }
+		return {
+			...defaultStoreState,
+			...parsed,
+			nextSequence:
+        typeof parsed.nextSequence === 'number'
+        	? parsed.nextSequence
+        	: 1,
+			users: Array.isArray(parsed.users)
+				? parsed.users
+				: [],
+			devices: Array.isArray(parsed.devices)
+				? parsed.devices
+				: [],
+			sessions: Array.isArray(parsed.sessions)
+				? parsed.sessions
+				: [],
+			emailVerificationTokens: Array.isArray(parsed.emailVerificationTokens)
+				? parsed.emailVerificationTokens
+				: [],
+			syncEvents: Array.isArray(parsed.syncEvents)
+				? parsed.syncEvents
+				: [],
+			syncRecords: Array.isArray(parsed.syncRecords)
+				? parsed.syncRecords
+				: [],
+		}
+	}
+	catch (error) {
+		if (
+			error
+      && typeof error === 'object'
+      && 'code' in error
+      && error.code === 'ENOENT'
+		) {
+			return defaultStoreState
+		}
 
-    throw error
-  }
+		throw error
+	}
 }
 
 function upsertDevice(devices, nextDevice) {
-  const existingDevice = devices.find(
-    (device) =>
-      device.userId === nextDevice.userId && device.clientId === nextDevice.clientId
-  )
+	const existingDevice = devices.find(
+		device =>
+			device.userId === nextDevice.userId && device.clientId === nextDevice.clientId,
+	)
 
-  if (!existingDevice) {
-    return [...devices, nextDevice]
-  }
+	if (!existingDevice) {
+		return [...devices, nextDevice]
+	}
 
-  return devices.map((device) =>
-    device.userId === nextDevice.userId && device.clientId === nextDevice.clientId
-      ? {
-          ...device,
-          updatedAt: nextDevice.updatedAt,
-        }
-      : device
-  )
+	return devices.map(device =>
+		device.userId === nextDevice.userId && device.clientId === nextDevice.clientId
+			? {
+				...device,
+				updatedAt: nextDevice.updatedAt,
+			}
+			: device,
+	)
 }
 
 function parseCursor(cursor) {
-  if (!cursor) {
-    return null
-  }
+	if (!cursor) {
+		return null
+	}
 
-  const parsed = Number(cursor)
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+	const parsed = Number(cursor)
+	return Number.isInteger(parsed) && parsed > 0
+		? parsed
+		: null
 }
 
 function normalizeLimit(limit) {
-  const parsed = Number(limit)
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : 100
+	const parsed = Number(limit)
+	return Number.isInteger(parsed) && parsed > 0
+		? parsed
+		: 100
 }
 
 function toCutoff(now, retentionDays) {
-  const parsedDays = Number(retentionDays)
-  const days = Number.isInteger(parsedDays) && parsedDays > 0 ? parsedDays : 30
-  return new Date(now).getTime() - days * 24 * 60 * 60 * 1000
+	const parsedDays = Number(retentionDays)
+	const days = Number.isInteger(parsedDays) && parsedDays > 0
+		? parsedDays
+		: 30
+	return new Date(now).getTime() - days * 24 * 60 * 60 * 1000
 }
 
 function getStorageKey(record) {
-  return record.storageKey ?? `${record.userId}:${record.recordKey}`
+	return record.storageKey ?? `${record.userId}:${record.recordKey}`
 }
 
 function withStorageKey(record) {
-  return {
-    ...record,
-    storageKey: getStorageKey(record),
-  }
+	return {
+		...record,
+		storageKey: getStorageKey(record),
+	}
 }
 
 function mergeSyncEvents(existingEvents, acceptedEvents) {
-  const knownIds = new Set(existingEvents.map((event) => event.id))
-  const newEvents = acceptedEvents.filter((event) => !knownIds.has(event.id))
-  return [...existingEvents, ...newEvents]
+	const knownIds = new Set(existingEvents.map(event => event.id))
+	const newEvents = acceptedEvents.filter(event => !knownIds.has(event.id))
+	return [...existingEvents, ...newEvents]
 }
 
 function findUserByEmail(users, email) {
-  return (
-    users.find(
-      (user) =>
-        typeof user.email === "string" &&
-        user.email.toLowerCase() === email.toLowerCase()
-    ) ?? null
-  )
+	return (
+		users.find(
+			user =>
+				typeof user.email === 'string'
+        && user.email.toLowerCase() === email.toLowerCase(),
+		) ?? null
+	)
 }
 
 function toPublicUser(user) {
-  return {
-    id: user.id,
-    kind: user.kind,
-    email: user.email,
-    emailVerifiedAt: user.emailVerifiedAt,
-    locale: user.locale,
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt,
-  }
+	return {
+		id: user.id,
+		kind: user.kind,
+		email: user.email,
+		emailVerifiedAt: user.emailVerifiedAt,
+		locale: user.locale,
+		createdAt: user.createdAt,
+		updatedAt: user.updatedAt,
+	}
 }

@@ -1,116 +1,116 @@
-export type Locale = "en" | "ru"
+export type Locale = 'en' | 'ru'
 
-export type WeightUnit = "kg" | "lb"
-export type ThemeMode = "system" | "light" | "dark"
-export type RestTimerMode = "stopwatch" | "timer"
+export type WeightUnit = 'kg' | 'lb'
+export type ThemeMode = 'system' | 'light' | 'dark'
+export type RestTimerMode = 'stopwatch' | 'timer'
 
-export type DateState = "past" | "today" | "future"
+export type DateState = 'past' | 'today' | 'future'
 
-export type AccountKind = "guest" | "account"
+export type AccountKind = 'guest' | 'account'
 
-export type SyncStatus = "pending" | "synced" | "conflict"
+export type SyncStatus = 'pending' | 'synced' | 'conflict'
 
 export type SyncMetadata = {
-  serverId?: string
-  createdAt?: string
-  updatedAt?: string
-  deletedAt?: string
-  syncStatus: SyncStatus
+	serverId?: string,
+	createdAt?: string,
+	updatedAt?: string,
+	deletedAt?: string,
+	syncStatus: SyncStatus,
 }
 
 export type MuscleGroupId =
-  | "chest"
-  | "back"
-  | "legs"
-  | "shoulders"
-  | "biceps"
-  | "triceps"
-  | "core"
-  | "glutes"
-  | "cardio"
-  | "full_body"
-  | "other"
+  | 'chest'
+  | 'back'
+  | 'legs'
+  | 'shoulders'
+  | 'biceps'
+  | 'triceps'
+  | 'core'
+  | 'glutes'
+  | 'cardio'
+  | 'full_body'
+  | 'other'
 
 export type ExerciseTrackingMode =
-  | "weight_reps"
-  | "bodyweight_reps"
-  | "time"
-  | "distance_time"
-  | "weighted_bodyweight"
+  | 'weight_reps'
+  | 'bodyweight_reps'
+  | 'time'
+  | 'distance_time'
+  | 'weighted_bodyweight'
 
 export type LocalizedText = Record<Locale, string>
 
 export type Exercise = {
-  id: string
-  name: LocalizedText
-  muscleGroupIds: MuscleGroupId[]
-  trackingMode: ExerciseTrackingMode
-  builtIn: boolean
+	id: string,
+	name: LocalizedText,
+	muscleGroupIds: MuscleGroupId[],
+	trackingMode: ExerciseTrackingMode,
+	builtIn: boolean,
 } & Partial<SyncMetadata>
 
 export type SetEntry = {
-  id: string
-  weight?: number
-  weightUnit?: WeightUnit
-  reps?: number
-  previousResultSourceSetId?: string
-  durationSeconds?: number
-  distanceMeters?: number
-  deletedAt?: string
-  createdAt: string
-  updatedAt: string
+	id: string,
+	weight?: number,
+	weightUnit?: WeightUnit,
+	reps?: number,
+	previousResultSourceSetId?: string,
+	durationSeconds?: number,
+	distanceMeters?: number,
+	deletedAt?: string,
+	createdAt: string,
+	updatedAt: string,
 }
 
 export type ExerciseEntry = {
-  id: string
-  exerciseId: string
-  workoutDate: string
-  position: number
-  setEntries: SetEntry[]
-  previousResultSourceId?: string
-  createdAt: string
-  updatedAt: string
+	id: string,
+	exerciseId: string,
+	workoutDate: string,
+	position: number,
+	setEntries: SetEntry[],
+	previousResultSourceId?: string,
+	createdAt: string,
+	updatedAt: string,
 } & Partial<SyncMetadata>
 
 export type WorkoutDay = {
-  id: string
-  date: string
-  localOwnerId: string
-  inferredDurationSeconds?: number
-  createdAt: string
-  updatedAt: string
+	id: string,
+	date: string,
+	localOwnerId: string,
+	inferredDurationSeconds?: number,
+	createdAt: string,
+	updatedAt: string,
 } & Partial<SyncMetadata>
 
 export type AccountSession = {
-  id: "local"
-  userId: string
-  kind: AccountKind
-  email?: string
-  emailVerified?: boolean
-  accessToken: string
-  tokenType: "Bearer"
-  expiresAt: string
-  syncCursor?: string | null
-  createdAt: string
-  updatedAt: string
+	id: 'local',
+	userId: string,
+	kind: AccountKind,
+	email?: string,
+	emailVerified?: boolean,
+	accessToken: string,
+	tokenType: 'Bearer',
+	expiresAt: string,
+	syncCursor?: string | null,
+	createdAt: string,
+	updatedAt: string,
 }
 
 export type UserSettings = {
-  id: "local"
-  locale: Locale
-  themeMode: ThemeMode
-  weightUnit: WeightUnit
-  kgStep: number
-  lbStep: number
-  repsStep: number
-  autoRestTimer: boolean
-  previousResultDefaults: boolean
-  restTimerMode: RestTimerMode
-  restTimerDurationSeconds: number
-  restTimerSoundEnabled: boolean
-  restTimerVibrationEnabled: boolean
-  restTimerNotificationsEnabled: boolean
-  restTimerWakeLockEnabled: boolean
-  restTimerLockScreenEnabled: boolean
-  updatedAt: string
+	id: 'local',
+	locale: Locale,
+	themeMode: ThemeMode,
+	weightUnit: WeightUnit,
+	kgStep: number,
+	lbStep: number,
+	repsStep: number,
+	autoRestTimer: boolean,
+	previousResultDefaults: boolean,
+	restTimerMode: RestTimerMode,
+	restTimerDurationSeconds: number,
+	restTimerSoundEnabled: boolean,
+	restTimerVibrationEnabled: boolean,
+	restTimerNotificationsEnabled: boolean,
+	restTimerWakeLockEnabled: boolean,
+	restTimerLockScreenEnabled: boolean,
+	updatedAt: string,
 } & Partial<SyncMetadata>

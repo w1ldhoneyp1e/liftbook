@@ -1,1295 +1,1340 @@
-"use client"
-
-import { useCallback, useEffect, useState } from "react"
+'use client'
 
 import {
-  createGuestAccount as requestGuestAccount,
-  loginAccount as requestLoginAccount,
-  pullSyncChanges,
-  pushSyncChanges,
-  registerAccount as requestRegisterAccount,
-  resendVerificationEmail as requestResendVerificationEmail,
-  type SyncChange,
-  type SyncEntityType,
-} from "@/shared/api/liftbook-api"
-import { getDictionary } from "@/shared/i18n/dictionaries"
-import type {
-  AccountSession,
-  Exercise,
-  ExerciseEntry,
-  Locale,
-  MuscleGroupId,
-  SetEntry,
-  UserSettings,
-  WorkoutDay,
-} from "@/shared/domain/types"
-import { db } from "@/shared/db/schema"
-import { seedLocalDatabase } from "@/shared/db/seed"
-import { shiftDateKey } from "./lib/date-utils"
+	useCallback,
+	useEffect,
+	useState,
+} from 'react'
+import {shiftDateKey} from './lib/date-utils'
+import {
+	type SyncChange,
+	type SyncEntityType,
+	createGuestAccount as requestGuestAccount,
+	loginAccount as requestLoginAccount,
+	pullSyncChanges,
+	pushSyncChanges,
+	registerAccount as requestRegisterAccount,
+	resendVerificationEmail as requestResendVerificationEmail,
+} from '@/shared/api/liftbook-api'
+import {db} from '@/shared/db/schema'
+import {seedLocalDatabase} from '@/shared/db/seed'
+import {
+	type AccountSession,
+	type Exercise,
+	type ExerciseEntry,
+	type Locale,
+	type MuscleGroupId,
+	type SetEntry,
+	type UserSettings,
+	type WorkoutDay,
+} from '@/shared/domain/types'
+import {getDictionary} from '@/shared/i18n/dictionaries'
 
 type DayScreenData = {
-  accountSession: AccountSession | null
-  resolvedDate: string | null
-  settings: UserSettings | null
-  workoutDay: WorkoutDay | null
-  exerciseEntries: ExerciseEntry[]
-  exercisesById: Record<string, Exercise>
-  daySnapshots: Record<string, DaySnapshot>
-  loading: boolean
-  loadError: string | null
-  syncSummary: {
-    pending: number
-    synced: number
-  }
-  previousDay: DaySnapshot
-  nextDay: DaySnapshot
-  dateMuscleGroups: Record<string, MuscleGroupId[]>
+	accountSession: AccountSession | null,
+	resolvedDate: string | null,
+	settings: UserSettings | null,
+	workoutDay: WorkoutDay | null,
+	exerciseEntries: ExerciseEntry[],
+	exercisesById: Record<string, Exercise>,
+	daySnapshots: Record<string, DaySnapshot>,
+	loading: boolean,
+	loadError: string | null,
+	syncSummary: {
+		pending: number,
+		synced: number,
+	},
+	previousDay: DaySnapshot,
+	nextDay: DaySnapshot,
+	dateMuscleGroups: Record<string, MuscleGroupId[]>,
 }
 
 type DaySnapshot = {
-  date: string
-  workoutDay: WorkoutDay | null
-  exerciseEntries: ExerciseEntry[]
+	date: string,
+	workoutDay: WorkoutDay | null,
+	exerciseEntries: ExerciseEntry[],
 }
 
 const DAY_WINDOW_RADIUS = 7
 
 export function useDayScreenData(date: string) {
-  const [state, setState] = useState<DayScreenData>({
-    accountSession: null,
-    resolvedDate: null,
-    settings: null,
-    workoutDay: null,
-    exerciseEntries: [],
-    exercisesById: {},
-    daySnapshots: {},
-    loading: true,
-    loadError: null,
-    syncSummary: {
-      pending: 0,
-      synced: 0,
-    },
-    previousDay: {
-      date: shiftDateKey(date, -1),
-      workoutDay: null,
-      exerciseEntries: [],
-    },
-    nextDay: {
-      date: shiftDateKey(date, 1),
-      workoutDay: null,
-      exerciseEntries: [],
-    },
-    dateMuscleGroups: {},
-  })
+	const [state, setState] = useState<DayScreenData>({
+		accountSession: null,
+		resolvedDate: null,
+		settings: null,
+		workoutDay: null,
+		exerciseEntries: [],
+		exercisesById: {},
+		daySnapshots: {},
+		loading: true,
+		loadError: null,
+		syncSummary: {
+			pending: 0,
+			synced: 0,
+		},
+		previousDay: {
+			date: shiftDateKey(date, -1),
+			workoutDay: null,
+			exerciseEntries: [],
+		},
+		nextDay: {
+			date: shiftDateKey(date, 1),
+			workoutDay: null,
+			exerciseEntries: [],
+		},
+		dateMuscleGroups: {},
+	})
 
-  const load = useCallback(async () => {
-    try {
-      await seedLocalDatabase()
-      await normalizeLegacyConflicts()
+	const load = useCallback(async () => {
+		try {
+			await seedLocalDatabase()
+			await normalizeLegacyConflicts()
 
-      const previousDate = shiftDateKey(date, -1)
-      const nextDate = shiftDateKey(date, 1)
-      const dayWindowDates = Array.from(
-        { length: DAY_WINDOW_RADIUS * 2 + 1 },
-        (_, index) => shiftDateKey(date, index - DAY_WINDOW_RADIUS)
-      )
+			const previousDate = shiftDateKey(date, -1)
+			const nextDate = shiftDateKey(date, 1)
+			const dayWindowDates = Array.from(
+				{length: DAY_WINDOW_RADIUS * 2 + 1},
+				(_, index) => shiftDateKey(date, index - DAY_WINDOW_RADIUS),
+			)
 
-      const [
-        accountSession,
-        settings,
-        workoutDays,
-        dayEntries,
-        allEntries,
-        exercises,
-      ] = await Promise.all([
-        db.accountSessions.get("local"),
-        db.userSettings.get("local"),
-        db.workoutDays.where("date").anyOf(dayWindowDates).toArray(),
-        db.exerciseEntries.where("workoutDate").anyOf(dayWindowDates).toArray(),
-        db.exerciseEntries.toArray(),
-        db.exercises.toArray(),
-      ])
-      const syncSummary = await getSyncSummary()
-      const normalizedSettings = settings
-        ? normalizeStoredUserSettings(settings)
-        : null
+			const [
+				accountSession,
+				settings,
+				workoutDays,
+				dayEntries,
+				allEntries,
+				exercises,
+			] = await Promise.all([
+				db.accountSessions.get('local'),
+				db.userSettings.get('local'),
+				db.workoutDays.where('date').anyOf(dayWindowDates)
+					.toArray(),
+				db.exerciseEntries.where('workoutDate').anyOf(dayWindowDates)
+					.toArray(),
+				db.exerciseEntries.toArray(),
+				db.exercises.toArray(),
+			])
+			const syncSummary = await getSyncSummary()
+			const normalizedSettings = settings
+				? normalizeStoredUserSettings(settings)
+				: null
 
-      if (settings && needsUserSettingsNormalization(settings)) {
-        await db.userSettings.put(normalizedSettings as UserSettings)
-      }
+			if (settings && needsUserSettingsNormalization(settings)) {
+				await db.userSettings.put(normalizedSettings as UserSettings)
+			}
 
-      const buildSnapshot = (
-        snapshotDate: string,
-        workoutDay: WorkoutDay | undefined,
-        entries: ExerciseEntry[]
-      ): DaySnapshot => ({
-        date: snapshotDate,
-        workoutDay: workoutDay && !workoutDay.deletedAt ? workoutDay : null,
-        exerciseEntries: entries
-          .filter((entry) => !entry.deletedAt)
-          .sort((left, right) => left.position - right.position)
-          .map((entry) => ({
-            ...entry,
-            setEntries: entry.setEntries.filter((setEntry) => !setEntry.deletedAt),
-          })),
-      })
+			const buildSnapshot = (
+				snapshotDate: string,
+				workoutDay: WorkoutDay | undefined,
+				entries: ExerciseEntry[],
+			): DaySnapshot => ({
+				date: snapshotDate,
+				workoutDay: workoutDay && !workoutDay.deletedAt
+					? workoutDay
+					: null,
+				exerciseEntries: entries
+					.filter(entry => !entry.deletedAt)
+					.sort((left, right) => left.position - right.position)
+					.map(entry => ({
+						...entry,
+						setEntries: entry.setEntries.filter(setEntry => !setEntry.deletedAt),
+					})),
+			})
 
-      const exercisesById = Object.fromEntries(
-        exercises.map((exercise) => [exercise.id, exercise])
-      )
-      const workoutDaysByDate = Object.fromEntries(
-        workoutDays.map((workoutDay) => [workoutDay.date, workoutDay])
-      )
-      const dayEntriesByDate = dayEntries.reduce<Record<string, ExerciseEntry[]>>(
-        (entriesByDate, entry) => {
-          if (!entriesByDate[entry.workoutDate]) {
-            entriesByDate[entry.workoutDate] = []
-          }
+			const exercisesById = Object.fromEntries(
+				exercises.map(exercise => [exercise.id, exercise]),
+			)
+			const workoutDaysByDate = Object.fromEntries(
+				workoutDays.map(workoutDay => [workoutDay.date, workoutDay]),
+			)
+			const dayEntriesByDate = dayEntries.reduce<Record<string, ExerciseEntry[]>>(
+				(entriesByDate, entry) => {
+					if (!entriesByDate[entry.workoutDate]) {
+						entriesByDate[entry.workoutDate] = []
+					}
 
-          entriesByDate[entry.workoutDate].push(entry)
-          return entriesByDate
-        },
-        {}
-      )
-      const daySnapshots = Object.fromEntries(
-        dayWindowDates.map((snapshotDate) => [
-          snapshotDate,
-          buildSnapshot(
-            snapshotDate,
-            workoutDaysByDate[snapshotDate],
-            dayEntriesByDate[snapshotDate] ?? []
-          ),
-        ])
-      )
-      const dateMuscleGroups = allEntries.reduce<Record<string, MuscleGroupId[]>>(
-        (summary, entry) => {
-          if (entry.deletedAt) {
-            return summary
-          }
+					entriesByDate[entry.workoutDate].push(entry)
+					return entriesByDate
+				},
+				{},
+			)
+			const daySnapshots = Object.fromEntries(
+				dayWindowDates.map(snapshotDate => [
+					snapshotDate,
+					buildSnapshot(
+						snapshotDate,
+						workoutDaysByDate[snapshotDate],
+						dayEntriesByDate[snapshotDate] ?? [],
+					),
+				]),
+			)
+			const dateMuscleGroups = allEntries.reduce<Record<string, MuscleGroupId[]>>(
+				(summary, entry) => {
+					if (entry.deletedAt) {
+						return summary
+					}
 
-          const exercise = exercisesById[entry.exerciseId]
-          if (!exercise || exercise.deletedAt) {
-            return summary
-          }
+					const exercise = exercisesById[entry.exerciseId]
+					if (!exercise || exercise.deletedAt) {
+						return summary
+					}
 
-          const current = new Set(summary[entry.workoutDate] ?? [])
-          for (const muscleGroupId of exercise.muscleGroupIds) {
-            current.add(muscleGroupId)
-          }
-          summary[entry.workoutDate] = Array.from(current)
+					const current = new Set(summary[entry.workoutDate] ?? [])
+					for (const muscleGroupId of exercise.muscleGroupIds) {
+						current.add(muscleGroupId)
+					}
+					summary[entry.workoutDate] = Array.from(current)
 
-          return summary
-        },
-        {}
-      )
+					return summary
+				},
+				{},
+			)
 
-      setState((currentState) => {
-        const nextDaySnapshots = {
-          ...currentState.daySnapshots,
-          ...daySnapshots,
-        }
-        const currentSnapshot =
-          nextDaySnapshots[date] ?? createEmptyDaySnapshot(date)
+			setState(currentState => {
+				const nextDaySnapshots = {
+					...currentState.daySnapshots,
+					...daySnapshots,
+				}
+				const currentSnapshot
+          = nextDaySnapshots[date] ?? createEmptyDaySnapshot(date)
 
-        return {
-          accountSession: accountSession ?? null,
-          resolvedDate: date,
-          settings: normalizedSettings ?? null,
-          workoutDay: currentSnapshot.workoutDay,
-          exerciseEntries: currentSnapshot.exerciseEntries,
-          exercisesById,
-          daySnapshots: nextDaySnapshots,
-          loading: false,
-          loadError: null,
-          syncSummary,
-          previousDay:
+				return {
+					accountSession: accountSession ?? null,
+					resolvedDate: date,
+					settings: normalizedSettings ?? null,
+					workoutDay: currentSnapshot.workoutDay,
+					exerciseEntries: currentSnapshot.exerciseEntries,
+					exercisesById,
+					daySnapshots: nextDaySnapshots,
+					loading: false,
+					loadError: null,
+					syncSummary,
+					previousDay:
             nextDaySnapshots[previousDate] ?? createEmptyDaySnapshot(previousDate),
-          nextDay:
+					nextDay:
             nextDaySnapshots[nextDate] ?? createEmptyDaySnapshot(nextDate),
-          dateMuscleGroups,
-        }
-      })
-    } catch (error) {
-      console.error("Failed to load day screen", error)
+					dateMuscleGroups,
+				}
+			})
+		}
+		catch (error) {
+			console.error('Failed to load day screen', error)
 
-      setState((currentState) => ({
-        ...currentState,
-        resolvedDate: date,
-        loading: false,
-        loadError:
+			setState(currentState => ({
+				...currentState,
+				resolvedDate: date,
+				loading: false,
+				loadError:
           error instanceof Error
-            ? error.message
-            : "Failed to initialize local data",
-      }))
-    }
-  }, [date])
+          	? error.message
+          	: 'Failed to initialize local data',
+			}))
+		}
+	}, [date])
 
-  useEffect(() => {
-    void load()
-  }, [load])
+	useEffect(() => {
+		void load()
+	}, [load])
 
-  const updateSet = useCallback(
-    async (
-      exerciseEntryId: string,
-      setEntryId: string,
-      patch: Partial<Pick<SetEntry, "reps" | "weight">>
-    ) => {
-      const entry = await db.exerciseEntries.get(exerciseEntryId)
+	const updateSet = useCallback(
+		async (
+			exerciseEntryId: string,
+			setEntryId: string,
+			patch: Partial<Pick<SetEntry, 'reps' | 'weight'>>,
+		) => {
+			const entry = await db.exerciseEntries.get(exerciseEntryId)
 
-      if (!entry) {
-        return
-      }
+			if (!entry) {
+				return
+			}
 
-      const now = new Date().toISOString()
-      const updatedEntry: ExerciseEntry = {
-        ...entry,
-        syncStatus: "pending",
-        updatedAt: now,
-        setEntries: entry.setEntries.map((setEntry) =>
-          setEntry.id === setEntryId
-            ? {
-                ...setEntry,
-                ...patch,
-                previousResultSourceSetId: undefined,
-                updatedAt: now,
-              }
-            : setEntry
-        ),
-      }
+			const now = new Date().toISOString()
+			const updatedEntry: ExerciseEntry = {
+				...entry,
+				syncStatus: 'pending',
+				updatedAt: now,
+				setEntries: entry.setEntries.map(setEntry =>
+					setEntry.id === setEntryId
+						? {
+							...setEntry,
+							...patch,
+							previousResultSourceSetId: undefined,
+							updatedAt: now,
+						}
+						: setEntry,
+				),
+			}
 
-      await db.exerciseEntries.put(updatedEntry)
-      await load()
-    },
-    [load]
-  )
+			await db.exerciseEntries.put(updatedEntry)
+			await load()
+		},
+		[load],
+	)
 
-  const addSet = useCallback(
-    async (exerciseEntryId: string) => {
-      const entry = await db.exerciseEntries.get(exerciseEntryId)
+	const addSet = useCallback(
+		async (exerciseEntryId: string) => {
+			const entry = await db.exerciseEntries.get(exerciseEntryId)
 
-      if (!entry) {
-        return null
-      }
+			if (!entry) {
+				return null
+			}
 
-      const now = new Date().toISOString()
-      const activeSetEntries = entry.setEntries.filter(
-        (setEntry) => !setEntry.deletedAt
-      )
-      const setPosition = activeSetEntries.length
-      const previousWorkoutEntries = await db.exerciseEntries
-        .where("exerciseId")
-        .equals(entry.exerciseId)
-        .toArray()
-      const previousWorkoutEntry = previousWorkoutEntries
-        .filter(
-          (previousEntry) =>
-            !previousEntry.deletedAt &&
-            previousEntry.workoutDate < entry.workoutDate
-        )
-        .sort((a, b) => b.workoutDate.localeCompare(a.workoutDate))[0]
-      const previousWorkoutSet = previousWorkoutEntry?.setEntries
-        .filter((setEntry) => !setEntry.deletedAt)
-        .at(setPosition)
-      const previousSet = activeSetEntries
-        .filter((setEntry) => !setEntry.deletedAt)
-        .at(-1)
-      const sourceSet = previousWorkoutSet ?? previousSet
-      const newSet: SetEntry = {
-        id: createLocalId("set"),
-        weight: sourceSet?.weight ?? 0,
-        weightUnit: "kg",
-        reps: sourceSet?.reps ?? 0,
-        createdAt: now,
-        updatedAt: now,
-      }
+			const now = new Date().toISOString()
+			const activeSetEntries = entry.setEntries.filter(
+				setEntry => !setEntry.deletedAt,
+			)
+			const setPosition = activeSetEntries.length
+			const previousWorkoutEntries = await db.exerciseEntries
+				.where('exerciseId')
+				.equals(entry.exerciseId)
+				.toArray()
+			const previousWorkoutEntry = previousWorkoutEntries
+				.filter(
+					previousEntry =>
+						!previousEntry.deletedAt
+            && previousEntry.workoutDate < entry.workoutDate,
+				)
+				.sort((a, b) => b.workoutDate.localeCompare(a.workoutDate))[0]
+			const previousWorkoutSet = previousWorkoutEntry?.setEntries
+				.filter(setEntry => !setEntry.deletedAt)
+				.at(setPosition)
+			const previousSet = activeSetEntries
+				.filter(setEntry => !setEntry.deletedAt)
+				.at(-1)
+			const sourceSet = previousWorkoutSet ?? previousSet
+			const newSet: SetEntry = {
+				id: createLocalId('set'),
+				weight: sourceSet?.weight ?? 0,
+				weightUnit: 'kg',
+				reps: sourceSet?.reps ?? 0,
+				createdAt: now,
+				updatedAt: now,
+			}
 
-      await db.exerciseEntries.put({
-        ...entry,
-        syncStatus: "pending",
-        updatedAt: now,
-        setEntries: [...entry.setEntries, newSet],
-      })
+			await db.exerciseEntries.put({
+				...entry,
+				syncStatus: 'pending',
+				updatedAt: now,
+				setEntries: [...entry.setEntries, newSet],
+			})
 
-      await load()
-      return newSet.id
-    },
-    [load]
-  )
+			await load()
+			return newSet.id
+		},
+		[load],
+	)
 
-  const deleteSet = useCallback(
-    async (exerciseEntryId: string, setEntryId: string) => {
-      const entry = await db.exerciseEntries.get(exerciseEntryId)
+	const deleteSet = useCallback(
+		async (exerciseEntryId: string, setEntryId: string) => {
+			const entry = await db.exerciseEntries.get(exerciseEntryId)
 
-      if (!entry) {
-        return
-      }
+			if (!entry) {
+				return
+			}
 
-      const now = new Date().toISOString()
+			const now = new Date().toISOString()
 
-      await db.exerciseEntries.put({
-        ...entry,
-        syncStatus: "pending",
-        updatedAt: now,
-        setEntries: entry.setEntries.map((setEntry) =>
-          setEntry.id === setEntryId
-            ? { ...setEntry, deletedAt: now, updatedAt: now }
-            : setEntry
-        ),
-      })
+			await db.exerciseEntries.put({
+				...entry,
+				syncStatus: 'pending',
+				updatedAt: now,
+				setEntries: entry.setEntries.map(setEntry =>
+					setEntry.id === setEntryId
+						? {
+							...setEntry,
+							deletedAt: now,
+							updatedAt: now,
+						}
+						: setEntry,
+				),
+			})
 
-      await load()
-    },
-    [load]
-  )
+			await load()
+		},
+		[load],
+	)
 
-  const deleteExercise = useCallback(
-    async (exerciseEntryId: string) => {
-      await db.transaction("rw", db.workoutDays, db.exerciseEntries, async () => {
-        const now = new Date().toISOString()
-        const entry = await db.exerciseEntries.get(exerciseEntryId)
+	const deleteExercise = useCallback(
+		async (exerciseEntryId: string) => {
+			await db.transaction('rw', db.workoutDays, db.exerciseEntries, async () => {
+				const now = new Date().toISOString()
+				const entry = await db.exerciseEntries.get(exerciseEntryId)
 
-        if (!entry) {
-          return
-        }
+				if (!entry) {
+					return
+				}
 
-        await db.exerciseEntries.put({
-          ...entry,
-          deletedAt: now,
-          syncStatus: "pending",
-          updatedAt: now,
-        })
+				await db.exerciseEntries.put({
+					...entry,
+					deletedAt: now,
+					syncStatus: 'pending',
+					updatedAt: now,
+				})
 
-        const remainingEntries = await db.exerciseEntries
-          .where("workoutDate")
-          .equals(date)
-          .sortBy("position")
-        const activeEntries = remainingEntries.filter(
-          (entry) => !entry.deletedAt
-        )
+				const remainingEntries = await db.exerciseEntries
+					.where('workoutDate')
+					.equals(date)
+					.sortBy('position')
+				const activeEntries = remainingEntries.filter(
+					entry => !entry.deletedAt,
+				)
 
-        if (activeEntries.length === 0) {
-          await db.workoutDays.update(`day_${date}`, {
-            deletedAt: now,
-            syncStatus: "pending",
-            updatedAt: now,
-          })
-          return
-        }
+				if (activeEntries.length === 0) {
+					await db.workoutDays.update(`day_${date}`, {
+						deletedAt: now,
+						syncStatus: 'pending',
+						updatedAt: now,
+					})
+					return
+				}
 
-        await db.exerciseEntries.bulkPut(
-          activeEntries.map((entry, position) => ({
-            ...entry,
-            position,
-            syncStatus: "pending",
-            updatedAt: now,
-          }))
-        )
+				await db.exerciseEntries.bulkPut(
+					activeEntries.map((entry, position) => ({
+						...entry,
+						position,
+						syncStatus: 'pending',
+						updatedAt: now,
+					})),
+				)
 
-        await db.workoutDays.update(`day_${date}`, {
-          syncStatus: "pending",
-          updatedAt: now,
-        })
-      })
+				await db.workoutDays.update(`day_${date}`, {
+					syncStatus: 'pending',
+					updatedAt: now,
+				})
+			})
 
-      await load()
-    },
-    [date, load]
-  )
+			await load()
+		},
+		[date, load],
+	)
 
-  const addExercise = useCallback(
-    async (
-      exerciseId: string,
-      options: {
-        insertAtStart?: boolean
-      } = {}
-    ) => {
-      const [settings, existingDay, entriesForDate, previousEntries] =
-        await Promise.all([
-          db.userSettings.get("local"),
-          db.workoutDays.where("date").equals(date).first(),
-          db.exerciseEntries
-            .where("workoutDate")
-            .equals(date)
-            .and((entry) => !entry.deletedAt)
-            .toArray(),
-          db.exerciseEntries.where("exerciseId").equals(exerciseId).toArray(),
+	const addExercise = useCallback(
+		async (
+			exerciseId: string,
+			options: {
+				insertAtStart?: boolean,
+			} = {},
+		) => {
+			const [settings, existingDay, entriesForDate, previousEntries]
+        = await Promise.all([
+        	db.userSettings.get('local'),
+        	db.workoutDays.where('date').equals(date)
+        		.first(),
+        	db.exerciseEntries
+        		.where('workoutDate')
+        		.equals(date)
+        		.and(entry => !entry.deletedAt)
+        		.toArray(),
+        	db.exerciseEntries.where('exerciseId').equals(exerciseId)
+        		.toArray(),
         ])
 
-      const now = new Date().toISOString()
-      const insertAtStart = options.insertAtStart === true
-      const workoutDay =
-        existingDay ??
-        ({
-          id: `day_${date}`,
-          date,
-          localOwnerId: "local",
-          createdAt: now,
-          syncStatus: "pending",
-          updatedAt: now,
+			const now = new Date().toISOString()
+			const insertAtStart = options.insertAtStart === true
+			const workoutDay
+        = existingDay
+        ?? ({
+        	id: `day_${date}`,
+        	date,
+        	localOwnerId: 'local',
+        	createdAt: now,
+        	syncStatus: 'pending',
+        	updatedAt: now,
         } satisfies WorkoutDay)
 
-      const previousResult =
-        settings?.previousResultDefaults === false
-          ? undefined
-          : previousEntries
-              .filter((entry) => !entry.deletedAt && entry.workoutDate < date)
-              .sort((a, b) => b.workoutDate.localeCompare(a.workoutDate))[0]
+			const previousResult
+        = settings?.previousResultDefaults === false
+        	? undefined
+        	: previousEntries
+        		.filter(entry => !entry.deletedAt && entry.workoutDate < date)
+        		.sort((a, b) => b.workoutDate.localeCompare(a.workoutDate))[0]
 
-      const setEntries =
-        previousResult?.setEntries
-          .filter((setEntry) => !setEntry.deletedAt)
-          .map((setEntry) => ({
-            ...setEntry,
-            id: createLocalId("set"),
-            deletedAt: undefined,
-            previousResultSourceSetId: setEntry.id,
-            createdAt: now,
-            updatedAt: now,
-          })) ?? []
+			const setEntries
+        = previousResult?.setEntries
+        	.filter(setEntry => !setEntry.deletedAt)
+        	.map(setEntry => ({
+        		...setEntry,
+        		id: createLocalId('set'),
+        		deletedAt: undefined,
+        		previousResultSourceSetId: setEntry.id,
+        		createdAt: now,
+        		updatedAt: now,
+        	})) ?? []
 
-      const exerciseEntry: ExerciseEntry = {
-        id: createLocalId("entry"),
-        exerciseId,
-        workoutDate: date,
-        position: insertAtStart ? 0 : entriesForDate.length,
-        setEntries,
-        previousResultSourceId: previousResult?.id,
-        createdAt: now,
-        syncStatus: "pending",
-        updatedAt: now,
-      }
+			const exerciseEntry: ExerciseEntry = {
+				id: createLocalId('entry'),
+				exerciseId,
+				workoutDate: date,
+				position: insertAtStart
+					? 0
+					: entriesForDate.length,
+				setEntries,
+				previousResultSourceId: previousResult?.id,
+				createdAt: now,
+				syncStatus: 'pending',
+				updatedAt: now,
+			}
 
-      await db.transaction("rw", db.workoutDays, db.exerciseEntries, async () => {
-        await db.workoutDays.put({
-          ...workoutDay,
-          deletedAt: undefined,
-          syncStatus: "pending",
-          updatedAt: now,
-        })
+			await db.transaction('rw', db.workoutDays, db.exerciseEntries, async () => {
+				await db.workoutDays.put({
+					...workoutDay,
+					deletedAt: undefined,
+					syncStatus: 'pending',
+					updatedAt: now,
+				})
 
-        if (insertAtStart && entriesForDate.length > 0) {
-          await db.exerciseEntries.bulkPut(
-            entriesForDate.map((entry, index) => ({
-              ...entry,
-              position: index + 1,
-              syncStatus: "pending" as const,
-              updatedAt: now,
-            }))
-          )
-        }
+				if (insertAtStart && entriesForDate.length > 0) {
+					await db.exerciseEntries.bulkPut(
+						entriesForDate.map((entry, index) => ({
+							...entry,
+							position: index + 1,
+							syncStatus: 'pending' as const,
+							updatedAt: now,
+						})),
+					)
+				}
 
-        await db.exerciseEntries.put(exerciseEntry)
-      })
+				await db.exerciseEntries.put(exerciseEntry)
+			})
 
-      await load()
-      return exerciseEntry.id
-    },
-    [date, load]
-  )
+			await load()
+			return exerciseEntry.id
+		},
+		[date, load],
+	)
 
-  const addCustomExercise = useCallback(
-    async (
-      name: string,
-      muscleGroupIds: MuscleGroupId[],
-      locale: Locale
-    ) => {
-      const trimmedName = name.trim()
+	const addCustomExercise = useCallback(
+		async (
+			name: string,
+			muscleGroupIds: MuscleGroupId[],
+			locale: Locale,
+		) => {
+			const trimmedName = name.trim()
 
-      if (!trimmedName) {
-        return
-      }
+			if (!trimmedName) {
+				return
+			}
 
-      const nextMuscleGroupIds =
-        muscleGroupIds.length > 0 ? muscleGroupIds : (["other"] as MuscleGroupId[])
+			const nextMuscleGroupIds
+        = muscleGroupIds.length > 0
+        	? muscleGroupIds
+        	: (['other'] as MuscleGroupId[])
 
-      const exerciseId = createLocalId("exercise")
-      const now = new Date().toISOString()
+			const exerciseId = createLocalId('exercise')
+			const now = new Date().toISOString()
 
-      await db.exercises.put({
-        id: exerciseId,
-        name: {
-          en: trimmedName,
-          ru: trimmedName,
-          [locale]: trimmedName,
-        },
-        muscleGroupIds: nextMuscleGroupIds,
-        trackingMode: "weight_reps",
-        builtIn: false,
-        createdAt: now,
-        updatedAt: now,
-        syncStatus: "pending",
-      })
+			await db.exercises.put({
+				id: exerciseId,
+				name: {
+					en: trimmedName,
+					ru: trimmedName,
+					[locale]: trimmedName,
+				},
+				muscleGroupIds: nextMuscleGroupIds,
+				trackingMode: 'weight_reps',
+				builtIn: false,
+				createdAt: now,
+				updatedAt: now,
+				syncStatus: 'pending',
+			})
 
-      return addExercise(exerciseId, { insertAtStart: true })
-    },
-    [addExercise]
-  )
+			return addExercise(exerciseId, {insertAtStart: true})
+		},
+		[addExercise],
+	)
 
-  const renameCustomExercise = useCallback(
-    async (exerciseId: string, name: string, locale: Locale) => {
-      const trimmedName = name.trim()
-      const exercise = await db.exercises.get(exerciseId)
+	const renameCustomExercise = useCallback(
+		async (exerciseId: string, name: string, locale: Locale) => {
+			const trimmedName = name.trim()
+			const exercise = await db.exercises.get(exerciseId)
 
-      if (!exercise || exercise.builtIn || !trimmedName) {
-        return
-      }
+			if (!exercise || exercise.builtIn || !trimmedName) {
+				return
+			}
 
-      await db.exercises.put({
-        ...exercise,
-        name: {
-          ...exercise.name,
-          [locale]: trimmedName,
-        },
-        syncStatus: "pending",
-        updatedAt: new Date().toISOString(),
-      })
+			await db.exercises.put({
+				...exercise,
+				name: {
+					...exercise.name,
+					[locale]: trimmedName,
+				},
+				syncStatus: 'pending',
+				updatedAt: new Date().toISOString(),
+			})
 
-      await load()
-    },
-    [load]
-  )
+			await load()
+		},
+		[load],
+	)
 
-  const deleteCustomExercise = useCallback(
-    async (exerciseId: string) => {
-      const exercise = await db.exercises.get(exerciseId)
+	const deleteCustomExercise = useCallback(
+		async (exerciseId: string) => {
+			const exercise = await db.exercises.get(exerciseId)
 
-      if (!exercise || exercise.builtIn) {
-        return
-      }
+			if (!exercise || exercise.builtIn) {
+				return
+			}
 
-      const now = new Date().toISOString()
+			const now = new Date().toISOString()
 
-      await db.exercises.put({
-        ...exercise,
-        deletedAt: now,
-        syncStatus: "pending",
-        updatedAt: now,
-      })
+			await db.exercises.put({
+				...exercise,
+				deletedAt: now,
+				syncStatus: 'pending',
+				updatedAt: now,
+			})
 
-      await load()
-    },
-    [load]
-  )
+			await load()
+		},
+		[load],
+	)
 
-  const updateNumber = useCallback(
-    async (
-      exerciseEntryId: string,
-      setEntryId: string,
-      field: "reps" | "weight",
-      value: number
-    ) => {
-      await updateSet(exerciseEntryId, setEntryId, {
-        [field]: Math.max(0, value),
-      })
-    },
-    [updateSet]
-  )
+	const updateNumber = useCallback(
+		async (
+			exerciseEntryId: string,
+			setEntryId: string,
+			field: 'reps' | 'weight',
+			value: number,
+		) => {
+			await updateSet(exerciseEntryId, setEntryId, {
+				[field]: Math.max(0, value),
+			})
+		},
+		[updateSet],
+	)
 
-  const updateSetNumbers = useCallback(
-    async (
-      exerciseEntryId: string,
-      setEntryId: string,
-      patch: Partial<{ reps: number; weight: number }>
-    ) => {
-      const nextPatch = Object.fromEntries(
-        Object.entries(patch).map(([field, value]) => [
-          field,
-          typeof value === "number" ? Math.max(0, value) : value,
-        ])
-      )
+	const updateSetNumbers = useCallback(
+		async (
+			exerciseEntryId: string,
+			setEntryId: string,
+			patch: Partial<{
+				reps: number,
+				weight: number,
+			}>,
+		) => {
+			const nextPatch = Object.fromEntries(
+				Object.entries(patch).map(([field, value]) => [
+					field,
+					typeof value === 'number'
+						? Math.max(0, value)
+						: value,
+				]),
+			)
 
-      await updateSet(
-        exerciseEntryId,
-        setEntryId,
-        nextPatch as Partial<Pick<SetEntry, "reps" | "weight">>
-      )
-    },
-    [updateSet]
-  )
+			await updateSet(
+				exerciseEntryId,
+				setEntryId,
+				nextPatch as Partial<Pick<SetEntry, 'reps' | 'weight'>>,
+			)
+		},
+		[updateSet],
+	)
 
-  const incrementNumber = useCallback(
-    async (
-      exerciseEntryId: string,
-      setEntryId: string,
-      field: "reps" | "weight",
-      delta: number
-    ) => {
-      const entry = state.exerciseEntries.find(
-        (exerciseEntry) => exerciseEntry.id === exerciseEntryId
-      )
-      const setEntry = entry?.setEntries.find((set) => set.id === setEntryId)
+	const incrementNumber = useCallback(
+		async (
+			exerciseEntryId: string,
+			setEntryId: string,
+			field: 'reps' | 'weight',
+			delta: number,
+		) => {
+			const entry = state.exerciseEntries.find(
+				exerciseEntry => exerciseEntry.id === exerciseEntryId,
+			)
+			const setEntry = entry?.setEntries.find(set => set.id === setEntryId)
 
-      if (!setEntry) {
-        return
-      }
+			if (!setEntry) {
+				return
+			}
 
-      const currentValue = field === "weight" ? setEntry.weight : setEntry.reps
+			const currentValue = field === 'weight'
+				? setEntry.weight
+				: setEntry.reps
 
-      await updateNumber(
-        exerciseEntryId,
-        setEntryId,
-        field,
-        (currentValue ?? 0) + delta
-      )
-    },
-    [state.exerciseEntries, updateNumber]
-  )
+			await updateNumber(
+				exerciseEntryId,
+				setEntryId,
+				field,
+				(currentValue ?? 0) + delta,
+			)
+		},
+		[state.exerciseEntries, updateNumber],
+	)
 
-  const updateSettings = useCallback(
-    async (patch: Partial<Omit<UserSettings, "id" | "updatedAt">>) => {
-      const currentSettings = await db.userSettings.get("local")
+	const updateSettings = useCallback(
+		async (patch: Partial<Omit<UserSettings, 'id' | 'updatedAt'>>) => {
+			const currentSettings = await db.userSettings.get('local')
 
-      if (!currentSettings) {
-        return
-      }
+			if (!currentSettings) {
+				return
+			}
 
-      await db.userSettings.put({
-        ...normalizeStoredUserSettings(currentSettings),
-        ...patch,
-        syncStatus: "pending",
-        updatedAt: new Date().toISOString(),
-      })
+			await db.userSettings.put({
+				...normalizeStoredUserSettings(currentSettings),
+				...patch,
+				syncStatus: 'pending',
+				updatedAt: new Date().toISOString(),
+			})
 
-      await load()
-    },
-    [load]
-  )
+			await load()
+		},
+		[load],
+	)
 
-  const createGuestAccount = useCallback(async () => {
-    const locale = state.settings?.locale ?? "en"
-    const response = await requestGuestAccount(locale)
-    const now = new Date().toISOString()
+	const createGuestAccount = useCallback(async () => {
+		const locale = state.settings?.locale ?? 'en'
+		const response = await requestGuestAccount(locale)
+		const now = new Date().toISOString()
 
-    await db.accountSessions.put({
-      id: "local",
-      userId: response.user.id,
-      kind: response.user.kind,
-      emailVerified: response.user.emailVerified,
-      accessToken: response.session.accessToken,
-      tokenType: response.session.tokenType,
-      expiresAt: response.session.expiresAt,
-      syncCursor: response.sync.cursor,
-      createdAt: response.user.createdAt,
-      updatedAt: now,
-    })
+		await db.accountSessions.put({
+			id: 'local',
+			userId: response.user.id,
+			kind: response.user.kind,
+			emailVerified: response.user.emailVerified,
+			accessToken: response.session.accessToken,
+			tokenType: response.session.tokenType,
+			expiresAt: response.session.expiresAt,
+			syncCursor: response.sync.cursor,
+			createdAt: response.user.createdAt,
+			updatedAt: now,
+		})
 
-    await load()
-  }, [load, state.settings?.locale])
+		await load()
+	}, [load, state.settings?.locale])
 
-  const registerAccount = useCallback(
-    async (email: string, password: string) => {
-      const locale = state.settings?.locale ?? "en"
-      const currentSession = await db.accountSessions.get("local")
-      const response = await requestRegisterAccount({
-        accessToken: currentSession?.accessToken ?? null,
-        email,
-        locale,
-        password,
-      })
-      const now = new Date().toISOString()
+	const registerAccount = useCallback(
+		async (email: string, password: string) => {
+			const locale = state.settings?.locale ?? 'en'
+			const currentSession = await db.accountSessions.get('local')
+			const response = await requestRegisterAccount({
+				accessToken: currentSession?.accessToken ?? null,
+				email,
+				locale,
+				password,
+			})
+			const now = new Date().toISOString()
 
-      await db.accountSessions.put({
-        id: "local",
-        userId: response.user.id,
-        kind: response.user.kind,
-        email: response.user.email,
-        emailVerified: response.user.emailVerified,
-        accessToken: response.session.accessToken,
-        tokenType: response.session.tokenType,
-        expiresAt: response.session.expiresAt,
-        syncCursor:
+			await db.accountSessions.put({
+				id: 'local',
+				userId: response.user.id,
+				kind: response.user.kind,
+				email: response.user.email,
+				emailVerified: response.user.emailVerified,
+				accessToken: response.session.accessToken,
+				tokenType: response.session.tokenType,
+				expiresAt: response.session.expiresAt,
+				syncCursor:
           currentSession?.userId === response.user.id
-            ? currentSession.syncCursor ?? null
-            : response.sync.cursor,
-        createdAt: response.user.createdAt,
-        updatedAt: now,
-      })
+          	? currentSession.syncCursor ?? null
+          	: response.sync.cursor,
+				createdAt: response.user.createdAt,
+				updatedAt: now,
+			})
 
-      await load()
-      return response
-    },
-    [load, state.settings?.locale]
-  )
+			await load()
+			return response
+		},
+		[load, state.settings?.locale],
+	)
 
-  const loginAccount = useCallback(
-    async (email: string, password: string) => {
-      const response = await requestLoginAccount({
-        email,
-        password,
-      })
-      const now = new Date().toISOString()
+	const loginAccount = useCallback(
+		async (email: string, password: string) => {
+			const response = await requestLoginAccount({
+				email,
+				password,
+			})
+			const now = new Date().toISOString()
 
-      await db.accountSessions.put({
-        id: "local",
-        userId: response.user.id,
-        kind: response.user.kind,
-        email: response.user.email,
-        emailVerified: response.user.emailVerified,
-        accessToken: response.session.accessToken,
-        tokenType: response.session.tokenType,
-        expiresAt: response.session.expiresAt,
-        syncCursor: response.sync.cursor,
-        createdAt: response.user.createdAt,
-        updatedAt: now,
-      })
+			await db.accountSessions.put({
+				id: 'local',
+				userId: response.user.id,
+				kind: response.user.kind,
+				email: response.user.email,
+				emailVerified: response.user.emailVerified,
+				accessToken: response.session.accessToken,
+				tokenType: response.session.tokenType,
+				expiresAt: response.session.expiresAt,
+				syncCursor: response.sync.cursor,
+				createdAt: response.user.createdAt,
+				updatedAt: now,
+			})
 
-      await load()
-    },
-    [load]
-  )
+			await load()
+		},
+		[load],
+	)
 
-  const logoutAccount = useCallback(async () => {
-    await db.accountSessions.delete("local")
-    await load()
-  }, [load])
+	const logoutAccount = useCallback(async () => {
+		await db.accountSessions.delete('local')
+		await load()
+	}, [load])
 
-  const resendVerificationEmail = useCallback(async () => {
-    const accountSession = await db.accountSessions.get("local")
+	const resendVerificationEmail = useCallback(async () => {
+		const accountSession = await db.accountSessions.get('local')
 
-    if (!accountSession) {
-      throw new Error("Account session is required")
-    }
+		if (!accountSession) {
+			throw new Error('Account session is required')
+		}
 
-    return requestResendVerificationEmail(accountSession.accessToken)
-  }, [])
+		return requestResendVerificationEmail(accountSession.accessToken)
+	}, [])
 
-  const syncPendingChanges = useCallback(async () => {
-    const accountSession = await db.accountSessions.get("local")
+	const syncPendingChanges = useCallback(async () => {
+		const accountSession = await db.accountSessions.get('local')
 
-    if (!accountSession) {
-      throw new Error("Account session is required for sync")
-    }
+		if (!accountSession) {
+			throw new Error('Account session is required for sync')
+		}
 
-    const cursorBeforeSync = accountSession.syncCursor
-    const changes = await collectPendingSyncChanges()
+		const cursorBeforeSync = accountSession.syncCursor
+		const changes = await collectPendingSyncChanges()
 
-    if (changes.length > 0) {
-      const pushResponse = await pushSyncChanges({
-        accessToken: accountSession.accessToken,
-        changes,
-        cursor: cursorBeforeSync,
-      })
+		if (changes.length > 0) {
+			const pushResponse = await pushSyncChanges({
+				accessToken: accountSession.accessToken,
+				changes,
+				cursor: cursorBeforeSync,
+			})
 
-      await markAcceptedChangesSynced(pushResponse.accepted)
-    }
+			await markAcceptedChangesSynced(pushResponse.accepted)
+		}
 
-    await pullAllSyncChanges(accountSession.accessToken, cursorBeforeSync)
-    await load()
-  }, [load])
+		await pullAllSyncChanges(accountSession.accessToken, cursorBeforeSync)
+		await load()
+	}, [load])
 
-  return {
-    ...state,
-    addExercise,
-    addCustomExercise,
-    addSet,
-    createGuestAccount,
-    loginAccount,
-    logoutAccount,
-    registerAccount,
-    resendVerificationEmail,
-    deleteCustomExercise,
-    deleteExercise,
-    deleteSet,
-    updateNumber,
-    updateSet: updateSetNumbers,
-    incrementNumber,
-    renameCustomExercise,
-    syncPendingChanges,
-    updateSettings,
-    locale: state.settings?.locale ?? "en",
-    dictionary: getDictionary(state.settings?.locale ?? "en"),
-  }
+	return {
+		...state,
+		addExercise,
+		addCustomExercise,
+		addSet,
+		createGuestAccount,
+		loginAccount,
+		logoutAccount,
+		registerAccount,
+		resendVerificationEmail,
+		deleteCustomExercise,
+		deleteExercise,
+		deleteSet,
+		updateNumber,
+		updateSet: updateSetNumbers,
+		incrementNumber,
+		renameCustomExercise,
+		syncPendingChanges,
+		updateSettings,
+		locale: state.settings?.locale ?? 'en',
+		dictionary: getDictionary(state.settings?.locale ?? 'en'),
+	}
 }
 
 function createEmptyDaySnapshot(date: string): DaySnapshot {
-  return {
-    date,
-    workoutDay: null,
-    exerciseEntries: [],
-  }
+	return {
+		date,
+		workoutDay: null,
+		exerciseEntries: [],
+	}
 }
 
 async function getSyncSummary() {
-  const [customExercises, workoutDays, exerciseEntries, userSettings] =
-    await Promise.all([
-      db.exercises
-        .filter((exercise) => !exercise.builtIn)
-        .toArray(),
-      db.workoutDays.toArray(),
-      db.exerciseEntries.toArray(),
-      db.userSettings.toArray(),
+	const [customExercises, workoutDays, exerciseEntries, userSettings]
+    = await Promise.all([
+    	db.exercises
+    		.filter(exercise => !exercise.builtIn)
+    		.toArray(),
+    	db.workoutDays.toArray(),
+    	db.exerciseEntries.toArray(),
+    	db.userSettings.toArray(),
     ])
 
-  const syncableRecords = [
-    ...customExercises,
-    ...workoutDays,
-    ...exerciseEntries,
-    ...userSettings,
-  ]
+	const syncableRecords = [
+		...customExercises,
+		...workoutDays,
+		...exerciseEntries,
+		...userSettings,
+	]
 
-  return syncableRecords.reduce(
-    (summary, record) => {
-      const status = record.syncStatus
+	return syncableRecords.reduce(
+		(summary, record) => {
+			const status = record.syncStatus
 
-      if (status === "pending") {
-        summary.pending += 1
-      } else if (status === "synced") {
-        summary.synced += 1
-      }
+			if (status === 'pending') {
+				summary.pending += 1
+			}
+			else if (status === 'synced') {
+				summary.synced += 1
+			}
 
-      return summary
-    },
-    {
-      pending: 0,
-      synced: 0,
-    }
-  )
+			return summary
+		},
+		{
+			pending: 0,
+			synced: 0,
+		},
+	)
 }
 
 async function collectPendingSyncChanges() {
-  const [exercises, workoutDays, exerciseEntries, userSettings] =
-    await Promise.all([
-      db.exercises.where("syncStatus").equals("pending").toArray(),
-      db.workoutDays.where("syncStatus").equals("pending").toArray(),
-      db.exerciseEntries.where("syncStatus").equals("pending").toArray(),
-      db.userSettings.where("syncStatus").equals("pending").toArray(),
+	const [exercises, workoutDays, exerciseEntries, userSettings]
+    = await Promise.all([
+    	db.exercises.where('syncStatus').equals('pending')
+    		.toArray(),
+    	db.workoutDays.where('syncStatus').equals('pending')
+    		.toArray(),
+    	db.exerciseEntries.where('syncStatus').equals('pending')
+    		.toArray(),
+    	db.userSettings.where('syncStatus').equals('pending')
+    		.toArray(),
     ])
 
-  return [
-    ...exercises.map((exercise) => createSyncChange("exercise", exercise)),
-    ...workoutDays.map((workoutDay) =>
-      createSyncChange("workoutDay", workoutDay)
-    ),
-    ...exerciseEntries.map((exerciseEntry) =>
-      createSyncChange("exerciseEntry", exerciseEntry)
-    ),
-    ...userSettings.map((settings) =>
-      createSyncChange("userSettings", settings)
-    ),
-  ]
+	return [
+		...exercises.map(exercise => createSyncChange('exercise', exercise)),
+		...workoutDays.map(workoutDay =>
+			createSyncChange('workoutDay', workoutDay),
+		),
+		...exerciseEntries.map(exerciseEntry =>
+			createSyncChange('exerciseEntry', exerciseEntry),
+		),
+		...userSettings.map(settings =>
+			createSyncChange('userSettings', settings),
+		),
+	]
 }
 
 function createSyncChange(
-  entityType: SyncEntityType,
-  entity: {
-    id: string
-    deletedAt?: string
-    updatedAt?: string
-  }
+	entityType: SyncEntityType,
+	entity: {
+		id: string,
+		deletedAt?: string,
+		updatedAt?: string,
+	},
 ): SyncChange {
-  return {
-    entityType,
-    localId: entity.id,
-    operation: entity.deletedAt ? "delete" : "upsert",
-    payload: entity,
-    updatedAt: entity.updatedAt ?? new Date().toISOString(),
-  }
+	return {
+		entityType,
+		localId: entity.id,
+		operation: entity.deletedAt
+			? 'delete'
+			: 'upsert',
+		payload: entity,
+		updatedAt: entity.updatedAt ?? new Date().toISOString(),
+	}
 }
 
 async function markAcceptedChangesSynced(
-  acceptedChanges: Array<{
-    entityType: SyncEntityType
-    localId: string
-  }>
+	acceptedChanges: {
+		entityType: SyncEntityType,
+		localId: string,
+	}[],
 ) {
-  await Promise.all(
-    acceptedChanges.map((change) =>
-      markEntitySynced(change.entityType, change.localId)
-    )
-  )
+	await Promise.all(
+		acceptedChanges.map(change =>
+			markEntitySynced(change.entityType, change.localId),
+		),
+	)
 }
 
 async function updateSyncCursor(nextCursor: string) {
-  const accountSession = await db.accountSessions.get("local")
+	const accountSession = await db.accountSessions.get('local')
 
-  if (accountSession) {
-    await db.accountSessions.put({
-      ...accountSession,
-      syncCursor: nextCursor,
-      updatedAt: new Date().toISOString(),
-    })
-  }
+	if (accountSession) {
+		await db.accountSessions.put({
+			...accountSession,
+			syncCursor: nextCursor,
+			updatedAt: new Date().toISOString(),
+		})
+	}
 }
 
 async function markEntitySynced(entityType: SyncEntityType, localId: string) {
-  const patch = {
-    syncStatus: "synced" as const,
-  }
+	const patch = {
+		syncStatus: 'synced' as const,
+	}
 
-  if (entityType === "exercise") {
-    await db.exercises.update(localId, patch)
-    return
-  }
+	if (entityType === 'exercise') {
+		await db.exercises.update(localId, patch)
+		return
+	}
 
-  if (entityType === "workoutDay") {
-    await db.workoutDays.update(localId, patch)
-    return
-  }
+	if (entityType === 'workoutDay') {
+		await db.workoutDays.update(localId, patch)
+		return
+	}
 
-  if (entityType === "exerciseEntry") {
-    await db.exerciseEntries.update(localId, patch)
-    return
-  }
+	if (entityType === 'exerciseEntry') {
+		await db.exerciseEntries.update(localId, patch)
+		return
+	}
 
-  await db.userSettings.update(localId as UserSettings["id"], patch)
+	await db.userSettings.update(localId as UserSettings['id'], patch)
 }
 
 async function applyPulledChanges(
-  changes: Array<SyncChange & { serverTime: string }>,
-  nextCursor: string
+	changes: (SyncChange & {serverTime: string})[],
+	nextCursor: string,
 ) {
-  for (const change of changes) {
-    await applyPulledChange(change)
-  }
+	for (const change of changes) {
+		await applyPulledChange(change)
+	}
 
-  await updateSyncCursor(nextCursor)
+	await updateSyncCursor(nextCursor)
 }
 
 async function pullAllSyncChanges(accessToken: string, initialCursor?: string | null) {
-  let cursor = initialCursor ?? null
+	let cursor = initialCursor ?? null
 
-  while (true) {
-    const pullResponse = await pullSyncChanges({
-      accessToken,
-      cursor,
-    })
+	while (true) {
+		const pullResponse = await pullSyncChanges({
+			accessToken,
+			cursor,
+		})
 
-    await applyPulledChanges(pullResponse.changes, pullResponse.nextCursor)
-    cursor = pullResponse.nextCursor
+		await applyPulledChanges(pullResponse.changes, pullResponse.nextCursor)
+		cursor = pullResponse.nextCursor
 
-    if (!pullResponse.hasMore) {
-      return
-    }
-  }
+		if (!pullResponse.hasMore) {
+			return
+		}
+	}
 }
 
-async function applyPulledChange(change: SyncChange & { serverTime: string }) {
-  if (change.entityType === "exercise") {
-    await applyPulledExercise(change)
-    return
-  }
+async function applyPulledChange(change: SyncChange & {serverTime: string}) {
+	if (change.entityType === 'exercise') {
+		await applyPulledExercise(change)
+		return
+	}
 
-  if (change.entityType === "workoutDay") {
-    await applyPulledWorkoutDay(change)
-    return
-  }
+	if (change.entityType === 'workoutDay') {
+		await applyPulledWorkoutDay(change)
+		return
+	}
 
-  if (change.entityType === "exerciseEntry") {
-    await applyPulledExerciseEntry(change)
-    return
-  }
+	if (change.entityType === 'exerciseEntry') {
+		await applyPulledExerciseEntry(change)
+		return
+	}
 
-  await applyPulledUserSettings(change)
+	await applyPulledUserSettings(change)
 }
 
-async function applyPulledExercise(change: SyncChange & { serverTime: string }) {
-  const existingExercise = await db.exercises.get(change.localId)
+async function applyPulledExercise(change: SyncChange & {serverTime: string}) {
+	const existingExercise = await db.exercises.get(change.localId)
 
-  if (existingExercise && shouldKeepLocalVersion(existingExercise, change)) {
-    await db.exercises.put({ ...existingExercise, syncStatus: "pending" })
-    return
-  }
+	if (existingExercise && shouldKeepLocalVersion(existingExercise, change)) {
+		await db.exercises.put({
+			...existingExercise,
+			syncStatus: 'pending',
+		})
+		return
+	}
 
-  if (change.operation === "delete") {
-    if (existingExercise) {
-      await db.exercises.put({
-        ...existingExercise,
-        deletedAt: existingExercise.deletedAt ?? change.serverTime,
-        syncStatus: "synced",
-      })
-    }
+	if (change.operation === 'delete') {
+		if (existingExercise) {
+			await db.exercises.put({
+				...existingExercise,
+				deletedAt: existingExercise.deletedAt ?? change.serverTime,
+				syncStatus: 'synced',
+			})
+		}
 
-    return
-  }
+		return
+	}
 
-  if (isExercisePayload(change.payload)) {
-    await db.exercises.put({
-      ...change.payload,
-      syncStatus: "synced",
-    })
-  }
+	if (isExercisePayload(change.payload)) {
+		await db.exercises.put({
+			...change.payload,
+			syncStatus: 'synced',
+		})
+	}
 }
 
 async function applyPulledWorkoutDay(
-  change: SyncChange & { serverTime: string }
+	change: SyncChange & {serverTime: string},
 ) {
-  const existingWorkoutDay = await db.workoutDays.get(change.localId)
+	const existingWorkoutDay = await db.workoutDays.get(change.localId)
 
-  if (
-    existingWorkoutDay &&
-    shouldKeepLocalVersion(existingWorkoutDay, change)
-  ) {
-    await db.workoutDays.put({ ...existingWorkoutDay, syncStatus: "pending" })
-    return
-  }
+	if (
+		existingWorkoutDay
+    && shouldKeepLocalVersion(existingWorkoutDay, change)
+	) {
+		await db.workoutDays.put({
+			...existingWorkoutDay,
+			syncStatus: 'pending',
+		})
+		return
+	}
 
-  if (change.operation === "delete") {
-    if (existingWorkoutDay) {
-      await db.workoutDays.put({
-        ...existingWorkoutDay,
-        deletedAt: existingWorkoutDay.deletedAt ?? change.serverTime,
-        syncStatus: "synced",
-      })
-    }
+	if (change.operation === 'delete') {
+		if (existingWorkoutDay) {
+			await db.workoutDays.put({
+				...existingWorkoutDay,
+				deletedAt: existingWorkoutDay.deletedAt ?? change.serverTime,
+				syncStatus: 'synced',
+			})
+		}
 
-    return
-  }
+		return
+	}
 
-  if (isWorkoutDayPayload(change.payload)) {
-    await db.workoutDays.put({
-      ...change.payload,
-      syncStatus: "synced",
-    })
-  }
+	if (isWorkoutDayPayload(change.payload)) {
+		await db.workoutDays.put({
+			...change.payload,
+			syncStatus: 'synced',
+		})
+	}
 }
 
 async function applyPulledExerciseEntry(
-  change: SyncChange & { serverTime: string }
+	change: SyncChange & {serverTime: string},
 ) {
-  const existingExerciseEntry = await db.exerciseEntries.get(change.localId)
+	const existingExerciseEntry = await db.exerciseEntries.get(change.localId)
 
-  if (
-    existingExerciseEntry &&
-    shouldKeepLocalVersion(existingExerciseEntry, change)
-  ) {
-    await db.exerciseEntries.put({
-      ...existingExerciseEntry,
-      syncStatus: "pending",
-    })
-    return
-  }
+	if (
+		existingExerciseEntry
+    && shouldKeepLocalVersion(existingExerciseEntry, change)
+	) {
+		await db.exerciseEntries.put({
+			...existingExerciseEntry,
+			syncStatus: 'pending',
+		})
+		return
+	}
 
-  if (change.operation === "delete") {
-    if (existingExerciseEntry) {
-      await db.exerciseEntries.put({
-        ...existingExerciseEntry,
-        deletedAt: existingExerciseEntry.deletedAt ?? change.serverTime,
-        syncStatus: "synced",
-      })
-    }
+	if (change.operation === 'delete') {
+		if (existingExerciseEntry) {
+			await db.exerciseEntries.put({
+				...existingExerciseEntry,
+				deletedAt: existingExerciseEntry.deletedAt ?? change.serverTime,
+				syncStatus: 'synced',
+			})
+		}
 
-    return
-  }
+		return
+	}
 
-  if (isExerciseEntryPayload(change.payload)) {
-    await db.exerciseEntries.put({
-      ...change.payload,
-      syncStatus: "synced",
-    })
-  }
+	if (isExerciseEntryPayload(change.payload)) {
+		await db.exerciseEntries.put({
+			...change.payload,
+			syncStatus: 'synced',
+		})
+	}
 }
 
 async function applyPulledUserSettings(
-  change: SyncChange & { serverTime: string }
+	change: SyncChange & {serverTime: string},
 ) {
-  const existingSettings = await db.userSettings.get("local")
+	const existingSettings = await db.userSettings.get('local')
 
-  if (existingSettings && shouldKeepLocalVersion(existingSettings, change)) {
-    await db.userSettings.put({
-      ...existingSettings,
-      syncStatus: "pending",
-    })
-    return
-  }
+	if (existingSettings && shouldKeepLocalVersion(existingSettings, change)) {
+		await db.userSettings.put({
+			...existingSettings,
+			syncStatus: 'pending',
+		})
+		return
+	}
 
-  if (change.operation === "delete") {
-    return
-  }
+	if (change.operation === 'delete') {
+		return
+	}
 
-  if (isUserSettingsPayload(change.payload)) {
-    await db.userSettings.put(
-      normalizeStoredUserSettings({
-      ...change.payload,
-      id: "local",
-      syncStatus: "synced",
-      } as UserSettings)
-    )
-  }
+	if (isUserSettingsPayload(change.payload)) {
+		await db.userSettings.put(
+			normalizeStoredUserSettings({
+				...change.payload,
+				id: 'local',
+				syncStatus: 'synced',
+			} as UserSettings),
+		)
+	}
 }
 
 async function normalizeLegacyConflicts() {
-  const [customExercises, workoutDays, exerciseEntries, userSettings] =
-    await Promise.all([
-      db.exercises
-        .filter(
-          (exercise) => !exercise.builtIn && exercise.syncStatus === "conflict"
-        )
-        .toArray(),
-      db.workoutDays.where("syncStatus").equals("conflict").toArray(),
-      db.exerciseEntries.where("syncStatus").equals("conflict").toArray(),
-      db.userSettings.where("syncStatus").equals("conflict").toArray(),
+	const [customExercises, workoutDays, exerciseEntries, userSettings]
+    = await Promise.all([
+    	db.exercises
+    		.filter(
+    			exercise => !exercise.builtIn && exercise.syncStatus === 'conflict',
+    		)
+    		.toArray(),
+    	db.workoutDays.where('syncStatus').equals('conflict')
+    		.toArray(),
+    	db.exerciseEntries.where('syncStatus').equals('conflict')
+    		.toArray(),
+    	db.userSettings.where('syncStatus').equals('conflict')
+    		.toArray(),
     ])
 
-  if (
-    customExercises.length === 0 &&
-    workoutDays.length === 0 &&
-    exerciseEntries.length === 0 &&
-    userSettings.length === 0
-  ) {
-    return
-  }
+	if (
+		customExercises.length === 0
+    && workoutDays.length === 0
+    && exerciseEntries.length === 0
+    && userSettings.length === 0
+	) {
+		return
+	}
 
-  await Promise.all([
-    ...customExercises.map((exercise) =>
-      db.exercises.update(exercise.id, { syncStatus: "pending" })
-    ),
-    ...workoutDays.map((workoutDay) =>
-      db.workoutDays.update(workoutDay.id, { syncStatus: "pending" })
-    ),
-    ...exerciseEntries.map((exerciseEntry) =>
-      db.exerciseEntries.update(exerciseEntry.id, { syncStatus: "pending" })
-    ),
-    ...userSettings.map((settings) =>
-      db.userSettings.update(settings.id, { syncStatus: "pending" })
-    ),
-  ])
+	await Promise.all([
+		...customExercises.map(exercise =>
+			db.exercises.update(exercise.id, {syncStatus: 'pending'}),
+		),
+		...workoutDays.map(workoutDay =>
+			db.workoutDays.update(workoutDay.id, {syncStatus: 'pending'}),
+		),
+		...exerciseEntries.map(exerciseEntry =>
+			db.exerciseEntries.update(exerciseEntry.id, {syncStatus: 'pending'}),
+		),
+		...userSettings.map(settings =>
+			db.userSettings.update(settings.id, {syncStatus: 'pending'}),
+		),
+	])
 }
 
 function shouldKeepLocalVersion(
-  localEntity: { syncStatus?: string; updatedAt?: string },
-  remoteChange: SyncChange & { serverTime: string }
+	localEntity: {
+		syncStatus?: string,
+		updatedAt?: string,
+	},
+	remoteChange: SyncChange & {serverTime: string},
 ) {
-  if (localEntity.syncStatus !== "pending" && localEntity.syncStatus !== "conflict") {
-    return false
-  }
+	if (localEntity.syncStatus !== 'pending' && localEntity.syncStatus !== 'conflict') {
+		return false
+	}
 
-  const localUpdatedAt = Date.parse(localEntity.updatedAt ?? "")
-  const remoteUpdatedAt = Date.parse(remoteChange.updatedAt || remoteChange.serverTime)
+	const localUpdatedAt = Date.parse(localEntity.updatedAt ?? '')
+	const remoteUpdatedAt = Date.parse(remoteChange.updatedAt || remoteChange.serverTime)
 
-  if (!Number.isFinite(localUpdatedAt)) {
-    return false
-  }
+	if (!Number.isFinite(localUpdatedAt)) {
+		return false
+	}
 
-  if (!Number.isFinite(remoteUpdatedAt)) {
-    return true
-  }
+	if (!Number.isFinite(remoteUpdatedAt)) {
+		return true
+	}
 
-  return localUpdatedAt >= remoteUpdatedAt
+	return localUpdatedAt >= remoteUpdatedAt
 }
 
 function isRecord(payload: unknown): payload is Record<string, unknown> {
-  return (
-    typeof payload === "object" &&
-    payload !== null
-  )
+	return (
+		typeof payload === 'object'
+    && payload !== null
+	)
 }
 
 function isExercisePayload(payload: unknown): payload is Exercise {
-  if (!isRecord(payload)) {
-    return false
-  }
+	if (!isRecord(payload)) {
+		return false
+	}
 
-  return (
-    typeof payload.id === "string" &&
-    isRecord(payload.name) &&
-    Array.isArray(payload.muscleGroupIds) &&
-    typeof payload.trackingMode === "string" &&
-    typeof payload.builtIn === "boolean"
-  )
+	return (
+		typeof payload.id === 'string'
+    && isRecord(payload.name)
+    && Array.isArray(payload.muscleGroupIds)
+    && typeof payload.trackingMode === 'string'
+    && typeof payload.builtIn === 'boolean'
+	)
 }
 
 function isWorkoutDayPayload(payload: unknown): payload is WorkoutDay {
-  if (!isRecord(payload)) {
-    return false
-  }
+	if (!isRecord(payload)) {
+		return false
+	}
 
-  return (
-    typeof payload.id === "string" &&
-    typeof payload.date === "string" &&
-    typeof payload.localOwnerId === "string" &&
-    typeof payload.createdAt === "string" &&
-    typeof payload.updatedAt === "string"
-  )
+	return (
+		typeof payload.id === 'string'
+    && typeof payload.date === 'string'
+    && typeof payload.localOwnerId === 'string'
+    && typeof payload.createdAt === 'string'
+    && typeof payload.updatedAt === 'string'
+	)
 }
 
 function isExerciseEntryPayload(payload: unknown): payload is ExerciseEntry {
-  if (!isRecord(payload)) {
-    return false
-  }
+	if (!isRecord(payload)) {
+		return false
+	}
 
-  return (
-    typeof payload.id === "string" &&
-    typeof payload.exerciseId === "string" &&
-    typeof payload.workoutDate === "string" &&
-    typeof payload.position === "number" &&
-    Array.isArray(payload.setEntries) &&
-    typeof payload.createdAt === "string" &&
-    typeof payload.updatedAt === "string"
-  )
+	return (
+		typeof payload.id === 'string'
+    && typeof payload.exerciseId === 'string'
+    && typeof payload.workoutDate === 'string'
+    && typeof payload.position === 'number'
+    && Array.isArray(payload.setEntries)
+    && typeof payload.createdAt === 'string'
+    && typeof payload.updatedAt === 'string'
+	)
 }
 
 function isUserSettingsPayload(payload: unknown): payload is UserSettings {
-  if (!isRecord(payload)) {
-    return false
-  }
+	if (!isRecord(payload)) {
+		return false
+	}
 
-  return (
-    payload.id === "local" &&
-    (payload.locale === "en" || payload.locale === "ru") &&
-    (payload.themeMode === "system" ||
-      payload.themeMode === "light" ||
-      payload.themeMode === "dark") &&
-    (payload.weightUnit === "kg" || payload.weightUnit === "lb") &&
-    typeof payload.kgStep === "number" &&
-    typeof payload.lbStep === "number" &&
-    typeof payload.repsStep === "number" &&
-    typeof payload.autoRestTimer === "boolean" &&
-    typeof payload.previousResultDefaults === "boolean" &&
-    (payload.restTimerMode === "stopwatch" || payload.restTimerMode === "timer") &&
-    typeof payload.restTimerDurationSeconds === "number" &&
-    typeof payload.restTimerSoundEnabled === "boolean" &&
-    typeof payload.restTimerVibrationEnabled === "boolean" &&
-    typeof payload.restTimerNotificationsEnabled === "boolean" &&
-    typeof payload.restTimerWakeLockEnabled === "boolean" &&
-    typeof payload.restTimerLockScreenEnabled === "boolean" &&
-    typeof payload.updatedAt === "string"
-  )
+	return (
+		payload.id === 'local'
+    && (payload.locale === 'en' || payload.locale === 'ru')
+    && (payload.themeMode === 'system'
+      || payload.themeMode === 'light'
+      || payload.themeMode === 'dark')
+    && (payload.weightUnit === 'kg' || payload.weightUnit === 'lb')
+    && typeof payload.kgStep === 'number'
+    && typeof payload.lbStep === 'number'
+    && typeof payload.repsStep === 'number'
+    && typeof payload.autoRestTimer === 'boolean'
+    && typeof payload.previousResultDefaults === 'boolean'
+    && (payload.restTimerMode === 'stopwatch' || payload.restTimerMode === 'timer')
+    && typeof payload.restTimerDurationSeconds === 'number'
+    && typeof payload.restTimerSoundEnabled === 'boolean'
+    && typeof payload.restTimerVibrationEnabled === 'boolean'
+    && typeof payload.restTimerNotificationsEnabled === 'boolean'
+    && typeof payload.restTimerWakeLockEnabled === 'boolean'
+    && typeof payload.restTimerLockScreenEnabled === 'boolean'
+    && typeof payload.updatedAt === 'string'
+	)
 }
 
 function normalizeStoredUserSettings(
-  settings: UserSettings & { version?: string }
+	settings: UserSettings & {version?: string},
 ): UserSettings {
-  const nextSettings = { ...settings }
+	const nextSettings = {...settings}
 
-  delete nextSettings.version
+	delete nextSettings.version
 
-  return {
-    ...nextSettings,
-    themeMode: nextSettings.themeMode ?? "system",
-    restTimerMode: nextSettings.restTimerMode ?? "stopwatch",
-    restTimerDurationSeconds: nextSettings.restTimerDurationSeconds ?? 90,
-    restTimerSoundEnabled: nextSettings.restTimerSoundEnabled ?? true,
-    restTimerVibrationEnabled: nextSettings.restTimerVibrationEnabled ?? true,
-    restTimerNotificationsEnabled:
+	return {
+		...nextSettings,
+		themeMode: nextSettings.themeMode ?? 'system',
+		restTimerMode: nextSettings.restTimerMode ?? 'stopwatch',
+		restTimerDurationSeconds: nextSettings.restTimerDurationSeconds ?? 90,
+		restTimerSoundEnabled: nextSettings.restTimerSoundEnabled ?? true,
+		restTimerVibrationEnabled: nextSettings.restTimerVibrationEnabled ?? true,
+		restTimerNotificationsEnabled:
       nextSettings.restTimerNotificationsEnabled ?? true,
-    restTimerWakeLockEnabled: nextSettings.restTimerWakeLockEnabled ?? true,
-    restTimerLockScreenEnabled:
+		restTimerWakeLockEnabled: nextSettings.restTimerWakeLockEnabled ?? true,
+		restTimerLockScreenEnabled:
       nextSettings.restTimerLockScreenEnabled ?? false,
-    syncStatus: nextSettings.syncStatus ?? "pending",
-    updatedAt: nextSettings.updatedAt ?? new Date().toISOString(),
-  }
+		syncStatus: nextSettings.syncStatus ?? 'pending',
+		updatedAt: nextSettings.updatedAt ?? new Date().toISOString(),
+	}
 }
 
 function needsUserSettingsNormalization(
-  settings: UserSettings & { version?: string }
+	settings: UserSettings & {version?: string},
 ) {
-  return (
-    "version" in settings ||
-    !settings.themeMode ||
-    !settings.restTimerMode ||
-    typeof settings.restTimerDurationSeconds !== "number" ||
-    typeof settings.restTimerSoundEnabled !== "boolean" ||
-    typeof settings.restTimerVibrationEnabled !== "boolean" ||
-    typeof settings.restTimerNotificationsEnabled !== "boolean" ||
-    typeof settings.restTimerWakeLockEnabled !== "boolean" ||
-    typeof settings.restTimerLockScreenEnabled !== "boolean"
-  )
+	return (
+		'version' in settings
+    || !settings.themeMode
+    || !settings.restTimerMode
+    || typeof settings.restTimerDurationSeconds !== 'number'
+    || typeof settings.restTimerSoundEnabled !== 'boolean'
+    || typeof settings.restTimerVibrationEnabled !== 'boolean'
+    || typeof settings.restTimerNotificationsEnabled !== 'boolean'
+    || typeof settings.restTimerWakeLockEnabled !== 'boolean'
+    || typeof settings.restTimerLockScreenEnabled !== 'boolean'
+	)
 }
 
 function createLocalId(prefix: string) {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return `${prefix}_${crypto.randomUUID()}`
-  }
+	if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+		return `${prefix}_${crypto.randomUUID()}`
+	}
 
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2)}`
+	return `${prefix}_${Date.now()}_${Math.random().toString(36)
+.slice(2)}`
 }
