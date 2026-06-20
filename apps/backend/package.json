@@ -1,20 +1,20 @@
 {
-  "name": "backend",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "node src/server.mjs",
-    "start": "node src/server.mjs",
-    "db:migrate": "node scripts/run-migrations.mjs",
-    "cleanup:lifecycle": "node scripts/cleanup-lifecycle.mjs",
-    "smoke:sync": "node scripts/smoke-sync-postgres.mjs",
-    "smoke:postgres:stack": "node scripts/run-postgres-smoke-stack.mjs",
-    "build": "node --check src/server.mjs",
-    "lint": "node --check src/server.mjs"
-  },
-  "dependencies": {
-    "nodemailer": "^8.0.7",
-    "pg": "^8.20.0"
-  }
+    "name": "backend",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "node src/server.mjs",
+        "start": "node src/server.mjs",
+        "db:migrate": "node scripts/run-migrations.mjs",
+        "cleanup:lifecycle": "node scripts/cleanup-lifecycle.mjs",
+        "smoke:sync": "node scripts/smoke-sync-postgres.mjs",
+        "smoke:postgres:stack": "node scripts/run-postgres-smoke-stack.mjs",
+        "build": "node --check src/server.mjs",
+        "lint": "node --check src/server.mjs"
+    },
+    "dependencies": {
+        "nodemailer": "^8.0.7",
+        "pg": "^8.20.0"
+    }
 }
