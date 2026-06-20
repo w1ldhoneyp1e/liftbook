@@ -147,8 +147,8 @@ rotate_backups() {
 }
 
 build_images() {
-  log "Building api, web and migrate images"
-  "${COMPOSE[@]}" build api web migrate
+  log "Building backend, frontend and migrate images"
+  "${COMPOSE[@]}" build backend frontend migrate
 }
 
 run_migrations() {
@@ -158,7 +158,7 @@ run_migrations() {
 
 deploy_stack() {
   log "Starting application containers"
-  "${COMPOSE[@]}" up -d web api caddy
+  "${COMPOSE[@]}" up -d frontend backend caddy
 }
 
 check_health() {
@@ -184,10 +184,10 @@ check_health() {
 print_failure_context() {
   log "docker compose ps:"
   "${COMPOSE[@]}" ps || true
-  log "Recent api logs:"
-  "${COMPOSE[@]}" logs --tail=100 api || true
-  log "Recent web logs:"
-  "${COMPOSE[@]}" logs --tail=100 web || true
+  log "Recent backend logs:"
+  "${COMPOSE[@]}" logs --tail=100 backend || true
+  log "Recent frontend logs:"
+  "${COMPOSE[@]}" logs --tail=100 frontend || true
   log "Recent caddy logs:"
   "${COMPOSE[@]}" logs --tail=100 caddy || true
 }

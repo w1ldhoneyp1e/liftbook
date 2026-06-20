@@ -1,6 +1,6 @@
-# Liftbook Web
+# Liftbook Frontend
 
-Next.js web application for Liftbook.
+Next.js frontend application for Liftbook.
 
 ## Scripts
 

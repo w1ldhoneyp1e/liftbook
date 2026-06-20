@@ -3,8 +3,8 @@
 .pnpm-store
 node_modules
 apps/*/node_modules
-apps/web/.next
-apps/api/.data
+apps/frontend/.next
+apps/backend/.data
 .data
 dist
 build

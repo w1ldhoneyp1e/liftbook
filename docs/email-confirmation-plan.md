@@ -302,7 +302,7 @@ EN:
 
 ### Frontend route
 
-Новый route в web:
+Новый route в frontend:
 
 - `/auth/verify-email`
 

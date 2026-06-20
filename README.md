@@ -14,13 +14,10 @@ Current status:
 ```bash
 pnpm install
 pnpm dev
-pnpm dev:api
+pnpm dev:backend
 pnpm lint
 pnpm build
 ```
-
-The web application lives in `apps/web`.
-The API skeleton lives in `apps/api`.
 
 ## Docs
 

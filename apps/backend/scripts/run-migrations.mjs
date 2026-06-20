@@ -9,7 +9,7 @@ import pg from 'pg'
 
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const projectRoot = resolve(scriptDir, '../../..')
-const migrationsDir = resolve(projectRoot, 'apps/api/db/migrations')
+const migrationsDir = resolve(projectRoot, 'apps/backend/db/migrations')
 const {Client} = pg
 const client = new Client({
 	connectionString: getDatabaseUrl(),

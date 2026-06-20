@@ -1,4 +1,4 @@
-# Liftbook API
+# Liftbook Backend
 
 Minimal backend skeleton for account and sync contracts.
 
@@ -24,12 +24,12 @@ Current-state sync records are now scoped per user internally, so two different 
 The storage layer already goes through a driver boundary, so a future PostgreSQL adapter can replace the file store without rewriting auth/sync routes.
 
 ```bash
-pnpm --filter api dev
+pnpm --filter backend dev
 ```
 
 Default URL: `http://localhost:4000`.
 
-Default local storage: `apps/api/.data/store.json`.
+Default local storage: `apps/backend/.data/store.json`.
 
 Local PostgreSQL can be started from the repo root:
 
@@ -71,10 +71,10 @@ Today:
 ## PostgreSQL Preparation
 
 - Docker Compose service: [docker-compose.yml](/home/kirill-yashmetov/projects/liftbook/docker-compose.yml)
-- Initial SQL sketch: [apps/api/db/migrations/0001_initial.sql](/home/kirill-yashmetov/projects/liftbook/apps/api/db/migrations/0001_initial.sql)
-- Current-state records migration: [apps/api/db/migrations/0002_sync_records.sql](/home/kirill-yashmetov/projects/liftbook/apps/api/db/migrations/0002_sync_records.sql)
+- Initial SQL sketch: [apps/backend/db/migrations/0001_initial.sql](/home/kirill-yashmetov/projects/liftbook/apps/backend/db/migrations/0001_initial.sql)
+- Current-state records migration: [apps/backend/db/migrations/0002_sync_records.sql](/home/kirill-yashmetov/projects/liftbook/apps/backend/db/migrations/0002_sync_records.sql)
 - Example env file: [.env.example](/home/kirill-yashmetov/projects/liftbook/.env.example)
-- Local migration runner: [apps/api/scripts/run-migrations.mjs](/home/kirill-yashmetov/projects/liftbook/apps/api/scripts/run-migrations.mjs)
+- Local migration runner: [apps/backend/scripts/run-migrations.mjs](/home/kirill-yashmetov/projects/liftbook/apps/backend/scripts/run-migrations.mjs)
 
 The migration runner now keeps a `schema_migrations` table and skips files that were already applied.
 
@@ -100,7 +100,7 @@ Recommended local flow:
 ```bash
 pnpm db:up
 pnpm db:migrate
-LIFTBOOK_STORAGE_DRIVER=postgres pnpm dev:api
-pnpm --filter api smoke:sync
-pnpm --filter api smoke:postgres:stack
+LIFTBOOK_STORAGE_DRIVER=postgres pnpm dev:backend
+pnpm --filter backend smoke:sync
+pnpm --filter backend smoke:postgres:stack
 ```

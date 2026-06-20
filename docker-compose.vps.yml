@@ -14,10 +14,10 @@ services:
       timeout: 5s
       retries: 10
 
-  api:
+  backend:
     build:
       context: .
-      dockerfile: apps/api/Dockerfile
+      dockerfile: apps/backend/Dockerfile
     restart: unless-stopped
     depends_on:
       postgres:
@@ -52,15 +52,15 @@ services:
       timeout: 5s
       retries: 10
 
-  web:
+  frontend:
     build:
       context: .
-      dockerfile: apps/web/Dockerfile
+      dockerfile: apps/frontend/Dockerfile
       args:
         NEXT_PUBLIC_LIFTBOOK_API_URL: ${NEXT_PUBLIC_LIFTBOOK_API_URL:-/api}
     restart: unless-stopped
     depends_on:
-      - api
+      - backend
     expose:
       - "3000"
     healthcheck:
@@ -79,8 +79,8 @@ services:
     image: caddy:2-alpine
     restart: unless-stopped
     depends_on:
-      - web
-      - api
+      - frontend
+      - backend
     environment:
       LIFTBOOK_DOMAIN: ${LIFTBOOK_DOMAIN}
     ports:
@@ -94,7 +94,7 @@ services:
   migrate:
     build:
       context: .
-      dockerfile: apps/api/Dockerfile
+      dockerfile: apps/backend/Dockerfile
     profiles: ["tools"]
     depends_on:
       postgres:

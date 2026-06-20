@@ -2,17 +2,17 @@
 
 Эта инструкция нужна, чтобы запустить Liftbook локально на ноутбуке и открыть приложение с телефона в той же Wi‑Fi сети.
 
-## 1. Запустить API
+## 1. Запустить backend
 
 Нужно, чтобы работали guest account, login/register и sync.
 
 Из корня проекта:
 
 ```bash
-pnpm dev:api
+pnpm dev:backend
 ```
 
-API поднимется на:
+Backend поднимется на:
 
 ```text
 http://localhost:4000
@@ -28,29 +28,29 @@ hostname -I
 
 Используй первый IP из вывода
 
-## 3. Запустить web так, чтобы он был доступен по сети
+## 3. Запустить frontend так, чтобы он был доступен по сети
 
 Нужно:
 
 - открыть dev-сервер не только на `localhost`;
 - сразу прокинуть правильный адрес API для телефона.
 
-Перейди в `apps/web` и запусти:
+Перейди в `apps/frontend` и запусти:
 
 ```bash
-cd apps/web
+cd apps/frontend
 NEXT_PUBLIC_LIFTBOOK_API_URL=http://<IP_НОУТБУКА>:4000 pnpm dev --hostname 0.0.0.0 --port 3000
 ```
 
 Пример:
 ```bash
-cd apps/web
-NEXT_PUBLIC_LIFTBOOK_API_URL=http://http://10.10.206.77:4000 pnpm dev --hostname 0.0.0.0 --port 3000
+cd apps/frontend
+NEXT_PUBLIC_LIFTBOOK_API_URL=http://10.10.206.77:4000 pnpm dev --hostname 0.0.0.0 --port 3000
 ```
 
 ## 4. Открыть приложение с телефона
 
-Нужно, чтобы проверить реальный mobile web UX: жесты, drawer, клавиатуру, safe-area и PWA-поведение.
+Нужно, чтобы проверить реальный mobile frontend UX: жесты, drawer, клавиатуру, safe-area и PWA-поведение.
 
 Телефон должен быть в той же сети Wi‑Fi.
 
@@ -70,7 +70,7 @@ http://<IP_НОУТБУКА>:3001
 
 Нужно, если dev-режим ведет себя нестабильно на телефоне.
 
-В `apps/web`:
+В `apps/frontend`:
 
 ```bash
 NEXT_PUBLIC_LIFTBOOK_API_URL=http://<IP_НОУТБУКА>:4000 pnpm build

@@ -104,8 +104,8 @@ docker compose --env-file .env.vps -f docker-compose.vps.yml up -d --build
 Это поднимет:
 
 - `postgres`
-- `api`
-- `web`
+- `backend`
+- `frontend`
 - `caddy`
 
 ### 8. Проверить состояние контейнеров
@@ -185,9 +185,9 @@ pnpm vps:release
 6. поднимает PostgreSQL;
 7. ждет readiness базы;
 8. делает backup БД в `/var/backups/liftbook`;
-9. собирает свежие образы `api` и `web`;
+9. собирает свежие образы `backend` и `frontend`;
 10. запускает миграции;
-11. поднимает `web`, `api`, `caddy`;
+11. поднимает `frontend`, `backend`, `caddy`;
 12. проверяет `http://127.0.0.1/api/health`.
 
 ---
@@ -200,16 +200,16 @@ pnpm vps:release
 docker compose --env-file .env.vps -f docker-compose.vps.yml logs --tail=100
 ```
 
-### Только API
+### Только backend
 
 ```bash
-docker compose --env-file .env.vps -f docker-compose.vps.yml logs api
+docker compose --env-file .env.vps -f docker-compose.vps.yml logs backend
 ```
 
-### Только web
+### Только frontend
 
 ```bash
-docker compose --env-file .env.vps -f docker-compose.vps.yml logs web
+docker compose --env-file .env.vps -f docker-compose.vps.yml logs frontend
 ```
 
 ### Только caddy
