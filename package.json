@@ -16,11 +16,14 @@
         "vps:migrate": "docker compose --env-file .env.vps -f docker-compose.vps.yml build migrate && docker compose --env-file .env.vps -f docker-compose.vps.yml run --rm migrate",
         "vps:release": "bash scripts/release-vps.sh",
         "build": "pnpm --filter frontend build && pnpm --filter backend build",
-        "lint": "eslint apps/frontend apps/backend --ext .ts,.tsx,.js,.jsx,.mjs --fix"
+        "tools:build": "tsc -p tools/tsconfig.json",
+        "test:eslint-rules": "pnpm tools:build && node --test $(find tools/generated -name '*.test.mjs' -type f)",
+        "lint": "pnpm tools:build && eslint apps/frontend apps/backend --ext .ts,.tsx,.js,.jsx,.mjs --fix"
     },
     "devDependencies": {
         "@eslint/compat": "^1.2.4",
         "@stylistic/eslint-plugin": "^2.12.1",
+        "@types/node": "^20.19.39",
         "@typescript-eslint/eslint-plugin": "^8.38.0",
         "@typescript-eslint/parser": "^8.38.0",
         "eslint": "^9",

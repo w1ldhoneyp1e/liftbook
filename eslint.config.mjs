@@ -10,6 +10,7 @@ import reactHooksPlugin from 'eslint-plugin-react-hooks'
 import sortExportPlugin from 'eslint-plugin-sort-exports'
 import eslintPluginYml from 'eslint-plugin-yml'
 import globals from 'globals'
+import localPlugin from './tools/generated/eslint-rules/plugin.mjs'
 
 function getFixedBrowserGlobals() {
 	// https://github.com/sindresorhus/globals/issues/239
@@ -24,7 +25,7 @@ function getFixedBrowserGlobals() {
 
 export default [
 	{
-		files: ['**/*.{js,mjs,cjs,ts,jsx,tsx,json,yaml,yml}'],
+		files: ['**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx,json,yaml,yml}'],
 	},
 	{
 		ignores: [
@@ -428,13 +429,14 @@ export default [
 	{
 		plugins: {
 			'import': importPlugin,
+			'local': localPlugin,
 		},
 		rules: {
 			'import/consistent-type-specifier-style': ['error',
 				'prefer-inline'],
 			'import/export': 'error',
-			'import/exports-last': 'error',
-			'import/group-exports': 'error',
+			'import/exports-last': 'off',
+			'import/group-exports': 'off',
 			'import/newline-after-import': 'error',
 			'import/no-absolute-path': 'error',
 			'import/no-duplicates': ['error',
@@ -455,6 +457,7 @@ export default [
 					},
 					'warnOnUnassignedImports': true,
 				}],
+			'local/consolidate-named-exports': 'error',
 		},
 	},
 	{
@@ -473,6 +476,8 @@ export default [
 	{
 		files: [
 			'**/*.ts',
+			'**/*.mts',
+			'**/*.cts',
 			'**/*.tsx',
 			'**/*.jsx',
 		],
