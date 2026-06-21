@@ -3,7 +3,7 @@ import {en} from './locales/en'
 import {ru} from './locales/ru'
 import {type Locale, type MuscleGroupId} from '@/shared/domain/types'
 
-export type Dictionary = {
+type Dictionary = {
 	actions: {
 		add: string,
 		addExercise: string,
@@ -115,11 +115,20 @@ export type Dictionary = {
 	muscleGroups: Record<MuscleGroupId, string>,
 }
 
-export const dictionaries: Record<Locale, Dictionary> = {
+const dictionaries: Record<Locale, Dictionary> = {
 	en,
 	ru,
 }
 
-export function getDictionary(locale: Locale) {
+function getDictionary(locale: Locale) {
 	return dictionaries[locale]
+}
+
+export type {
+	Dictionary,
+}
+
+export {
+	dictionaries,
+	getDictionary,
 }

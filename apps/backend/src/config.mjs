@@ -1,7 +1,7 @@
 const defaultPort = 4000
 const defaultSyncPullPageSize = 100
 
-export function loadConfig(env = process.env) {
+function loadConfig(env = process.env) {
 	const port = parsePort(env.PORT)
 	const syncPullPageSize = parsePositiveInteger(
 		env.LIFTBOOK_SYNC_PULL_PAGE_SIZE,
@@ -91,4 +91,8 @@ function parsePortLike(value, fallback) {
 	}
 
 	return parsed
+}
+
+export {
+	loadConfig,
 }

@@ -41,7 +41,7 @@ type RestTimerRowProps = {
 	onUpdateWakeLockEnabled: (enabled: boolean) => void,
 }
 
-export function RestTimerRow({
+function RestTimerRow({
 	dictionary,
 	durationSeconds,
 	mode,
@@ -297,4 +297,8 @@ function ToggleRow({
 			</div>
 		</button>
 	)
+}
+
+export {
+	RestTimerRow,
 }

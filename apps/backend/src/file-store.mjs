@@ -17,13 +17,13 @@ const defaultStoreState = {
 	syncRecords: [],
 }
 
-export async function createFileStore() {
+async function createFileStore() {
 	return createFileStoreFromPath(
 		resolve(process.cwd(), process.env.LIFTBOOK_DATA_FILE ?? '.data/store.json'),
 	)
 }
 
-export async function createFileStoreFromPath(filePath) {
+async function createFileStoreFromPath(filePath) {
 	let state = await loadState(filePath)
 	let writeChain = Promise.resolve()
 
@@ -586,4 +586,9 @@ function toPublicUser(user) {
 		createdAt: user.createdAt,
 		updatedAt: user.updatedAt,
 	}
+}
+
+export {
+	createFileStore,
+	createFileStoreFromPath,
 }

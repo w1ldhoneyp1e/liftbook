@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 
-export type OverlayLayer = 'drawer' | 'popover' | 'popup' | 'tooltip'
+type OverlayLayer = 'drawer' | 'popover' | 'popup' | 'tooltip'
 
 const OVERLAY_ROOT_ID = 'liftbook-overlay-root'
 const OVERLAY_LAYER_ORDER: OverlayLayer[] = [
@@ -41,7 +41,7 @@ function getOverlayLayerContainer(layer: OverlayLayer) {
 	return root.querySelector<HTMLElement>(`[data-overlay-layer="${layer}"]`)
 }
 
-export function useOverlayLayerContainer(layer: OverlayLayer) {
+function useOverlayLayerContainer(layer: OverlayLayer) {
 	return React.useSyncExternalStore(
 		() => () => {},
 		() =>
@@ -50,4 +50,12 @@ export function useOverlayLayerContainer(layer: OverlayLayer) {
 				: getOverlayLayerContainer(layer) ?? null,
 		() => null,
 	)
+}
+
+export type {
+	OverlayLayer,
+}
+
+export {
+	useOverlayLayerContainer,
 }

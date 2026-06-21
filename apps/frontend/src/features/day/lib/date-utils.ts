@@ -5,10 +5,10 @@ import {
 } from '@/shared/domain/types'
 import {type Dictionary} from '@/shared/i18n/dictionaries'
 
-export const DATE_STRIP_DAYS_BACK = 14
-export const DATE_STRIP_DAYS_FORWARD = 7
+const DATE_STRIP_DAYS_BACK = 14
+const DATE_STRIP_DAYS_FORWARD = 7
 
-export type DateStripItem = {
+type DateStripItem = {
 	date: string,
 	dateKey: string,
 	day: string,
@@ -17,7 +17,7 @@ export type DateStripItem = {
 	state: DateState,
 }
 
-export function toDateKey(date: Date) {
+function toDateKey(date: Date) {
 	const year = date.getFullYear()
 	const month = String(date.getMonth() + 1).padStart(2, '0')
 	const day = String(date.getDate()).padStart(2, '0')
@@ -25,13 +25,13 @@ export function toDateKey(date: Date) {
 	return `${year}-${month}-${day}`
 }
 
-export function shiftDateKey(dateKey: string, dayDelta: number) {
+function shiftDateKey(dateKey: string, dayDelta: number) {
 	const nextDate = new Date(`${dateKey}T12:00:00`)
 	nextDate.setDate(nextDate.getDate() + dayDelta)
 	return toDateKey(nextDate)
 }
 
-export function createDateStrip(
+function createDateStrip(
 	selectedDate: string,
 	locale: Locale,
 	dateMuscleGroups: Record<string, MuscleGroupId[]> = {},
@@ -58,7 +58,7 @@ export function createDateStrip(
 	)
 }
 
-export function getDateState(
+function getDateState(
 	dateKey: string,
 	todayKey: string,
 ): DateState {
@@ -71,7 +71,7 @@ export function getDateState(
 		: 'future'
 }
 
-export function getDateStatusLabel(
+function getDateStatusLabel(
 	state: DateState,
 	dictionary: Dictionary,
 	selectedDate: string,
@@ -83,7 +83,7 @@ export function getDateStatusLabel(
 	return selectedDate
 }
 
-export function getDateTone(state: DateState) {
+function getDateTone(state: DateState) {
 	if (state === 'today') {
 		return {
 			headerClassName:
@@ -107,7 +107,7 @@ export function getDateTone(state: DateState) {
 	}
 }
 
-export function getDateButtonClassName(
+function getDateButtonClassName(
 	state: DateState,
 	selected: boolean,
 ) {
@@ -132,4 +132,20 @@ export function getDateButtonClassName(
 	}
 
 	return 'bg-zinc-50 text-zinc-500 dark:bg-zinc-900/25 dark:text-zinc-400'
+}
+
+export type {
+	DateStripItem,
+}
+
+export {
+	DATE_STRIP_DAYS_BACK,
+	DATE_STRIP_DAYS_FORWARD,
+	toDateKey,
+	shiftDateKey,
+	createDateStrip,
+	getDateState,
+	getDateStatusLabel,
+	getDateTone,
+	getDateButtonClassName,
 }

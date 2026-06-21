@@ -6,7 +6,7 @@ type MuscleGroupColor = {
 	textClassName: string,
 }
 
-export const muscleGroupColors: Record<MuscleGroupId, MuscleGroupColor> = {
+const muscleGroupColors: Record<MuscleGroupId, MuscleGroupColor> = {
 	chest: {
 		badgeClassName: 'bg-rose-100 text-rose-700 dark:bg-rose-950/45 dark:text-rose-300',
 		dotClassName: 'bg-rose-500',
@@ -64,6 +64,11 @@ export const muscleGroupColors: Record<MuscleGroupId, MuscleGroupColor> = {
 	},
 }
 
-export function getMuscleGroupColor(muscleGroupId: MuscleGroupId) {
+function getMuscleGroupColor(muscleGroupId: MuscleGroupId) {
 	return muscleGroupColors[muscleGroupId]
+}
+
+export {
+	muscleGroupColors,
+	getMuscleGroupColor,
 }

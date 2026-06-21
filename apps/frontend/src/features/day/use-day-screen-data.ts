@@ -57,7 +57,7 @@ type DaySnapshot = {
 
 const DAY_WINDOW_RADIUS = 7
 
-export function useDayScreenData(date: string) {
+function useDayScreenData(date: string) {
 	const [state, setState] = useState<DayScreenData>({
 		accountSession: null,
 		resolvedDate: null,
@@ -1337,4 +1337,8 @@ function createLocalId(prefix: string) {
 
 	return `${prefix}_${Date.now()}_${Math.random().toString(36)
 .slice(2)}`
+}
+
+export {
+	useDayScreenData,
 }

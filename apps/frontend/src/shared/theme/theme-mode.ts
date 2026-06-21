@@ -1,8 +1,8 @@
 import {type ThemeMode} from '@/shared/domain/types'
 
-export const THEME_MODE_STORAGE_KEY = 'liftbook-theme-mode'
+const THEME_MODE_STORAGE_KEY = 'liftbook-theme-mode'
 
-export function resolveThemeMode(mode: ThemeMode) {
+function resolveThemeMode(mode: ThemeMode) {
 	if (mode !== 'system') {
 		return mode
 	}
@@ -16,7 +16,7 @@ export function resolveThemeMode(mode: ThemeMode) {
 		: 'light'
 }
 
-export function applyThemeMode(mode: ThemeMode) {
+function applyThemeMode(mode: ThemeMode) {
 	if (typeof document === 'undefined') {
 		return
 	}
@@ -36,7 +36,7 @@ export function applyThemeMode(mode: ThemeMode) {
 	}
 }
 
-export function getStoredThemeMode(): ThemeMode {
+function getStoredThemeMode(): ThemeMode {
 	if (typeof window === 'undefined') {
 		return 'system'
 	}
@@ -48,10 +48,18 @@ export function getStoredThemeMode(): ThemeMode {
 		: 'system'
 }
 
-export function persistThemeMode(mode: ThemeMode) {
+function persistThemeMode(mode: ThemeMode) {
 	if (typeof window === 'undefined') {
 		return
 	}
 
 	window.localStorage.setItem(THEME_MODE_STORAGE_KEY, mode)
+}
+
+export {
+	THEME_MODE_STORAGE_KEY,
+	resolveThemeMode,
+	applyThemeMode,
+	getStoredThemeMode,
+	persistThemeMode,
 }

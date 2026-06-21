@@ -7,7 +7,7 @@ import {
 	type WorkoutDay,
 } from '@/shared/domain/types'
 
-export class LiftbookDb extends Dexie {
+class LiftbookDb extends Dexie {
 	exercises!: EntityTable<Exercise, 'id'>
 	workoutDays!: EntityTable<WorkoutDay, 'id'>
 	exerciseEntries!: EntityTable<ExerciseEntry, 'id'>
@@ -47,4 +47,9 @@ export class LiftbookDb extends Dexie {
 	}
 }
 
-export const db = new LiftbookDb()
+const db = new LiftbookDb()
+
+export {
+	LiftbookDb,
+	db,
+}

@@ -1,14 +1,14 @@
 import {type Locale} from '@/shared/domain/types'
 
-export type SyncEntityType =
+type SyncEntityType =
   | 'exercise'
   | 'workoutDay'
   | 'exerciseEntry'
   | 'userSettings'
 
-export type SyncOperation = 'upsert' | 'delete'
+type SyncOperation = 'upsert' | 'delete'
 
-export type SyncChange = {
+type SyncChange = {
 	localId: string,
 	entityType: SyncEntityType,
 	operation: SyncOperation,
@@ -79,7 +79,7 @@ type PullSyncResponse = {
 const apiBaseUrl
   = process.env.NEXT_PUBLIC_LIFTBOOK_API_URL ?? 'http://localhost:4000'
 
-export async function createGuestAccount(locale: Locale) {
+async function createGuestAccount(locale: Locale) {
 	const response = await fetch(`${apiBaseUrl}/v1/auth/guest`, {
 		method: 'POST',
 		headers: {
@@ -98,7 +98,7 @@ export async function createGuestAccount(locale: Locale) {
 	return (await response.json()) as GuestAccountResponse
 }
 
-export async function registerAccount({
+async function registerAccount({
 	accessToken,
 	email,
 	locale,
@@ -132,7 +132,7 @@ export async function registerAccount({
 	return (await response.json()) as AuthAccountResponse
 }
 
-export async function loginAccount({
+async function loginAccount({
 	email,
 	password,
 }: {
@@ -158,7 +158,7 @@ export async function loginAccount({
 	return (await response.json()) as AuthAccountResponse
 }
 
-export async function resendVerificationEmail(accessToken: string) {
+async function resendVerificationEmail(accessToken: string) {
 	const response = await fetch(`${apiBaseUrl}/v1/auth/verify-email/resend`, {
 		method: 'POST',
 		headers: {
@@ -179,7 +179,7 @@ export async function resendVerificationEmail(accessToken: string) {
 	}
 }
 
-export async function verifyEmailToken(token: string) {
+async function verifyEmailToken(token: string) {
 	const response = await fetch(`${apiBaseUrl}/v1/auth/verify-email`, {
 		method: 'POST',
 		headers: {
@@ -197,7 +197,7 @@ export async function verifyEmailToken(token: string) {
 	return (await response.json()) as VerifyEmailResponse
 }
 
-export async function pushSyncChanges({
+async function pushSyncChanges({
 	accessToken,
 	changes,
 	cursor,
@@ -226,7 +226,7 @@ export async function pushSyncChanges({
 	return (await response.json()) as PushSyncResponse
 }
 
-export async function pullSyncChanges({
+async function pullSyncChanges({
 	accessToken,
 	cursor,
 }: {
@@ -283,4 +283,20 @@ async function getRequestErrorMessage(response: Response, fallback: string) {
 	catch {
 		return `${fallback}: ${response.status}`
 	}
+}
+
+export type {
+	SyncEntityType,
+	SyncOperation,
+	SyncChange,
+}
+
+export {
+	createGuestAccount,
+	registerAccount,
+	loginAccount,
+	resendVerificationEmail,
+	verifyEmailToken,
+	pushSyncChanges,
+	pullSyncChanges,
 }

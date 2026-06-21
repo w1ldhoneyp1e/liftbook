@@ -1,7 +1,7 @@
 const defaultPort = 4000
 const maxBodySizeBytes = 1024 * 1024
 
-export function setCorsHeaders(response) {
+function setCorsHeaders(response) {
 	response.setHeader('Access-Control-Allow-Origin', '*')
 	response.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
 	response.setHeader(
@@ -10,7 +10,7 @@ export function setCorsHeaders(response) {
 	)
 }
 
-export function getRequestOrigin(request) {
+function getRequestOrigin(request) {
 	const host = request.headers.host ?? `localhost:${defaultPort}`
 	const forwardedProto = request.headers['x-forwarded-proto']
 	const protocol
@@ -20,7 +20,7 @@ export function getRequestOrigin(request) {
 	return `${protocol}://${host}`
 }
 
-export async function readJsonBody(request) {
+async function readJsonBody(request) {
 	const chunks = []
 	let bodySize = 0
 
@@ -41,9 +41,16 @@ export async function readJsonBody(request) {
 	return JSON.parse(Buffer.concat(chunks).toString('utf8'))
 }
 
-export function sendJson(response, statusCode, payload) {
+function sendJson(response, statusCode, payload) {
 	response.writeHead(statusCode, {
 		'Content-Type': 'application/json; charset=utf-8',
 	})
 	response.end(JSON.stringify(payload, null, 2))
+}
+
+export {
+	setCorsHeaders,
+	getRequestOrigin,
+	readJsonBody,
+	sendJson,
 }

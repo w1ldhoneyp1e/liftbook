@@ -6,7 +6,7 @@ import {
 	timingSafeEqual,
 } from 'node:crypto'
 
-export function createAuthService(store, options = {}) {
+function createAuthService(store, options = {}) {
 	const mailService = options.mailService
 	const appOrigin = options.appOrigin ?? null
 
@@ -395,4 +395,8 @@ async function issueVerificationEmail({
 
 function resolveAppOrigin(appOrigin, requestOrigin) {
 	return appOrigin ?? requestOrigin
+}
+
+export {
+	createAuthService,
 }

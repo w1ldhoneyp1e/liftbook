@@ -1,6 +1,6 @@
 import {type Exercise, type MuscleGroupId} from './types'
 
-export const muscleGroups: MuscleGroupId[] = [
+const muscleGroups: MuscleGroupId[] = [
 	'chest',
 	'back',
 	'legs',
@@ -14,7 +14,7 @@ export const muscleGroups: MuscleGroupId[] = [
 	'other',
 ]
 
-export const starterExercises: Exercise[] = [
+const starterExercises: Exercise[] = [
 	exercise('bench_press', 'Bench press', 'Жим лежа', ['chest', 'triceps']),
 	exercise('incline_dumbbell_press', 'Incline dumbbell press', 'Жим гантелей на наклонной', ['chest']),
 	exercise('dumbbell_bench_press', 'Dumbbell bench press', 'Жим гантелей лежа', ['chest', 'triceps']),
@@ -195,4 +195,9 @@ function exercise(
 		trackingMode,
 		builtIn: true,
 	}
+}
+
+export {
+	muscleGroups,
+	starterExercises,
 }

@@ -41,7 +41,7 @@ type SettingsDrawerProps = {
 	) => void,
 }
 
-export function SettingsDrawer({
+function SettingsDrawer({
 	accountSession,
 	dictionary,
 	open,
@@ -323,4 +323,8 @@ function SettingsSwitchRow({
 			/>
 		</div>
 	)
+}
+
+export {
+	SettingsDrawer,
 }

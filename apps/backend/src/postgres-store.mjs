@@ -3,7 +3,7 @@ import pg from 'pg'
 
 const {Pool} = pg
 
-export async function createPostgresStore(options) {
+async function createPostgresStore(options) {
 	const databaseUrl = options?.databaseUrl ?? null
 
 	if (!databaseUrl) {
@@ -742,4 +742,8 @@ function toCutoff(now, retentionDays) {
 		? parsedDays
 		: 30
 	return new Date(new Date(now).getTime() - days * 24 * 60 * 60 * 1000)
+}
+
+export {
+	createPostgresStore,
 }

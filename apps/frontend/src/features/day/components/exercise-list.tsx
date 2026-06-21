@@ -42,7 +42,7 @@ type ExerciseListProps = {
 	) => Promise<void> | void,
 }
 
-export const ExerciseList = memo(({
+const ExerciseList = memo(({
 	dictionary,
 	exerciseEntries,
 	exercisesById,
@@ -131,3 +131,7 @@ export const ExerciseList = memo(({
 })
 
 ExerciseList.displayName = 'ExerciseList'
+
+export {
+	ExerciseList,
+}

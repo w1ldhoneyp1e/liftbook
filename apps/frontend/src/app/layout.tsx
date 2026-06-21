@@ -3,7 +3,7 @@ import './globals.css'
 import {PwaRegistrar} from './pwa-registrar'
 import {ThemeController} from './theme-controller'
 
-export const metadata: Metadata = {
+const metadata: Metadata = {
 	applicationName: 'Liftbook',
 	title: 'Liftbook',
 	description: 'Mobile-first offline workout journal',
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 	},
 }
 
-export const viewport: Viewport = {
+const viewport: Viewport = {
 	themeColor: '#ecfdf5',
 	width: 'device-width',
 	initialScale: 1,
@@ -43,4 +43,9 @@ export default function RootLayout({
 			</body>
 		</html>
 	)
+}
+
+export {
+	metadata,
+	viewport,
 }

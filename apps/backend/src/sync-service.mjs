@@ -8,7 +8,7 @@ const supportedEntityTypes = [
 ]
 const maxPushBatchSize = 50
 
-export function createSyncService(store, options = {}) {
+function createSyncService(store, options = {}) {
 	const pullPageSize = Math.max(1, Number(options.pullPageSize ?? 100))
 
 	return {
@@ -188,4 +188,8 @@ function isValidIsoTimestamp(value) {
 
 	const parsed = Date.parse(value)
 	return Number.isFinite(parsed)
+}
+
+export {
+	createSyncService,
 }
