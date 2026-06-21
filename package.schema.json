@@ -1,0 +1,56 @@
+{
+    "$id": "package.schema.json",
+    "title": "package.json",
+    "type": "object",
+    "additionalProperties": true,
+    "properties": {
+        "$schema": {
+            "type": "string"
+        },
+        "name": {
+            "type": "string"
+        },
+        "version": {
+            "type": "string"
+        },
+        "private": {
+            "type": "boolean"
+        },
+        "type": {
+            "type": "string",
+            "enum": [
+                "commonjs",
+                "module"
+            ]
+        },
+        "packageManager": {
+            "type": "string"
+        },
+        "scripts": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "string"
+            }
+        },
+        "dependencies": {
+            "$ref": "#/$defs/dependencyMap"
+        },
+        "devDependencies": {
+            "$ref": "#/$defs/dependencyMap"
+        },
+        "peerDependencies": {
+            "$ref": "#/$defs/dependencyMap"
+        },
+        "optionalDependencies": {
+            "$ref": "#/$defs/dependencyMap"
+        }
+    },
+    "$defs": {
+        "dependencyMap": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "string"
+            }
+        }
+    }
+}
