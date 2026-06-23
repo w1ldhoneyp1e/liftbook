@@ -58,15 +58,12 @@ export function DayScreen() {
 	)
 	const [today, setToday] = useState(INITIAL_DATE_KEY)
 	const [selectedDate, setSelectedDate] = useState(INITIAL_DATE_KEY)
-	const [carouselCenterDate, setCarouselCenterDate]
-    = useState(INITIAL_DATE_KEY)
-	const [calendarCenterDate, setCalendarCenterDate]
-    = useState(INITIAL_DATE_KEY)
+	const [carouselCenterDate, setCarouselCenterDate] = useState(INITIAL_DATE_KEY)
+	const [calendarCenterDate, setCalendarCenterDate] = useState(INITIAL_DATE_KEY)
 	const [visualDate, setVisualDate] = useState(INITIAL_DATE_KEY)
 	const [calendarOpen, setCalendarOpen] = useState(false)
 	const [exercisePickerOpen, setExercisePickerOpen] = useState(false)
-	const [highlightedExerciseEntryId, setHighlightedExerciseEntryId]
-    = useState<string | null>(null)
+	const [highlightedExerciseEntryId, setHighlightedExerciseEntryId] = useState<string | null>(null)
 	const [settingsOpen, setSettingsOpen] = useState(false)
 	const [stopwatchSeconds, setStopwatchSeconds] = useState(0)
 	const [timerElapsedSeconds, setTimerElapsedSeconds] = useState(0)
@@ -113,18 +110,15 @@ export function DayScreen() {
 	const repsStep = settings?.repsStep ?? 1
 	const restTimerMode = settings?.restTimerMode ?? 'stopwatch'
 	const restTimerDurationSeconds = settings?.restTimerDurationSeconds ?? 90
-	const restTimerNotificationsEnabled
-    = settings?.restTimerNotificationsEnabled ?? true
+	const restTimerNotificationsEnabled = settings?.restTimerNotificationsEnabled ?? true
 	const restTimerSoundEnabled = settings?.restTimerSoundEnabled ?? true
 	const restTimerVibrationEnabled = settings?.restTimerVibrationEnabled ?? true
 	const restTimerWakeLockEnabled = settings?.restTimerWakeLockEnabled ?? true
-	const restTimerLockScreenEnabled
-    = settings?.restTimerLockScreenEnabled ?? false
+	const restTimerLockScreenEnabled = settings?.restTimerLockScreenEnabled ?? false
 	const restTimerRunning = runningTimerMode === restTimerMode
-	const restSeconds
-    = restTimerMode === 'timer'
-    	? timerElapsedSeconds
-    	: stopwatchSeconds
+	const restSeconds = restTimerMode === 'timer'
+		? timerElapsedSeconds
+		: stopwatchSeconds
 	const days = useMemo(
 		() => createDateStrip(calendarCenterDate, locale, dateMuscleGroups, today),
 		[calendarCenterDate, dateMuscleGroups, locale, today],
@@ -278,10 +272,9 @@ export function DayScreen() {
 			setStopwatchSeconds(0)
 		})
 
-		const mediaTitle
-      = restTimerMode === 'timer'
-      	? `${dictionary.actions.timer}: ${Math.max(restTimerDurationSeconds - restSeconds, 0)}s`
-      	: `${dictionary.actions.stopwatch}: ${restSeconds}s`
+		const mediaTitle = restTimerMode === 'timer'
+			? `${dictionary.actions.timer}: ${Math.max(restTimerDurationSeconds - restSeconds, 0)}s`
+			: `${dictionary.actions.stopwatch}: ${restSeconds}s`
 
 		navigator.mediaSession.metadata = new MediaMetadata({
 			title: mediaTitle,
@@ -787,12 +780,11 @@ export function DayScreen() {
 		const centerOffset = carouselRef.current.scrollLeft - carouselWidth * 2
 		const isMoving = Math.abs(centerOffset) > 4
 		const progress = centerOffset / carouselWidth
-		const nextVisualDate
-      = progress > 0.35
-      	? shiftDateKey(carouselCenterDate, 1)
-      	: progress < -0.35
-      		? shiftDateKey(carouselCenterDate, -1)
-      		: carouselCenterDate
+		const nextVisualDate = progress > 0.35
+			? shiftDateKey(carouselCenterDate, 1)
+			: progress < -0.35
+				? shiftDateKey(carouselCenterDate, -1)
+				: carouselCenterDate
 
 		setIsDayCarouselMoving(isMoving)
 		setVisualDate(currentDate =>
@@ -849,8 +841,7 @@ export function DayScreen() {
 			return
 		}
 
-		const scrollProgress
-      = (carouselRef.current.scrollLeft - carouselWidth * 2) / carouselWidth
+		const scrollProgress = (carouselRef.current.scrollLeft - carouselWidth * 2) / carouselWidth
 		const dragDistance = touchLastXRef.current - touchStartXRef.current
 		const dragDuration = Math.max(
 			touchLastTimeRef.current - touchStartTimeRef.current,

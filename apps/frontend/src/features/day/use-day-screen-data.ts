@@ -195,8 +195,7 @@ function useDayScreenData(date: string) {
 					...currentState.daySnapshots,
 					...daySnapshots,
 				}
-				const currentSnapshot
-          = nextDaySnapshots[date] ?? createEmptyDaySnapshot(date)
+				const currentSnapshot = nextDaySnapshots[date] ?? createEmptyDaySnapshot(date)
 
 				return {
 					accountSession: accountSession ?? null,
@@ -415,24 +414,22 @@ function useDayScreenData(date: string) {
 				insertAtStart?: boolean,
 			} = {},
 		) => {
-			const [settings, existingDay, entriesForDate, previousEntries]
-        = await Promise.all([
-        	db.userSettings.get('local'),
-        	db.workoutDays.where('date').equals(date)
-        		.first(),
-        	db.exerciseEntries
-        		.where('workoutDate')
-        		.equals(date)
-        		.and(entry => !entry.deletedAt)
-        		.toArray(),
-        	db.exerciseEntries.where('exerciseId').equals(exerciseId)
-        		.toArray(),
-        ])
+			const [settings, existingDay, entriesForDate, previousEntries] = await Promise.all([
+				db.userSettings.get('local'),
+				db.workoutDays.where('date').equals(date)
+					.first(),
+				db.exerciseEntries
+					.where('workoutDate')
+					.equals(date)
+					.and(entry => !entry.deletedAt)
+					.toArray(),
+				db.exerciseEntries.where('exerciseId').equals(exerciseId)
+					.toArray(),
+			])
 
 			const now = new Date().toISOString()
 			const insertAtStart = options.insertAtStart === true
-			const workoutDay
-        = existingDay
+			const workoutDay = existingDay
         ?? ({
         	id: `day_${date}`,
         	date,
@@ -442,24 +439,22 @@ function useDayScreenData(date: string) {
         	updatedAt: now,
         } satisfies WorkoutDay)
 
-			const previousResult
-        = settings?.previousResultDefaults === false
-        	? undefined
-        	: previousEntries
-        		.filter(entry => !entry.deletedAt && entry.workoutDate < date)
-        		.sort((a, b) => b.workoutDate.localeCompare(a.workoutDate))[0]
+			const previousResult = settings?.previousResultDefaults === false
+				? undefined
+				: previousEntries
+					.filter(entry => !entry.deletedAt && entry.workoutDate < date)
+					.sort((a, b) => b.workoutDate.localeCompare(a.workoutDate))[0]
 
-			const setEntries
-        = previousResult?.setEntries
-        	.filter(setEntry => !setEntry.deletedAt)
-        	.map(setEntry => ({
-        		...setEntry,
-        		id: createLocalId('set'),
-        		deletedAt: undefined,
-        		previousResultSourceSetId: setEntry.id,
-        		createdAt: now,
-        		updatedAt: now,
-        	})) ?? []
+			const setEntries = previousResult?.setEntries
+				.filter(setEntry => !setEntry.deletedAt)
+				.map(setEntry => ({
+					...setEntry,
+					id: createLocalId('set'),
+					deletedAt: undefined,
+					previousResultSourceSetId: setEntry.id,
+					createdAt: now,
+					updatedAt: now,
+				})) ?? []
 
 			const exerciseEntry: ExerciseEntry = {
 				id: createLocalId('entry'),
@@ -515,10 +510,9 @@ function useDayScreenData(date: string) {
 				return
 			}
 
-			const nextMuscleGroupIds
-        = muscleGroupIds.length > 0
-        	? muscleGroupIds
-        	: (['other'] as MuscleGroupId[])
+			const nextMuscleGroupIds = muscleGroupIds.length > 0
+				? muscleGroupIds
+				: (['other'] as MuscleGroupId[])
 
 			const exerciseId = createLocalId('exercise')
 			const now = new Date().toISOString()
@@ -835,15 +829,14 @@ function createEmptyDaySnapshot(date: string): DaySnapshot {
 }
 
 async function getSyncSummary() {
-	const [customExercises, workoutDays, exerciseEntries, userSettings]
-    = await Promise.all([
-    	db.exercises
-    		.filter(exercise => !exercise.builtIn)
-    		.toArray(),
-    	db.workoutDays.toArray(),
-    	db.exerciseEntries.toArray(),
-    	db.userSettings.toArray(),
-    ])
+	const [customExercises, workoutDays, exerciseEntries, userSettings] = await Promise.all([
+		db.exercises
+			.filter(exercise => !exercise.builtIn)
+			.toArray(),
+		db.workoutDays.toArray(),
+		db.exerciseEntries.toArray(),
+		db.userSettings.toArray(),
+	])
 
 	const syncableRecords = [
 		...customExercises,

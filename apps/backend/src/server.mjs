@@ -146,10 +146,9 @@ const server = createServer(async (request, response) => {
 		sendJson(response, 404, {error: 'Route not found'})
 	}
 	catch (error) {
-		const statusCode
-      = error && typeof error === 'object' && 'statusCode' in error
-      	? Number(error.statusCode) || 500
-      	: 500
+		const statusCode = error && typeof error === 'object' && 'statusCode' in error
+			? Number(error.statusCode) || 500
+			: 500
 
 		sendJson(response, statusCode, {
 			error: error instanceof Error

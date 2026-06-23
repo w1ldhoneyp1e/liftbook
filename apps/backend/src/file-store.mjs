@@ -104,10 +104,9 @@ async function createFileStoreFromPath(filePath) {
 				throw new Error('Email is already registered')
 			}
 
-			const nextUser
-        = existingUserId
-        	? state.users.find(user => user.id === existingUserId)
-        	: null
+			const nextUser = existingUserId
+				? state.users.find(user => user.id === existingUserId)
+				: null
 
 			const user = nextUser
 				? {

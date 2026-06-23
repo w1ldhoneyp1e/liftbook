@@ -40,18 +40,15 @@ export function createMailService(config) {
 			async sendVerificationEmail({
 				email, verifyUrl, locale,
 			}) {
-				const subject
-          = locale === 'ru'
-          	? 'Подтвердите почту в Liftbook'
-          	: 'Confirm your Liftbook email'
-				const text
-          = locale === 'ru'
-          	? `Подтвердите почту для Liftbook: ${verifyUrl}`
-          	: `Confirm your email for Liftbook: ${verifyUrl}`
-				const html
-          = locale === 'ru'
-          	? `<p>Подтвердите почту для Liftbook.</p><p><a href="${verifyUrl}">${verifyUrl}</a></p>`
-          	: `<p>Confirm your email for Liftbook.</p><p><a href="${verifyUrl}">${verifyUrl}</a></p>`
+				const subject = locale === 'ru'
+					? 'Подтвердите почту в Liftbook'
+					: 'Confirm your Liftbook email'
+				const text = locale === 'ru'
+					? `Подтвердите почту для Liftbook: ${verifyUrl}`
+					: `Confirm your email for Liftbook: ${verifyUrl}`
+				const html = locale === 'ru'
+					? `<p>Подтвердите почту для Liftbook.</p><p><a href="${verifyUrl}">${verifyUrl}</a></p>`
+					: `<p>Confirm your email for Liftbook.</p><p><a href="${verifyUrl}">${verifyUrl}</a></p>`
 
 				await transport.sendMail({
 					from: `${config.mail.fromName} <${config.mail.fromEmail}>`,

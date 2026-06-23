@@ -13,10 +13,9 @@ function setCorsHeaders(response) {
 function getRequestOrigin(request) {
 	const host = request.headers.host ?? `localhost:${defaultPort}`
 	const forwardedProto = request.headers['x-forwarded-proto']
-	const protocol
-    = typeof forwardedProto === 'string' && forwardedProto.length > 0
-    	? forwardedProto.split(',')[0]
-    	: 'http'
+	const protocol = typeof forwardedProto === 'string' && forwardedProto.length > 0
+		? forwardedProto.split(',')[0]
+		: 'http'
 	return `${protocol}://${host}`
 }
 

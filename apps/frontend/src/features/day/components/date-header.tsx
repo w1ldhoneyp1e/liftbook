@@ -103,8 +103,7 @@ export function DateHeader({
 
 		const containerRect = container.getBoundingClientRect()
 		const buttonRect = selectedButton.getBoundingClientRect()
-		const targetLeft
-      = container.scrollLeft
+		const targetLeft = container.scrollLeft
       + buttonRect.left
       - containerRect.left
       - (container.clientWidth - selectedButton.offsetWidth) / 2
@@ -142,8 +141,7 @@ export function DateHeader({
 		const containerRect = container.getBoundingClientRect()
 		const buttonRect = selectedButton.getBoundingClientRect()
 		const startLeft = container.scrollLeft
-		const targetLeft
-      = startLeft
+		const targetLeft = startLeft
       + buttonRect.left
       - containerRect.left
       - (container.clientWidth - selectedButton.offsetWidth) / 2

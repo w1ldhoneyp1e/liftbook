@@ -56,8 +56,7 @@ export function ExercisePickerDrawer({
 	onRenameCustomExercise,
 	onSelectExercise,
 }: ExercisePickerDrawerProps) {
-	const [selectedMuscleGroup, setSelectedMuscleGroup]
-    = useState<MuscleGroupId | null>(null)
+	const [selectedMuscleGroup, setSelectedMuscleGroup] = useState<MuscleGroupId | null>(null)
 	const [query, setQuery] = useState('')
 	const [editingExerciseId, setEditingExerciseId] = useState<string | null>(null)
 	const [editingName, setEditingName] = useState('')
@@ -102,11 +101,9 @@ export function ExercisePickerDrawer({
 		.filter(exercise => !exercise.deletedAt)
 		.filter(exercise => {
 			const normalizedQuery = query.trim().toLowerCase()
-			const matchesQuery
-        = normalizedQuery.length === 0
+			const matchesQuery = normalizedQuery.length === 0
         || exercise.name[locale].toLowerCase().includes(normalizedQuery)
-			const matchesMuscleGroup
-        = normalizedQuery.length > 0
+			const matchesMuscleGroup = normalizedQuery.length > 0
         || !selectedMuscleGroup
         || exercise.muscleGroupIds.includes(selectedMuscleGroup)
 

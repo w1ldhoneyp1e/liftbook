@@ -73,8 +73,7 @@ type PullSyncResponse = {
 	serverTime: string,
 }
 
-const apiBaseUrl
-  = process.env.NEXT_PUBLIC_LIFTBOOK_API_URL ?? 'http://localhost:4000'
+const apiBaseUrl = process.env.NEXT_PUBLIC_LIFTBOOK_API_URL ?? 'http://localhost:4000'
 
 async function createGuestAccount(locale: Locale) {
 	const response = await fetch(`${apiBaseUrl}/v1/auth/guest`, {

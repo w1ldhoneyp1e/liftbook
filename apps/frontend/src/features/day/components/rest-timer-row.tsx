@@ -62,10 +62,9 @@ function RestTimerRow({
 	onUpdateVibrationEnabled,
 	onUpdateWakeLockEnabled,
 }: RestTimerRowProps) {
-	const displaySeconds
-    = mode === 'timer'
-    	? Math.max(durationSeconds - seconds, 0)
-    	: seconds
+	const displaySeconds = mode === 'timer'
+		? Math.max(durationSeconds - seconds, 0)
+		: seconds
 
 	return (
 		<section className="flex items-center justify-between gap-3 border-t border-border/60 bg-background/88 px-4 py-3 backdrop-blur dark:bg-background/70">

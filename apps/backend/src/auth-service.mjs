@@ -205,8 +205,7 @@ function createAuthService(store, options = {}) {
 			const latestToken = await store.getLatestEmailVerificationTokenForUser(user.id)
 
 			if (latestToken) {
-				const elapsedMs
-          = Date.now() - Date.parse(latestToken.createdAt)
+				const elapsedMs = Date.now() - Date.parse(latestToken.createdAt)
 				if (Number.isFinite(elapsedMs) && elapsedMs < 60_000) {
 					throw createHttpError(429, 'Verification email was sent recently')
 				}

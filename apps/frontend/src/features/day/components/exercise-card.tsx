@@ -123,10 +123,9 @@ export function ExerciseCard({
 	}
 
 	const displayUnit = unit
-	const editorWeightStep
-    = displayUnit === 'kg'
-    	? (settings?.kgStep ?? 1)
-    	: (settings?.lbStep ?? 2.5)
+	const editorWeightStep = displayUnit === 'kg'
+		? (settings?.kgStep ?? 1)
+		: (settings?.lbStep ?? 2.5)
 
 	function openEditor(setId: string) {
 		const nextSet = activeSets.find(setEntry => setEntry.id === setId)

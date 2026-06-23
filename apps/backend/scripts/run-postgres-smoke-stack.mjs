@@ -9,8 +9,7 @@ const serverEntry = resolve(apiRoot, 'src/server.mjs')
 const smokeScript = resolve(apiRoot, 'scripts/smoke-sync-postgres.mjs')
 
 const port = await resolveSmokePort()
-const databaseUrl
-  = process.env.DATABASE_URL
+const databaseUrl = process.env.DATABASE_URL
   ?? 'postgresql://liftbook:liftbook@localhost:5432/liftbook'
 const apiBaseUrl = `http://localhost:${port}`
 
