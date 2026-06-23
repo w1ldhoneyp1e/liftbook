@@ -16,7 +16,7 @@
         "vps:migrate": "docker compose --env-file .env.vps -f docker-compose.vps.yml build migrate && docker compose --env-file .env.vps -f docker-compose.vps.yml run --rm migrate",
         "vps:release": "bash scripts/release-vps.sh",
         "build": "pnpm --filter frontend build && pnpm --filter backend build",
-        "tools:build": "tsc -p tools/tsconfig.json",
+        "tools:build": "node -e \"require('fs').rmSync('tools/generated', { recursive: true, force: true })\" && tsc -p tools/tsconfig.json",
         "test:eslint-rules": "pnpm tools:build && node --test $(find tools/generated -name '*.test.mjs' -type f)",
         "lint": "pnpm tools:build && eslint apps/frontend apps/backend --ext .ts,.tsx,.js,.jsx,.mjs --fix"
     },

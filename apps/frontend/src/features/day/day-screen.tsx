@@ -760,12 +760,11 @@ export function DayScreen() {
 
 		const centerOffset = carouselRef.current.scrollLeft - carouselWidth * 2
 		const progress = centerOffset / carouselWidth
-		const delta
-      = progress > 0.5
-      	? 1
-      	: progress < -0.5
-      		? -1
-      		: 0
+		const delta = progress > 0.5
+			? 1
+			: progress < -0.5
+				? -1
+				: 0
 
 		animateAndCommitCarousel(delta)
 	}
@@ -858,16 +857,15 @@ export function DayScreen() {
 			1,
 		)
 		const velocity = dragDistance / dragDuration
-		const swipeDelta
-      = dragDistance < -carouselWidth * 0.16 || velocity < -0.35
-      	? 1
-      	: dragDistance > carouselWidth * 0.16 || velocity > 0.35
-      		? -1
-      		: scrollProgress > 0.32
-      			? 1
-      			: scrollProgress < -0.32
-      				? -1
-      				: 0
+		const swipeDelta = dragDistance < -carouselWidth * 0.16 || velocity < -0.35
+			? 1
+			: dragDistance > carouselWidth * 0.16 || velocity > 0.35
+				? -1
+				: scrollProgress > 0.32
+					? 1
+					: scrollProgress < -0.32
+						? -1
+						: 0
 
 		window.requestAnimationFrame(() => animateAndCommitCarousel(swipeDelta))
 	}

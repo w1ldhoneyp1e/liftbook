@@ -228,12 +228,11 @@ type SyncBadgeProps = {
 function SyncBadge({
 	label, tone, value,
 }: SyncBadgeProps) {
-	const toneClassName
-    = tone === 'success'
-    	? 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-300'
-    	: tone === 'warning'
-    		? 'bg-amber-500/12 text-amber-700 dark:text-amber-300'
-    		: 'bg-muted/75 text-foreground dark:bg-muted/55'
+	const toneClassName = tone === 'success'
+		? 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-300'
+		: tone === 'warning'
+			? 'bg-amber-500/12 text-amber-700 dark:text-amber-300'
+			: 'bg-muted/75 text-foreground dark:bg-muted/55'
 
 	return (
 		<div

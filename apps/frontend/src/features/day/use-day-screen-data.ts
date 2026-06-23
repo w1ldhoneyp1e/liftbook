@@ -873,17 +873,16 @@ async function getSyncSummary() {
 }
 
 async function collectPendingSyncChanges() {
-	const [exercises, workoutDays, exerciseEntries, userSettings]
-    = await Promise.all([
-    	db.exercises.where('syncStatus').equals('pending')
-    		.toArray(),
-    	db.workoutDays.where('syncStatus').equals('pending')
-    		.toArray(),
-    	db.exerciseEntries.where('syncStatus').equals('pending')
-    		.toArray(),
-    	db.userSettings.where('syncStatus').equals('pending')
-    		.toArray(),
-    ])
+	const [exercises, workoutDays, exerciseEntries, userSettings] = await Promise.all([
+		db.exercises.where('syncStatus').equals('pending')
+			.toArray(),
+		db.workoutDays.where('syncStatus').equals('pending')
+			.toArray(),
+		db.exerciseEntries.where('syncStatus').equals('pending')
+			.toArray(),
+		db.userSettings.where('syncStatus').equals('pending')
+			.toArray(),
+	])
 
 	return [
 		...exercises.map(exercise => createSyncChange('exercise', exercise)),
@@ -1146,20 +1145,19 @@ async function applyPulledUserSettings(
 }
 
 async function normalizeLegacyConflicts() {
-	const [customExercises, workoutDays, exerciseEntries, userSettings]
-    = await Promise.all([
-    	db.exercises
-    		.filter(
-    			exercise => !exercise.builtIn && exercise.syncStatus === 'conflict',
-    		)
-    		.toArray(),
-    	db.workoutDays.where('syncStatus').equals('conflict')
-    		.toArray(),
-    	db.exerciseEntries.where('syncStatus').equals('conflict')
-    		.toArray(),
-    	db.userSettings.where('syncStatus').equals('conflict')
-    		.toArray(),
-    ])
+	const [customExercises, workoutDays, exerciseEntries, userSettings] = await Promise.all([
+		db.exercises
+			.filter(
+				exercise => !exercise.builtIn && exercise.syncStatus === 'conflict',
+			)
+			.toArray(),
+		db.workoutDays.where('syncStatus').equals('conflict')
+			.toArray(),
+		db.exerciseEntries.where('syncStatus').equals('conflict')
+			.toArray(),
+		db.userSettings.where('syncStatus').equals('conflict')
+			.toArray(),
+	])
 
 	if (
 		customExercises.length === 0

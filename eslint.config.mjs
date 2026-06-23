@@ -458,6 +458,7 @@ export default [
 					'warnOnUnassignedImports': true,
 				}],
 			'local/consolidate-named-exports': 'error',
+			'local/join-split-variable-assignment': 'error',
 		},
 	},
 	{

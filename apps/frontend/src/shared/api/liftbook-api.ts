@@ -34,10 +34,7 @@ type GuestAccountResponse = {
 	},
 }
 
-type AuthAccountResponse = GuestAccountResponse
-  & {
-  	verificationEmailSent?: boolean,
-  }
+type AuthAccountResponse = GuestAccountResponse & {verificationEmailSent?: boolean}
 
 type VerifyEmailResponse = {
 	verified: boolean,
@@ -265,10 +262,9 @@ function getClientId() {
 		return existingClientId
 	}
 
-	const clientId
-    = typeof crypto !== 'undefined' && 'randomUUID' in crypto
-    	? `client_${crypto.randomUUID()}`
-    	: `client_${Date.now()}_${Math.random().toString(36)
+	const clientId = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+		? `client_${crypto.randomUUID()}`
+		: `client_${Date.now()}_${Math.random().toString(36)
 .slice(2)}`
 
 	window.localStorage.setItem(storageKey, clientId)
