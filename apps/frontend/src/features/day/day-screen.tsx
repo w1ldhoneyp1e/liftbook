@@ -376,7 +376,7 @@ export function DayScreen() {
 		) {
 			const body = `${dictionary.labels.restTimer}: ${dictionary.actions.timer}`
 
-			void navigator.serviceWorker?.ready
+			navigator.serviceWorker?.ready
 				.then(registration =>
 					registration.active?.postMessage({
 						type: 'show-timer-notification',
@@ -599,7 +599,7 @@ export function DayScreen() {
 		autoSyncSignatureRef.current = signature
 
 		const timeoutId = window.setTimeout(() => {
-			void runSync('auto')
+			runSync('auto')
 		}, 350)
 
 		return () => window.clearTimeout(timeoutId)
@@ -1022,8 +1022,8 @@ export function DayScreen() {
 							>
 								<div
 									className={`min-h-full ${isCenterPane
-? ''
-: 'pointer-events-none'}`}
+										? ''
+										: 'pointer-events-none'}`}
 								>
 									<ExerciseList
 										dictionary={dictionary}

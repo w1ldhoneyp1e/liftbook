@@ -237,13 +237,12 @@ async function pullSyncChanges({
 		searchParams.set('cursor', cursor)
 	}
 
-	const response = await fetch(
-    `${apiBaseUrl}/v1/sync/pull?${searchParams.toString()}`,
-    {
-    	headers: {
-    		Authorization: `Bearer ${accessToken}`,
-    	},
-    },
+	const response = await fetch(`${apiBaseUrl}/v1/sync/pull?${searchParams.toString()}`,
+		{
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+			},
+		},
 	)
 
 	if (!response.ok) {

@@ -223,16 +223,15 @@ function useDayScreenData(date: string) {
 				...currentState,
 				resolvedDate: date,
 				loading: false,
-				loadError:
-          error instanceof Error
-          	? error.message
-          	: 'Failed to initialize local data',
+				loadError: error instanceof Error
+					? error.message
+					: 'Failed to initialize local data',
 			}))
 		}
 	}, [date])
 
 	useEffect(() => {
-		void load()
+		load()
 	}, [load])
 
 	const updateSet = useCallback(
@@ -375,7 +374,7 @@ function useDayScreenData(date: string) {
 					.equals(date)
 					.sortBy('position')
 				const activeEntries = remainingEntries.filter(
-					entry => !entry.deletedAt,
+					e => !e.deletedAt,
 				)
 
 				if (activeEntries.length === 0) {
@@ -388,8 +387,8 @@ function useDayScreenData(date: string) {
 				}
 
 				await db.exerciseEntries.bulkPut(
-					activeEntries.map((entry, position) => ({
-						...entry,
+					activeEntries.map((e, position) => ({
+						...e,
 						position,
 						syncStatus: 'pending',
 						updatedAt: now,
@@ -429,15 +428,14 @@ function useDayScreenData(date: string) {
 
 			const now = new Date().toISOString()
 			const insertAtStart = options.insertAtStart === true
-			const workoutDay = existingDay
-        ?? ({
-        	id: `day_${date}`,
-        	date,
-        	localOwnerId: 'local',
-        	createdAt: now,
-        	syncStatus: 'pending',
-        	updatedAt: now,
-        } satisfies WorkoutDay)
+			const workoutDay = existingDay ?? ({
+				id: `day_${date}`,
+				date,
+				localOwnerId: 'local',
+				createdAt: now,
+				syncStatus: 'pending',
+				updatedAt: now,
+			} satisfies WorkoutDay)
 
 			const previousResult = settings?.previousResultDefaults === false
 				? undefined
@@ -716,10 +714,9 @@ function useDayScreenData(date: string) {
 				accessToken: response.session.accessToken,
 				tokenType: response.session.tokenType,
 				expiresAt: response.session.expiresAt,
-				syncCursor:
-          currentSession?.userId === response.user.id
-          	? currentSession.syncCursor ?? null
-          	: response.sync.cursor,
+				syncCursor: currentSession?.userId === response.user.id
+					? currentSession.syncCursor ?? null
+					: response.sync.cursor,
 				createdAt: response.user.createdAt,
 				updatedAt: now,
 			})
